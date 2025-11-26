@@ -1,24 +1,316 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PFSeeker — PFPs</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PFSeeker — PFP Gallery</title>
+
+<!-- Masonry.js -->
+<script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
+
+<!-- Font Awesome -->
+<script src="https://kit.fontawesome.com/628c8d2499.js" crossorigin="anonymous"></script>
+
+<!-- Google Fonts -->
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
 <style>
-nav a { margin-right: 15px; }
+/* ============================================================
+   GLOBAL + BACKGROUND
+============================================================ */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #050505;
+  overflow-x: hidden;
+  font-family: 'Roboto', sans-serif;
+}
+
+/* Subtle noise */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: url('https://raw.githubusercontent.com/666forever/discord/refs/heads/main/assets/subtle%20noise.png');
+    opacity: 0.20;
+    z-index: 0;
+    transform: translate(var(--parallax-x), var(--parallax-y));
+    transition: transform 0.15s ease-out;
+}
+
+/* Vignette + strong grain */
+body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(circle, rgba(0,0,0,0) 40%, rgba(0,0,0,0.95) 100%),
+        url('https://raw.githubusercontent.com/666forever/discord/refs/heads/main/assets/strong%20grain-texture.png');
+    background-size: 100%, 600px;
+    opacity: 0.55;
+    mix-blend-mode: lighten;
+    z-index: 1;
+    transform: translate(calc(var(--parallax-x)*0.6), calc(var(--parallax-y)*0.6));
+    transition: transform 0.25s ease-out;
+}
+
+/* ============================================================
+   NEW NAVBAR (CodePen Style)
+============================================================ */
+
+:root {
+  --menu-width: 50em;
+  --items: 5;
+  --item-width: calc(var(--menu-width) / var(--items));
+}
+
+nav {
+  width: var(--menu-width);
+  display: flex;
+  justify-content: space-evenly;
+  margin: 0 auto;
+  padding-top: 3em;
+  z-index: 10;
+  position: relative;
+}
+
+nav .menu-item {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  padding: 1em 1.5em;
+}
+
+nav .menu-text a {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  transition: 0.2s ease;
+}
+
+nav .menu-item:hover a:not(.soon) {
+  transform: translateZ(40px) scale(1.12);
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
+  color: rgba(255,255,255,0.75);
+}
+
+/* Strike-through */
+nav .menu-text a.soon {
+  position: relative;
+  opacity: 0.55;
+}
+nav .menu-text a.soon::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: 4px;
+  background: rgba(0,0,0,0.7);
+  transform: translateY(-50%);
+}
+
+/* ============================================================
+   PAGE TITLE
+============================================================ */
+
+h1 {
+  text-align: center;
+  margin-top: 40px;
+  margin-bottom: 30px;
+  letter-spacing: 0.08em;
+  font-size: 38px;
+  color: #dcdcdc;
+  position: relative;
+  z-index: 5;
+}
+
+/* ============================================================
+   EXISTING GALLERY (UNCHANGED)
+============================================================ */
+
+#gallery {
+  max-width: 1400px;
+  margin: 20px auto;
+  position: relative;
+  z-index: 5;
+}
+
+.grid-sizer {
+  width: 300px !important;
+}
+
+.grid-item {
+  width: 260px !important;
+  margin-bottom: 20px !important;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.grid-item.loaded {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.grid-item img {
+  width: 100%;
+  border-radius: 20px;
+  cursor: pointer;
+  display: block;
+}
+
+/* RESPONSIVE (UNCHANGED) */
+@media (max-width: 1500px){ .grid-sizer,.grid-item{ width:240px!important;} }
+@media (max-width: 1200px){ .grid-sizer,.grid-item{ width:220px!important;} }
+@media (max-width: 900px){ .grid-sizer,.grid-item{ width:200px!important;} }
+@media (max-width: 550px){ .grid-sizer,.grid-item{ width:100%!important;} }
+
+/* LIGHTBOX (UNCHANGED) */
+#lightbox {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.9);
+  justify-content:center;
+  align-items:center;
+  z-index:10000;
+}
+#lightbox img{ max-width:100%; max-height:100%; border-radius:10px; }
+#lightbox .close{ position:absolute; top:10px; right:15px; font-size:2em; cursor:pointer; }
+#lightbox .nav{ position:absolute; top:50%; transform:translateY(-50%); font-size:2em; cursor:pointer; }
+#lightbox .prev{ left:10px; }
+#lightbox .next{ right:10px; }
+
 </style>
 </head>
 <body>
-<nav>
-<a href="/pfps">pfps</a>
-<a href="/banners">banners</a>
-<a href="#">coming soon</a>
-<a href="#">coming soon</a>
-<a href="/">home</a>
+
+<!-- NAVBAR -->
+<nav id="menu">
+  <div class="menu-item"><div class="menu-text"><a href="/pfps">pfps</a></div></div>
+  <div class="menu-item"><div class="menu-text"><a href="/banners">banners</a></div></div>
+  <div class="menu-item"><div class="menu-text"><a class="soon" href="#">coming soon</a></div></div>
+  <div class="menu-item"><div class="menu-text"><a class="soon" href="#">coming soon</a></div></div>
+  <div class="menu-item"><div class="menu-text"><a href="/">home</a></div></div>
 </nav>
 
+<h1>profile pictures</h1>
 
-<h1>PFPs Page</h1>
-<p>Your PFP content will go here.</p>
+<!-- GALLERY -->
+<div id="gallery" class="grid">
+  <div class="grid-sizer"></div>
+</div>
+
+<!-- LIGHTBOX -->
+<div id="lightbox">
+  <span class="close">&times;</span>
+  <span class="nav prev">&#10094;</span>
+  <img src="">
+  <span class="nav next">&#10095;</span>
+</div>
+
+<!-- Masonry Loader (UNCHANGED) -->
+<script>
+/* Parallax */
+document.addEventListener("mousemove", e => {
+  const x = (e.clientX / window.innerWidth - 0.5) * 8;
+  const y = (e.clientY / window.innerHeight - 0.5) * 8;
+  document.body.style.setProperty("--parallax-x", x + "px");
+  document.body.style.setProperty("--parallax-y", y + "px");
+});
+
+async function loadGallery() {
+  const response = await fetch('images_list.json');
+  const images = await response.json();
+
+  const gallery = document.getElementById('gallery');
+  const lightbox = document.getElementById('lightbox');
+  const lightboxImg = lightbox.querySelector('img');
+  const closeBtn = lightbox.querySelector('.close');
+  const prevBtn = lightbox.querySelector('.prev');
+  const nextBtn = lightbox.querySelector('.next');
+
+  let currentIndex = 0;
+  let loadedCount = 0;
+  const batchSize = 50;
+
+  const msnry = new Masonry(gallery, {
+    itemSelector: '.grid-item',
+    columnWidth: '.grid-item',
+    gutter: 20,
+    percentPosition: true,
+    horizontalOrder: true
+  });
+
+  function addImage(imgName, index) {
+    const div = document.createElement('div');
+    div.className = 'grid-item';
+
+    const img = document.createElement('img');
+    img.src = `images/${imgName}`;
+    img.alt = imgName;
+    img.loading = 'lazy';
+
+    img.addEventListener('load', () => {
+      div.classList.add('loaded');
+      msnry.appended(div);
+      msnry.layout();
+    });
+
+    img.addEventListener('click', () => {
+      currentIndex = index;
+      lightboxImg.src = img.src;
+      lightbox.style.display = 'flex';
+    });
+
+    div.appendChild(img);
+    gallery.appendChild(div);
+  }
+
+  function loadBatch() {
+    const batch = images.slice(loadedCount, loadedCount + batchSize);
+    batch.forEach((imgName, i) => addImage(imgName, loadedCount + i));
+    loadedCount += batch.length;
+
+    if (loadedCount < images.length) {
+      setTimeout(loadBatch, 200);
+    }
+  }
+
+  loadBatch();
+
+  function showPrev() {
+    currentIndex = (currentIndex - 1 + images.length) % images.length;
+    lightboxImg.src = `images/${images[currentIndex]}`;
+  }
+
+  function showNext() {
+    currentIndex = (currentIndex + 1) % images.length;
+    lightboxImg.src = `images/${images[currentIndex]}`;
+  }
+
+  closeBtn.addEventListener('click', () => lightbox.style.display = 'none');
+  prevBtn.addEventListener('click', showPrev);
+  nextBtn.addEventListener('click', showNext);
+
+  lightbox.addEventListener('click', e => {
+    if (e.target === lightbox) lightbox.style.display = 'none';
+  });
+
+  document.addEventListener('keydown', e => {
+    if (lightbox.style.display === 'flex') {
+      if (e.key === 'ArrowLeft') showPrev();
+      if (e.key === 'ArrowRight') showNext();
+      if (e.key === 'Escape') lightbox.style.display = 'none';
+    }
+  });
+}
+
+loadGallery();
+</script>
+
 </body>
 </html>
