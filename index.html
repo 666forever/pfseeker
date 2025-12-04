@@ -2,16 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>coming soon</title>
 
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="https://666forever.github.io/discord/assets/logoblack.png">
 
     <style>
         html, body {
             margin: 0;
             padding: 0;
-            height: 93%;
+            height: 100%;
             background: #000;
             display: flex;
             align-items: center;
@@ -19,8 +19,9 @@
         }
 
         img {
-            max-width: 115vw;
-            max-height: 115vh;
+            width: 100vw;      /* fills phone width */
+            height: auto;
+            max-width: 1300px; /* stops it from getting absurdly huge on desktop */
             user-select: none;
             -webkit-user-drag: none;
             pointer-events: none;
