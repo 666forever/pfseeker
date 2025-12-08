@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>pfps & banners</title>
+
+<link rel="icon" type="image/png" href="https://666forever.github.io/pfseeker-assets/logo/logored.png">
+
+<style>
+/* -------------------- FONTS -------------------- */
+
+@font-face {
+    font-family: "Geist";
+    src: url("https://666forever.github.io/pfseeker-assets/font/Geist-Variable.ttf")
+         format("truetype");
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: "LibreFranklin";
+    src: url("https://666forever.github.io/pfseeker-assets/font/LibreFranklin.ttf")
+         format("truetype");
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+/* -------------------- ROOT -------------------- */
+
+html {
+    font-size: 16px;
+}
+
+/* -------------------- ADAPTIVE BACKGROUND -------------------- */
+
+body {
+    margin: 0;
+    padding: 0;
+
+    background-color: #000;
+    background-image: url("https://666forever.github.io/pfseeker-assets/background/adaptive/background20-1080.jpg");
+    background-repeat: no-repeat;
+    background-position: center top;
+    background-size: cover;
+
+    min-height: 100vh;
+    overflow-x: hidden;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 1440p */
+@media (min-width: 1400px) {
+    body {
+        background-image: url("https://666forever.github.io/pfseeker-assets/background/adaptive/background20-1440.jpg");
+    }
+}
+
+/* 4K / ultrawide */
+@media (min-width: 2400px) {
+    body {
+        background-image: url("https://666forever.github.io/pfseeker-assets/background/adaptive/background20-4k.jpg");
+    }
+}
+
+/* -------------------- LAYOUT -------------------- */
+
+.page-frame {
+    width: 100%;
+    min-height: 100vh;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+/* -------------------- HEADER -------------------- */
+
+header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.header-link {
+    margin-top: 4.7rem;
+    text-align: center;
+
+    font-family: "Geist", sans-serif;
+    font-weight: 700;
+    font-size: 0.61rem;
+    letter-spacing: 0.1em;
+
+    color: #fff;
+    text-decoration: none;
+}
+
+/* -------------------- NAVBAR -------------------- */
+
+.navbar {
+    margin-top: 1rem;
+    text-align: center;
+}
+
+.navbar a {
+    font-family: "Geist", sans-serif;
+    font-weight: 800;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+
+    color: #ccc;
+    text-decoration: none;
+    margin: 0.4rem;
+}
+
+/* -------------------- FOOTER -------------------- */
+
+footer {
+    width: 100%;
+    margin-bottom: 20px;
+    text-align: center;
+
+    font-family: "LibreFranklin", sans-serif;
+    font-weight: 800;
+    font-size: 0.6rem;
+    letter-spacing: 0.05em;
+
+    color: #ccc;
+}
+</style>
+</head>
+<body>
+
+<div class="page-frame">
+
+    <header>
+        <a href="index.html" class="header-link">
+            WWW.PFSEEKER.COM
+        </a>
+
+        <nav class="navbar" aria-label="Primary navigation">
+            <a href="./browse.html">browse profiles</a>
+            <a href="./mental-health.html">mental health</a>
+            <a href="./the-outlet.html">the outlet</a>
+            <a href="./about.html">about</a>
+        </nav>
+    </header>
+
+    <footer>
+        © 2025 - 2026 ProfileSeeker. All rights reserved.
+    </footer>
+
+</div>
+
+</body>
+</html>
