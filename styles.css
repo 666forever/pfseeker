@@ -1,0 +1,419 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  background: #0f1113;
+  color: #fff;
+}
+
+/* =========================
+   PAGE LOAD FADE
+========================= */
+#page-loader {
+  position: fixed;
+  inset: 0;
+  background: #0f1113; /* same as body */
+  z-index: 9999;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+}
+
+#page-loader.fade-out {
+  opacity: 0;
+}
+
+/* =========================
+   NAVBAR
+========================= */
+.navbar {
+  height: 60px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  background: #0b0d0f;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.logo-img {
+  height: 60px;
+  transition: transform 0.25s ease, opacity 0.25s ease, filter 0.25s ease;
+}
+
+.logo-img:hover {
+  transform: scale(1.04);
+  opacity: 0.9;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+}
+
+.nav-center {
+  display: flex;
+  gap: 14px;
+}
+
+.nav-icon {
+  width: 44px;
+  height: 44px;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 10px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.icon-btn:hover {
+  transform: scale(1.2);
+  opacity: 1;
+}
+
+/* =========================
+   EXPLORE DROPDOWN
+========================= */
+.nav-dropdown {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 110%;
+  left: 50%;
+  transform: translateX(-50%) translateY(6px);
+  background: #0b0d0f;
+  border-radius: 14px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.nav-dropdown:hover .dropdown-menu {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+
+.dropdown-item {
+  text-decoration: none;          /* 🔥 remove underline */
+  color: white;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+
+  display: block;                 /* make full row clickable */
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+
+/* hover state */
+.dropdown-item:hover {
+  background: rgba(255,255,255,0.06);
+  transform: translateX(2px);
+  opacity: 0.95;
+}
+
+/* optional: active click feel */
+.dropdown-item:active {
+  transform: translateX(2px) scale(0.98);
+}
+
+/* =========================
+   GALLERY
+========================= */
+.gallery {
+  display: flex;
+  gap: 12px;
+  padding: 24px;
+}
+
+.column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* =========================
+   CARD + VIGNETTE
+========================= */
+.card {
+  position: relative;
+  background: #15181b;
+  border-radius: 16px;
+  padding: 2px;
+  overflow: hidden;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(0,0,0,0) 55%,
+      rgba(0,0,0,0.35) 100%
+    );
+  opacity: 0;
+  pointer-events: none; /* 🔥 REQUIRED */
+  transition: opacity 0.25s ease;
+}
+.card:hover::after {
+  opacity: 1;
+}
+
+.card img {
+  width: 100%;
+  border-radius: 12px;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.card img.loaded {
+  opacity: 1;
+}
+
+/* Banner aspect */
+.card.banner img {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+/* =========================
+   ICONS
+========================= */
+.like-btn,
+.enlarge-btn {
+  position: absolute;
+  top: 10px;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.like-btn {
+  right: 10px;
+}
+
+.enlarge-btn {
+  right: 56px;
+}
+
+.card:hover .like-btn,
+.card:hover .enlarge-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.material-symbols-outlined {
+  font-size: 32px;
+  font-variation-settings: 'FILL' 0;
+}
+
+.like-btn.liked .material-symbols-outlined {
+  font-variation-settings: 'FILL' 1;
+  color: #e2264d;
+  animation: heart-pop 0.35s ease;
+}
+
+@keyframes heart-pop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* =========================
+   MODAL
+========================= */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+}
+
+.modal-content {
+  position: relative;
+  z-index: 1;
+}
+
+.modal-content img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 12px;
+}
+
+.modal-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: white;
+  cursor: pointer;
+}
+
+.modal-like {
+  top: 12px;
+  right: 5px;
+  opacity: 1;
+  transform: none;
+}
+
+/* =========================
+   RESPONSIVE (TABLET)
+========================= */
+@media (max-width: 1024px) {
+  .gallery {
+    padding: 16px;
+    gap: 10px;
+  }
+
+  .column {
+    gap: 10px;
+  }
+
+  .nav-icon {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+/* =========================
+   RESPONSIVE (PHONE)
+========================= */
+@media (max-width: 640px) {
+  /* navbar */
+  .navbar {
+    padding: 0 12px;
+  }
+
+  .nav-left {
+    gap: 14px;
+  }
+
+  .nav-center {
+    gap: 10px;
+  }
+
+  .logo-img {
+    height: 48px;
+  }
+
+  .nav-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* gallery */
+  .gallery {
+    padding: 12px;
+    gap: 8px;
+  }
+
+  .column {
+    gap: 8px;
+  }
+
+  /* cards */
+  .card {
+    border-radius: 14px;
+  }
+
+  .card img {
+    border-radius: 10px;
+  }
+
+  /* icons easier to tap */
+  .like-btn,
+  .enlarge-btn {
+    top: 8px;
+  }
+
+  .like-btn {
+    right: 8px;
+  }
+
+  .enlarge-btn {
+    right: 48px;
+  }
+
+  .like-btn .material-symbols-outlined {
+    font-size: 28px;
+  }
+
+  .enlarge-btn .material-symbols-outlined {
+    font-size: 24px;
+  }
+
+  /* dropdown spacing */
+  .dropdown-menu {
+    min-width: 120px;
+    padding: 6px;
+  }
+
+  .dropdown-item {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+}
+
+/* =========================
+   RESPONSIVE (VERY SMALL)
+========================= */
+@media (max-width: 420px) {
+  .gallery {
+    padding: 10px;
+  }
+
+  .logo-img {
+    height: 44px;
+  }
+
+  /* icons sit closer */
+  .enlarge-btn {
+    right: 44px;
+  }
+}
