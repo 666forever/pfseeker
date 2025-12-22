@@ -296,17 +296,24 @@ createColumns();
 loadBatch();
 
 /* =========================
-   PAGE LOAD FADE-OUT
+   PAGE LOAD FADE-OUT (ROBUST)
 ========================= */
-window.addEventListener("load", () => {
+function hideLoader() {
   const loader = document.getElementById("page-loader");
   if (!loader) return;
 
-  // small delay so it feels intentional
-  setTimeout(() => {
-    loader.classList.add("fade-out");
+  loader.classList.add("fade-out");
 
-    // remove after transition
-    setTimeout(() => loader.remove(), 800);
-  }, 100);
+  setTimeout(() => {
+    loader.remove();
+  }, 800);
+}
+
+/* Fade out as soon as DOM is ready */
+document.addEventListener("DOMContentLoaded", () => {
+  // small intentional delay so it feels smooth
+  setTimeout(hideLoader, 100);
 });
+
+/* Absolute safety fallback (never gets stuck) */
+setTimeout(hideLoader, 2000);
