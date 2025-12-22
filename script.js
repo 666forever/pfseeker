@@ -1,5 +1,5 @@
-import { pfpImages } from "./gallery/pfp/images_list.json";
-import { bannerImages } from "./gallery/banner/images_list.json";
+import { pfpImages } from "./gallery/pfp/images_list.js";
+import { bannerImages } from "./gallery/banner/images_list.js";
 
 const gallery = document.getElementById("gallery");
 
