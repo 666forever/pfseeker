@@ -10,22 +10,6 @@ body {
   color: #fff;
 }
 
-/* =========================
-   PAGE LOAD FADE
-========================= */
-#page-loader {
-  position: fixed;
-  inset: 0;
-  background: #0f1113; /* same as body */
-  z-index: 9999;
-  opacity: 1;
-  pointer-events: none;
-  transition: opacity 0.8s ease;
-}
-
-#page-loader.fade-out {
-  opacity: 0;
-}
 
 /* =========================
    NAVBAR

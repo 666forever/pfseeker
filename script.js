@@ -294,26 +294,3 @@ document.querySelector('[aria-label="Liked"]').onclick = () => {
 ========================= */
 createColumns();
 loadBatch();
-
-/* =========================
-   PAGE LOAD FADE-OUT (ROBUST)
-========================= */
-function hideLoader() {
-  const loader = document.getElementById("page-loader");
-  if (!loader) return;
-
-  loader.classList.add("fade-out");
-
-  setTimeout(() => {
-    loader.remove();
-  }, 800);
-}
-
-/* Fade out as soon as DOM is ready */
-document.addEventListener("DOMContentLoaded", () => {
-  // small intentional delay so it feels smooth
-  setTimeout(hideLoader, 100);
-});
-
-/* Absolute safety fallback (never gets stuck) */
-setTimeout(hideLoader, 2000);
