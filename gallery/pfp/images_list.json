@@ -1,4 +1,4 @@
-export const pfpImages = [
+[
   "pfp_00001.jpg",
   "pfp_00002.jpg",
   "pfp_00003.jpg",
@@ -6795,4 +6795,4 @@ export const pfpImages = [
   "pfp_06794.jpg",
   "pfp_06795.jpg",
   "pfp_06796.jpg"
-];
+]
