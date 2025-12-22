@@ -1,4 +1,4 @@
-[
+export const bannerImages = [
   "banner_00001.jpg",
   "banner_00002.jpg",
   "banner_00003.jpg",
@@ -2957,4 +2957,4 @@
   "banner_02956.png",
   "banner_02957.png",
   "banner_02958.gif"
-]
+];
