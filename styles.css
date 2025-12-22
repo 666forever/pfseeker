@@ -400,4 +400,9 @@ body {
   .enlarge-btn {
     right: 44px;
   }
+
+  .nav-dropdown {
+    display: none !important;
+    
+  }
 }
