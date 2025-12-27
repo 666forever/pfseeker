@@ -1,11 +1,22 @@
-import { pfpImages } from "./gallery/pfp/images_list.js";
-import { bannerImages } from "./gallery/banner/images_list.js";
+// :
+// images_list.js must load before this file.
+// Lists contain filenames only. Paths are built here.
 
-/* =========================
-   PAGE MODE
-========================= */
-const pageMode =
-  document.querySelector('meta[name="pfseeker-mode"]')?.content || "all";
+
+
+const pageType = location.pathname.includes("/banners")
+  ? "banner"
+  : "pfp";
+
+  const images =
+  pageType === "pfp"
+    ? window.pfpImages
+    : pageType === "banner"
+    ? window.bannerImages
+    : [];
+
+// viewMode controls gallery source: "normal" | "liked"
+let viewMode = "normal";
 
 /* =========================
    ELEMENTS
@@ -45,14 +56,16 @@ document.addEventListener("keydown", e => {
 /* =========================
    STATE
 ========================= */
-const BATCH_SIZE = 36;
+const BATCH_SIZE_BASE = 12; // Rows per batch
+let BATCH_SIZE = 12 * getColumnCount(); // Will be recalculated on column changes
 let index = 0;
-let viewMode = "all";
 
 const loadedImages = new Set();
 const likedImages = new Set(
   JSON.parse(localStorage.getItem("likedImages") || "[]")
 );
+
+let loadQueue = 0; // Track pending load requests
 
 /* =========================
    COLUMNS (RESPONSIVE)
@@ -61,10 +74,10 @@ const columns = [];
 let COLUMN_COUNT = getColumnCount();
 
 function getColumnCount() {
-  if (window.innerWidth <= 500) return 1;
-  if (window.innerWidth <= 900) return 2;
-  if (window.innerWidth <= 1400) return 4;
-  return 6;
+  if (window.innerWidth <= 500) return 3;
+  if (window.innerWidth <= 900) return 4;
+  if (window.innerWidth <= 1400) return 5;
+  return 7;
 }
 
 function createColumns() {
@@ -78,6 +91,9 @@ function createColumns() {
     gallery.appendChild(col);
     columns.push(col);
   }
+  
+  // Recalculate batch size when columns change
+  BATCH_SIZE = BATCH_SIZE_BASE * COLUMN_COUNT;
 }
 
 createColumns();
@@ -85,99 +101,111 @@ createColumns();
 /* =========================
    SHUFFLE + MIXED FEED
 ========================= */
-function shuffle(arr) {
-  return [...arr].sort(() => Math.random() - 0.5);
+// Fisher–Yates shuffle: shuffles in place and returns the array
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+  return arr;
 }
-
-const mixedFeed = (() => {
-  const pfps = shuffle(pfpImages);
-  const banners = shuffle(bannerImages);
-
-  const result = [];
-  let bi = 0;
-
-  pfps.forEach((pfp, i) => {
-    result.push({ type: "pfp", file: pfp });
-
-    if ((i + 1) % 6 === 0 && banners[bi]) {
-      result.push({ type: "banner", file: banners[bi++] });
-    }
-  });
-
-  return result;
-})();
-
-/* =========================
-   IMAGE SOURCE
-========================= */
 function getImageSource() {
+  // 1. Liked = always global
   if (viewMode === "liked") {
-    return [...likedImages].map(f => ({
-      type: f.startsWith("banner/") ? "banner" : "pfp",
-      file: f.replace(/^banner\/|^pfp\//, "")
-    }));
+    return [...likedImages].map(key => {
+      const [type, file] = key.split("/");
+      return { type, file };
+    });
   }
 
-  if (pageMode === "pfp") return pfpImages.map(f => ({ type: "pfp", file: f }));
-  if (pageMode === "banner") return bannerImages.map(f => ({ type: "banner", file: f }));
+  // 2. Explore = mixed (groundwork for tags later)
+  if (viewMode === "explore") {
+    // If an explore-specific, precomputed source exists (created below), use it.
+    if (Array.isArray(window.exploreImages) && window.exploreImages.length) {
+      return window.exploreImages;
+    }
 
-  return mixedFeed;
+    // Fallback: combine without `src` if no precomputed array exists
+    return [
+      ...((window.pfpImages || []).map(img => ({
+        type: "pfp",
+        file: img.file,
+        tags: img.tags
+      })) || []),
+      ...((window.bannerImages || []).map(img => ({
+        type: "banner",
+        file: img.file,
+        tags: img.tags
+      })) || [])
+    ];
+  }
+
+  // 3. Default = current page only
+  return images.map(img => ({
+    type: pageType,
+    file: img.file,
+    tags: img.tags
+  }));
 }
 
 /* =========================
    CREATE CARD
 ========================= */
-function createCard(filename, type) {
+function createCard(filename, type, isHighPriority = false, overrideSrc) {
   const card = document.createElement("div");
   card.className = `card ${type}`;
+  const key = `${type}/${filename}`;
+  card.dataset.key = key;
 
   const img = document.createElement("img");
-  const src =
-    type === "banner"
-      ? `gallery/banner/${filename}`
-      : `gallery/pfp/${filename}`;
+  img.dataset.key = key;
+  // Use provided `overrideSrc` (explore precomputed `src`) if available,
+  // otherwise fall back to the existing path construction.
+  const src = overrideSrc || `/${type}s/images/${filename}`;
 
   img.src = src;
+  // Keep the actual resolved src on dataset so other handlers can prefer it
+  img.dataset.src = src;
   img.alt = filename;
   img.loading = "lazy";
   img.decoding = "async";
 
-  img.addEventListener("load", () => img.classList.add("loaded"));
+  // Prioritize images likely to be in the first viewport
+  if (isHighPriority) img.fetchPriority = "high";
+
+  img.addEventListener("load", () => {
+    img.classList.add("loaded");
+    card.classList.add("visible");
+  });
   img.addEventListener("error", () => card.remove());
 
-  /* DOUBLE CLICK / DOUBLE TAP LIKE */
-  let lastTap = 0;
-  img.addEventListener("click", e => {
-    const now = Date.now();
-    if (now - lastTap < 300) {
-      toggleLike(filename, type);
-    }
-    lastTap = now;
-  });
-
-  /* LIKE BUTTON */
   const likeBtn = document.createElement("button");
   likeBtn.className = "like-btn";
-  likeBtn.innerHTML = `<span class="material-symbols-outlined">favorite</span>`;
+  likeBtn.innerHTML = `
+    <img
+      src="https://666forever.github.io/pfseeker-assets/icons/svg/heart-alt.svg"
+      alt=""
+      class="card-icon"
+    />
+  `;
 
-  if (likedImages.has(`${type}/${filename}`)) {
+  if (likedImages.has(key)) {
     likeBtn.classList.add("liked");
+    const icon = likeBtn.querySelector(".card-icon");
+    if (icon) icon.src = "https://666forever.github.io/pfseeker-assets/icons/svg/heart-filled.svg";
   }
 
-  likeBtn.addEventListener("click", e => {
-    e.stopPropagation();
-    toggleLike(filename, type);
-    likeBtn.classList.toggle("liked");
-  });
-
-  /* ENLARGE BUTTON */
   const enlargeBtn = document.createElement("button");
   enlargeBtn.className = "enlarge-btn";
-  enlargeBtn.innerHTML = `<span class="material-symbols-outlined">fit_screen</span>`;
-  enlargeBtn.addEventListener("click", e => {
-    e.stopPropagation();
-    openModal(src, filename, type);
-  });
+  enlargeBtn.innerHTML = `
+    <img
+      src="https://666forever.github.io/pfseeker-assets/icons/svg/expand.svg"
+      alt=""
+      class="card-icon"
+    />
+  `;
 
   card.append(img, enlargeBtn, likeBtn);
   return card;
@@ -186,15 +214,76 @@ function createCard(filename, type) {
 /* =========================
    LIKE LOGIC
 ========================= */
+// Event delegation: handle like/enlarge clicks and double-tap like on images
+const _lastTapMap = new Map();
+gallery.addEventListener("pointerup", e => {
+  const img = e.target.closest("img");
+  if (!img || !gallery.contains(img)) return;
+  const key = img.dataset.key;
+  if (!key) return;
+  const now = Date.now();
+  const last = _lastTapMap.get(key) || 0;
+  if (now - last < 300) {
+    const [type, filename] = key.split("/");
+    toggleLike(filename, type);
+    const card = img.closest(".card");
+    const likeBtn = card?.querySelector(".like-btn");
+    likeBtn?.classList.toggle("liked");
+  }
+  _lastTapMap.set(key, now);
+});
+
+gallery.addEventListener("click", e => {
+  const likeBtn = e.target.closest(".like-btn");
+  if (likeBtn && gallery.contains(likeBtn)) {
+    e.stopPropagation();
+    const card = likeBtn.closest(".card");
+    const key = card?.dataset.key;
+    if (!key) return;
+    const [type, filename] = key.split("/");
+    toggleLike(filename, type);
+    likeBtn.classList.toggle("liked");
+    return;
+  }
+
+  const enlargeBtn = e.target.closest(".enlarge-btn");
+  if (enlargeBtn && gallery.contains(enlargeBtn)) {
+    e.stopPropagation();
+    const card = enlargeBtn.closest(".card");
+    const key = card?.dataset.key;
+    if (!key) return;
+    const [type, filename] = key.split("/");
+    const imgEl = card.querySelector("img");
+    const src = imgEl?.dataset?.src || imgEl?.src || `/${type}s/images/${filename}`;
+    openModal(src, filename, type);
+    return;
+  }
+});
+
 function toggleLike(filename, type) {
   const key = `${type}/${filename}`;
 
-  if (likedImages.has(key)) {
-    likedImages.delete(key);
-  } else {
-    likedImages.add(key);
-  }
+let selector;
+if (window.CSS && CSS.escape) selector = `.card[data-key="${CSS.escape(key)}"]`;
+else selector = `.card[data-key=\"${key.replace(/\"/g, '\\\"')}\"]`;
+const card = document.querySelector(selector);
 
+const likeBtn = card?.querySelector(".like-btn");
+const icon = likeBtn?.querySelector(".card-icon");
+
+if (likedImages.has(key)) {
+  likedImages.delete(key);
+
+  if (icon) {
+    icon.src = "https://666forever.github.io/pfseeker-assets/icons/svg/heart-alt.svg";
+  }
+} else {
+  likedImages.add(key);
+
+  if (icon) {
+    icon.src = "https://666forever.github.io/pfseeker-assets/icons/svg/heart-filled.svg";
+  }
+}
   localStorage.setItem("likedImages", JSON.stringify([...likedImages]));
   syncModalLike();
 }
@@ -217,17 +306,34 @@ modalLikeBtn?.addEventListener("click", () => {
 function loadBatch() {
   const source = getImageSource();
   const batch = source.slice(index, index + BATCH_SIZE);
+  const fragments = columns.map(() => document.createDocumentFragment());
 
   batch.forEach((item, i) => {
     const key = `${item.type}/${item.file}`;
     if (loadedImages.has(key)) return;
 
     loadedImages.add(key);
-    const card = createCard(item.file, item.type);
-    columns[(index + i) % COLUMN_COUNT].appendChild(card);
+    const isHighPriority = (index + i) < 6;
+    // Pass item.src when available so explore items can provide full paths
+    const card = createCard(item.file, item.type, isHighPriority, item.src);
+
+    const columnIndex = (index + i) % COLUMN_COUNT;
+    const rowIndex = Math.floor((index + i) / COLUMN_COUNT);
+
+    // cap stagger after N rows
+    const MAX_STAGGER_ROWS = 6;
+    const delay = Math.min(rowIndex, 5) * 35;
+
+    card.style.setProperty("--enter-delay", `${delay}ms`);
+
+    fragments[columnIndex].appendChild(card);
   });
 
-  index += BATCH_SIZE;
+  fragments.forEach((frag, i) => {
+    columns[i].appendChild(frag);
+  });
+
+  index += batch.length;
 }
 
 /* =========================
@@ -237,18 +343,76 @@ const sentinel = document.createElement("div");
 gallery.after(sentinel);
 
 const observer = new IntersectionObserver(
-  ([e]) => e.isIntersecting && loadBatch(),
-  { rootMargin: "600px" }
+  ([e]) => {
+    if (!e.isIntersecting) return;
+    
+    // Don't queue more than 2 loads ahead
+    if (loadQueue > 2) return;
+    
+    loadQueue++;
+    
+    requestAnimationFrame(() => {
+      loadBatch();
+      
+      requestAnimationFrame(() => {
+        loadQueue--;
+        
+        // If still intersecting and more to load, chain another batch
+        if (e.isIntersecting && loadQueue === 0 && index < getImageSource().length) {
+          loadQueue++;
+          setTimeout(() => {
+            loadBatch();
+            loadQueue--;
+          }, 50);
+        }
+      });
+    });
+  },
+  { rootMargin: "1500px" } // Trigger 1500px before reaching sentinel
 );
 observer.observe(sentinel);
 
-/* =========================
-   LIKED NAV BUTTON
-========================= */
-document
-  .querySelector('[aria-label="Liked"]')
-  ?.addEventListener("click", () => {
-    viewMode = "liked";
+// If we're on the liked page, switch mode before loading
+if (location.pathname.startsWith("/liked")) {
+  viewMode = "liked";
+}
+
+// === ADDED: Activate explore mode on /explore/ page ===
+if (location.pathname.startsWith("/explore")) {
+  viewMode = "explore";
+}
+// Prepare a mixed, shuffled source for the explore page only.
+if (location.pathname.startsWith("/explore")) {
+  try {
+    const pfpList = Array.isArray(window.pfpImages)
+      ? window.pfpImages.map(img => ({
+          type: "pfp",
+          file: img.file,
+          tags: img.tags,
+          src: `/pfps/images/${img.file}`
+        }))
+      : [];
+
+    const bannerList = Array.isArray(window.bannerImages)
+      ? window.bannerImages.map(img => ({
+          type: "banner",
+          file: img.file,
+          tags: img.tags,
+          src: `/banners/images/${img.file}`
+        }))
+      : [];
+
+    const combined = [...pfpList, ...bannerList];
+    shuffleArray(combined);
+    // Expose a single, stable mixed source for getImageSource() to use
+    window.exploreImages = combined;
+  } catch (err) {
+    console.error("Failed to prepare explore mixed feed", err);
+  }
+}
+  
+/*
+    viewMode = "explore"; // future-proof
     index = 0;
     loadedImages.clear();
     createColumns();
@@ -266,8 +430,15 @@ window.addEventListener("resize", () => {
     if (newCount !== COLUMN_COUNT) {
       index = 0;
       loadedImages.clear();
-      createColumns();
+      createColumns(); // Recalculates BATCH_SIZE automatically
+      
+      // Load two batches for better initial view after resize
       loadBatch();
+      setTimeout(() => {
+        if (index < getImageSource().length) {
+          loadBatch();
+        }
+      }, 100);
     }
   }, 150);
 });
@@ -275,4 +446,14 @@ window.addEventListener("resize", () => {
 /* =========================
    INIT
 ========================= */
-loadBatch();
+if (images.length) {
+  // Load first batch
+  loadBatch();
+  
+  // Preload second batch immediately for smoother initial scroll
+  setTimeout(() => {
+    if (index < getImageSource().length) {
+      loadBatch();
+    }
+  }, 100);
+}

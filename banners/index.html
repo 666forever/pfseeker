@@ -11,11 +11,8 @@
     href="https://666forever.github.io/discord/assets/logored.png"
   >
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="../styles.css">
-
-  <!-- Page mode -->
-  <meta name="pfseeker-mode" content="banner">
+  <link rel="stylesheet" href="/css/styles.css" />
+  <link rel="stylesheet" href="/css/sidebar.css" />
 
   <!-- Material Symbols -->
   <link
@@ -26,53 +23,22 @@
 
 <body>
 
-  <!-- =========================
-       NAVBAR
-  ========================= -->
-  <header class="navbar">
-    <div class="nav-left">
-
-      <!-- LOGO -->
-      <a href="/" class="logo">
+  <main class="content">
+    <div class="search-row">
+      <div class="search-bar">
+        <input type="search" placeholder="Search" />
         <img
-          src="https://666forever.github.io/pfseeker-assets/logo/LOGO.svg"
-          class="logo-img"
-          alt="PFSeeker"
-        >
-      </a>
-
-      <div class="nav-center">
-
-        <!-- HOME -->
-        <a href="/" class="icon-btn" aria-label="Home">
-          <img
-            src="https://666forever.github.io/pfseeker-assets/logo/HOME.svg"
-            class="nav-icon"
-            alt="Home"
-          >
-        </a>
-
-        <!-- LIKED -->
-        <button class="icon-btn" aria-label="Liked">
-          <img
-            src="https://666forever.github.io/pfseeker-assets/logo/LIKED.svg"
-            class="nav-icon"
-            alt="Liked"
-          >
-        </button>
-
+          src="https://666forever.github.io/pfseeker-assets/icons/svg/search.svg"
+          alt=""
+          class="search-icon"
+        />
       </div>
     </div>
-  </header>
 
-  <!-- =========================
-       GALLERY
-  ========================= -->
-  <main id="gallery" class="gallery"></main>
+    <div id="gallery" class="gallery"></div>
+  </main>
 
-  <!-- =========================
-       MODAL
-  ========================= -->
+    <!-- MODAL -->
   <div id="imageModal" class="modal hidden">
     <div class="modal-overlay"></div>
 
@@ -80,17 +46,19 @@
       <button class="modal-close" aria-label="Close">✕</button>
 
       <button id="modalLikeBtn" class="like-btn modal-like" aria-label="Like">
-        <span class="material-symbols-outlined">favorite</span>
       </button>
 
-      <img id="modalImage" alt="Expanded image">
+      <img id="modalImage" alt="Expanded image" />
     </div>
   </div>
 
-  <!-- =========================
-       SCRIPT (LOAD LAST)
-  ========================= -->
-  <script type="module" src="../script.js"></script>
 
+  <!-- Page / gallery logic -->
+  <script src="images_list.js"></script>
+  <script src="/pfps/images_list.js"></script>
+  <script src="/script.js"></script>
+
+  <!-- Sidebar loader (injects /partials/sidebar.html) -->
+  <script src="/js/sidebar-loader.js"></script>
 </body>
 </html>
