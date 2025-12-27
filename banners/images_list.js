@@ -1,4 +1,4 @@
-window.bannerImages = [
+export const bannerImages = [
   {
     "file": "banner_00001.jpg",
     "tags": [

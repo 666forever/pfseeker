@@ -1,18 +1,19 @@
 // :
-// images_list.js must load before this file.
 // Lists contain filenames only. Paths are built here.
-
-
-
+// This file is now a module and imports image lists directly.
+import { pfpImages } from "./pfps/images_list.js";
+import { bannerImages } from "./banners/images_list.js";
+// Explorer prepared mixed array (module-scoped)
+let exploreImages = [];
 const pageType = location.pathname.includes("/banners")
   ? "banner"
   : "pfp";
 
-  const images =
+const images =
   pageType === "pfp"
-    ? window.pfpImages
+    ? pfpImages
     : pageType === "banner"
-    ? window.bannerImages
+    ? bannerImages
     : [];
 
 // viewMode controls gallery source: "normal" | "liked"
@@ -123,18 +124,18 @@ function getImageSource() {
   // 2. Explore = mixed (groundwork for tags later)
   if (viewMode === "explore") {
     // If an explore-specific, precomputed source exists (created below), use it.
-    if (Array.isArray(window.exploreImages) && window.exploreImages.length) {
-      return window.exploreImages;
+    if (Array.isArray(exploreImages) && exploreImages.length) {
+      return exploreImages;
     }
 
     // Fallback: combine without `src` if no precomputed array exists
     return [
-      ...((window.pfpImages || []).map(img => ({
+      ...((pfpImages || []).map(img => ({
         type: "pfp",
         file: img.file,
         tags: img.tags
       })) || []),
-      ...((window.bannerImages || []).map(img => ({
+      ...((bannerImages || []).map(img => ({
         type: "banner",
         file: img.file,
         tags: img.tags
@@ -384,8 +385,8 @@ if (location.pathname.startsWith("/explore")) {
 // Prepare a mixed, shuffled source for the explore page only.
 if (location.pathname.startsWith("/explore")) {
   try {
-    const pfpList = Array.isArray(window.pfpImages)
-      ? window.pfpImages.map(img => ({
+    const pfpList = Array.isArray(pfpImages)
+      ? pfpImages.map(img => ({
           type: "pfp",
           file: img.file,
           tags: img.tags,
@@ -393,8 +394,8 @@ if (location.pathname.startsWith("/explore")) {
         }))
       : [];
 
-    const bannerList = Array.isArray(window.bannerImages)
-      ? window.bannerImages.map(img => ({
+    const bannerList = Array.isArray(bannerImages)
+      ? bannerImages.map(img => ({
           type: "banner",
           file: img.file,
           tags: img.tags,
@@ -405,7 +406,7 @@ if (location.pathname.startsWith("/explore")) {
     const combined = [...pfpList, ...bannerList];
     shuffleArray(combined);
     // Expose a single, stable mixed source for getImageSource() to use
-    window.exploreImages = combined;
+    exploreImages = combined;
   } catch (err) {
     console.error("Failed to prepare explore mixed feed", err);
   }

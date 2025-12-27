@@ -1,4 +1,4 @@
-window.pfpImages = [
+export const pfpImages = [
   {
     "file": "pfp_00001.jpg",
     "tags": [
