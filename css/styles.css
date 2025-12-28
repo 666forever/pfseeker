@@ -471,3 +471,43 @@ body {
 .modal-like.liked {
   color: #ee4e4e;
 }
+
+/* ===========================
+   GIF BADGE
+=========================== */
+
+.gif-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  pointer-events: none;
+  z-index: 2; /* above image, below buttons */
+}
+
+.card:hover .gif-badge {
+  opacity: 1;
+}
+
+.gif-icon {
+  width: 20px;
+  height: 20px;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5));
+}
+
+.gif-icon path {
+  fill: #ffffff;
+}
+
+/* Ensure buttons render above badge */
+.like-btn,
+.enlarge-btn {
+  z-index: 3;
+}
+
+@media (max-width: 768px) {
+  .gif-badge {
+    opacity: 0.7;
+  }
+}

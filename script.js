@@ -209,7 +209,22 @@ function createCard(filename, type, isHighPriority = false, overrideSrc) {
     </svg>
   `;
 
-  card.append(img, enlargeBtn, likeBtn);
+  // === GIF badge (appear on hover) ===
+  const isGif = filename.toLowerCase().endsWith('.gif');
+  let gifBadge = null;
+  if (isGif) {
+    gifBadge = document.createElement('div');
+    gifBadge.className = 'gif-badge';
+    gifBadge.innerHTML = `
+      <svg class="gif-icon" width="20" height="20" aria-hidden="true">
+        <use href="#icon-gif-badge"></use>
+      </svg>
+    `;
+  }
+
+  // Append elements; badge should be above image but below buttons via z-index
+  if (gifBadge) card.append(img, enlargeBtn, likeBtn, gifBadge);
+  else card.append(img, enlargeBtn, likeBtn);
   return card;
 }
 
