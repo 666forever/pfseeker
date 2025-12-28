@@ -114,8 +114,8 @@ body {
 }
 
 .card-icon {
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   display: block;
 
   opacity: 0.85;
@@ -384,4 +384,90 @@ body {
 /* Smooth transition for nav buttons */
 .nav-icon-btn {
   transition: transform 0.2s ease-in-out;
+}
+
+/* ===========================
+   SVG ICON STYLING
+=========================== */
+
+/* SVG icon sizing */
+.nav-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+/* All icons inherit color from parent link */
+.nav-icon path,
+.nav-icon circle,
+.nav-icon polyline,
+.nav-icon line,
+.nav-icon rect,
+.nav-icon g {
+  stroke: currentColor;
+  fill: none; /* Most icons are outline only */
+}
+
+/* Filled icons use fill: currentColor */
+.nav-icon use[href$="-filled"] ~ * {}, /* no-op for selector stability */
+.nav-icon[path][fill],
+.nav-icon g[fill] {
+  fill: currentColor;
+  stroke: none;
+}
+
+/* NAVIGATION LINK COLORS - ALL WHITE */
+.nav-icon-btn {
+  color: #ffffff;
+  transition: all 0.2s ease-in-out;
+}
+
+.nav-icon-btn:hover {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.nav-icon-btn.active {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.nav-icon-btn.active .nav-icon {
+  transform: scale(1.05);
+}
+
+/* ===========================
+   UI CARD ICON STYLING
+=========================== */
+
+/* Modal icon slightly larger */
+.modal-like .card-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* All card icon paths inherit color */
+.card-icon path,
+.card-icon circle,
+.card-icon polyline,
+.card-icon g {
+  stroke: currentColor;
+  fill: none;
+}
+
+/* Button colors: outline white, liked red */
+.like-btn {
+  color: #ffffff;
+}
+.like-btn.liked {
+  color: #ee4e4e;
+}
+.enlarge-btn {
+  color: #ffffff;
+}
+.modal-like {
+  color: #ffffff;
+}
+.modal-like.liked {
+  color: #ee4e4e;
 }

@@ -59,23 +59,24 @@ export class Router {
   }
   
   updateActiveNav(path) {
-    // Reset icons for all nav links and remove active class
+    // Remove active class and reset all icons to normal (outline)
     document.querySelectorAll('.nav-icon-btn').forEach(link => {
       link.classList.remove('active');
-      const icon = link.querySelector('img.nav-icon');
-      if (icon && icon.src) {
-        // replace any -filled.svg suffix with .svg
-        icon.src = icon.src.replace(/-filled\.svg$/, '.svg');
+      const iconName = link.getAttribute('data-icon');
+      const useElement = link.querySelector('.nav-icon use');
+      if (useElement && iconName) {
+        useElement.setAttribute('href', `#icon-${iconName}`);
       }
     });
 
-    // Add active class to current route's link and swap its icon
+    // Add active class and swap the clicked/current icon to filled version
     const activeLink = document.querySelector(`[data-route="${path}"]`);
     if (activeLink) {
       activeLink.classList.add('active');
-      const icon = activeLink.querySelector('img.nav-icon');
-      if (icon && icon.src) {
-        icon.src = icon.src.replace(/\.svg$/, '-filled.svg');
+      const iconName = activeLink.getAttribute('data-icon');
+      const useElement = activeLink.querySelector('.nav-icon use');
+      if (useElement && iconName) {
+        useElement.setAttribute('href', `#icon-${iconName}-filled`);
       }
     }
   }

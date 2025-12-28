@@ -60,16 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .catch(err => console.error("Sidebar load failed", err));
 });
 
-/**
- * Map of default icon URLs to their filled equivalents
- */
-const iconMapping = {
-  "https://666forever.github.io/pfseeker-assets/icons/svg/home.svg": "https://666forever.github.io/pfseeker-assets/icons/svg/home-filled.svg",
-  "https://666forever.github.io/pfseeker-assets/icons/svg/explore.svg": "https://666forever.github.io/pfseeker-assets/icons/svg/explore-filled.svg",
-  "https://666forever.github.io/pfseeker-assets/icons/svg/pfps.svg": "https://666forever.github.io/pfseeker-assets/icons/svg/pfps-filled.svg",
-  "https://666forever.github.io/pfseeker-assets/icons/svg/banners.svg": "https://666forever.github.io/pfseeker-assets/icons/svg/banners-filled.svg",
-  "https://666forever.github.io/pfseeker-assets/icons/svg/heartsquare.svg": "https://666forever.github.io/pfseeker-assets/icons/svg/heartsquare-filled.svg"
-};
+// No external icon URLs needed; sidebar uses inline SVG sprite with <use> elements.
 
 /**
  * Highlights the navigation link matching the current page.
@@ -77,35 +68,20 @@ const iconMapping = {
  */
 function highlightActiveLink() {
   const navLinks = document.querySelectorAll(".sidebar .nav-icon-btn");
-
   navLinks.forEach(link => {
     const href = link.getAttribute("href");
     const isActive = navState.isLinkActive(href);
-    const img = link.querySelector("img");
+    const iconName = link.getAttribute('data-icon');
+    const useEl = link.querySelector('.nav-icon use');
 
     if (isActive) {
-      // Set aria-current for accessibility
-      link.setAttribute("aria-current", "page");
-
-      // Swap icon to filled version if mapping exists
-      if (img && iconMapping[img.src]) {
-        img.src = iconMapping[img.src];
-      }
+      link.setAttribute('aria-current', 'page');
+      if (useEl && iconName) useEl.setAttribute('href', `#icon-${iconName}-filled`);
+      link.classList.add('active');
     } else {
-      // Remove aria-current from non-active links
-      link.removeAttribute("aria-current");
-
-      // Ensure non-active links use the default (outline) icon
-      if (img) {
-        // Find the default URL by checking if current src is a filled variant
-        const filledUrl = img.src;
-        const defaultUrl = Object.keys(iconMapping).find(
-          key => iconMapping[key] === filledUrl
-        );
-        if (defaultUrl) {
-          img.src = defaultUrl;
-        }
-      }
+      link.removeAttribute('aria-current');
+      if (useEl && iconName) useEl.setAttribute('href', `#icon-${iconName}`);
+      link.classList.remove('active');
     }
   });
 }

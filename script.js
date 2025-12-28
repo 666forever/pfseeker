@@ -190,27 +190,23 @@ function createCard(filename, type, isHighPriority = false, overrideSrc) {
   const likeBtn = document.createElement("button");
   likeBtn.className = "like-btn";
   likeBtn.innerHTML = `
-    <img
-      src="https://666forever.github.io/pfseeker-assets/icons/svg/heart-alt.svg"
-      alt=""
-      class="card-icon"
-    />
+    <svg class="card-icon" width="20" height="20" aria-hidden="true">
+      <use href="#icon-heart-outline"></use>
+    </svg>
   `;
 
   if (likedImages.has(key)) {
     likeBtn.classList.add("liked");
-    const icon = likeBtn.querySelector(".card-icon");
-    if (icon) icon.src = "https://666forever.github.io/pfseeker-assets/icons/svg/heart-filled.svg";
+    const useElement = likeBtn.querySelector(".card-icon use");
+    if (useElement) useElement.setAttribute('href', '#icon-heart-filled');
   }
 
   const enlargeBtn = document.createElement("button");
   enlargeBtn.className = "enlarge-btn";
   enlargeBtn.innerHTML = `
-    <img
-      src="https://666forever.github.io/pfseeker-assets/icons/svg/expand.svg"
-      alt=""
-      class="card-icon"
-    />
+    <svg class="card-icon" width="20" height="20" aria-hidden="true">
+      <use href="#icon-expand"></use>
+    </svg>
   `;
 
   card.append(img, enlargeBtn, likeBtn);
@@ -275,19 +271,19 @@ else selector = `.card[data-key=\"${key.replace(/\"/g, '\\\"')}\"]`;
 const card = document.querySelector(selector);
 
 const likeBtn = card?.querySelector(".like-btn");
-const icon = likeBtn?.querySelector(".card-icon");
+const useElement = likeBtn?.querySelector('.card-icon use');
 
 if (likedImages.has(key)) {
   likedImages.delete(key);
 
-  if (icon) {
-    icon.src = "https://666forever.github.io/pfseeker-assets/icons/svg/heart-alt.svg";
+  if (useElement) {
+    useElement.setAttribute('href', '#icon-heart-outline');
   }
 } else {
   likedImages.add(key);
 
-  if (icon) {
-    icon.src = "https://666forever.github.io/pfseeker-assets/icons/svg/heart-filled.svg";
+  if (useElement) {
+    useElement.setAttribute('href', '#icon-heart-filled');
   }
 }
   localStorage.setItem("likedImages", JSON.stringify([...likedImages]));
@@ -298,7 +294,12 @@ function syncModalLike() {
   if (!modalCurrent || !modalLikeBtn) return;
 
   const key = `${modalCurrent.type}/${modalCurrent.filename}`;
-  modalLikeBtn.classList.toggle("liked", likedImages.has(key));
+  const isLiked = likedImages.has(key);
+  modalLikeBtn.classList.toggle("liked", isLiked);
+
+  // Swap modal icon to match liked state
+  const useEl = modalLikeBtn.querySelector('use');
+  if (useEl) useEl.setAttribute('href', isLiked ? '#icon-heart-filled' : '#icon-heart-outline');
 }
 
 modalLikeBtn?.addEventListener("click", () => {
