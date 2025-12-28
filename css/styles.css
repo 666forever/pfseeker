@@ -361,3 +361,27 @@ body {
   }
 }
 }
+
+/* ===========================
+   ACTIVE NAVIGATION STATE
+   (Added for SPA router)
+=========================== */
+
+.nav-icon-btn.active {
+  /* Active state uses filled icon; no background highlight */
+}
+
+/* Smooth transition for icons */
+.nav-icon {
+  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+}
+
+/* Subtle scale effect when icon becomes active */
+.nav-icon-btn.active .nav-icon {
+  transform: scale(1.05);
+}
+
+/* Smooth transition for nav buttons */
+.nav-icon-btn {
+  transition: transform 0.2s ease-in-out;
+}

@@ -1,20 +1,25 @@
 // :
 // Lists contain filenames only. Paths are built here.
 // This file is now a module and imports image lists directly.
+import { router } from "./router.js";
 import { pfpImages } from "./pfps/images_list.js";
 import { bannerImages } from "./banners/images_list.js";
 // Explorer prepared mixed array (module-scoped)
 let exploreImages = [];
-const pageType = location.pathname.includes("/banners")
-  ? "banner"
-  : "pfp";
 
-const images =
-  pageType === "pfp"
-    ? pfpImages
-    : pageType === "banner"
-    ? bannerImages
+// Page type and images will be set dynamically by router
+let pageType = "pfp";
+let images = pfpImages;
+
+// Function called by router to update page type
+function updatePageType(type) {
+  pageType = type;
+  images = type === "pfp" 
+    ? pfpImages 
+    : type === "banner" 
+    ? bannerImages 
     : [];
+}
 
 // viewMode controls gallery source: "normal" | "liked"
 let viewMode = "normal";
@@ -373,17 +378,21 @@ const observer = new IntersectionObserver(
 );
 observer.observe(sentinel);
 
-// If we're on the liked page, switch mode before loading
-if (location.pathname.startsWith("/liked")) {
-  viewMode = "liked";
+// Function called by router to update view mode
+function updateViewMode(route) {
+  if (route === "/liked") {
+    viewMode = "liked";
+  } else if (route === "/explore") {
+    viewMode = "explore";
+  } else {
+    viewMode = "normal";
+  }
 }
 
-// === ADDED: Activate explore mode on /explore/ page ===
-if (location.pathname.startsWith("/explore")) {
-  viewMode = "explore";
-}
-// Prepare a mixed, shuffled source for the explore page only.
-if (location.pathname.startsWith("/explore")) {
+/* =========================
+   PREPARE EXPLORE ARRAY
+========================= */
+function prepareExploreArray() {
   try {
     const pfpList = Array.isArray(pfpImages)
       ? pfpImages.map(img => ({
@@ -405,20 +414,36 @@ if (location.pathname.startsWith("/explore")) {
 
     const combined = [...pfpList, ...bannerList];
     shuffleArray(combined);
-    // Expose a single, stable mixed source for getImageSource() to use
     exploreImages = combined;
   } catch (err) {
     console.error("Failed to prepare explore mixed feed", err);
   }
 }
+
+/* =========================
+   GALLERY RESET
+========================= */
+function resetGallery() {
+  // Clear current state
+  index = 0;
+  loadedImages.clear();
   
-/*
-    viewMode = "explore"; // future-proof
-    index = 0;
-    loadedImages.clear();
-    createColumns();
+  // Recreate columns (handles responsive sizing)
+  createColumns();
+  
+  // Load initial batches
+  const sourceImages = getImageSource();
+  if (sourceImages.length > 0) {
     loadBatch();
-  });
+    
+    // Preload second batch for smooth scrolling
+    setTimeout(() => {
+      if (index < getImageSource().length) {
+        loadBatch();
+      }
+    }, 100);
+  }
+}
 
 /* =========================
    RESIZE HANDLING
@@ -445,16 +470,46 @@ window.addEventListener("resize", () => {
 });
 
 /* =========================
-   INIT
+   ROUTER SETUP & INITIALIZATION
 ========================= */
-if (images.length) {
-  // Load first batch
-  loadBatch();
-  
-  // Preload second batch immediately for smoother initial scroll
-  setTimeout(() => {
-    if (index < getImageSource().length) {
-      loadBatch();
-    }
-  }, 100);
-}
+
+// Define route handlers
+
+// Home route (front page)
+router.addRoute('/', () => {
+  updatePageType('pfp'); // Currently shows same content as pfps
+  updateViewMode('/'); // Normal mode
+  resetGallery();
+});
+
+// PFPs route (dedicated pfp gallery)
+router.addRoute('/pfps', () => {
+  updatePageType('pfp');
+  updateViewMode('/pfps');
+  resetGallery();
+});
+
+// Banners route
+router.addRoute('/banners', () => {
+  updatePageType('banner');
+  updateViewMode('/banners');
+  resetGallery();
+});
+
+// Explore route
+router.addRoute('/explore', () => {
+  updatePageType('pfp'); // Doesn't matter for explore (uses both)
+  updateViewMode('/explore');
+  prepareExploreArray(); // Prepare mixed array before loading
+  resetGallery();
+});
+
+// Liked route
+router.addRoute('/liked', () => {
+  updatePageType('pfp'); // Doesn't matter for liked (uses stored keys)
+  updateViewMode('/liked');
+  resetGallery();
+});
+
+// Initialize router - it will automatically load the current route
+router.init();
