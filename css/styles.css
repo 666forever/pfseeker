@@ -13,6 +13,10 @@ body {
     /*     ⸻⸻⸻⸻⸻⸻⸻⸻⸻ 🌑 ﹑ Search bar
 */
 
+.search-row {
+  position: relative;
+}
+
 .search-bar {
   position: relative;
   width: 100%;
@@ -23,7 +27,7 @@ body {
   width: 100%;
   height: 44px;
 
-  padding: 10px 22px 10px 44px;
+  padding: 10px 22px 10px 118px; /* Left padding for filter button + search icon */
 
   background: #242424;
   border: 3px solid rgba(255, 255, 255, 0);
@@ -52,27 +56,135 @@ body {
   border: 3px solid #0c4273;
 }
 
-.search-icon {
+/* === FILTER DRAWER BUTTON === */
+.filter-drawer-btn {
   position: absolute;
   left: 40px;
   top: calc(20px + 22px);
   transform: translateY(-50%);
+  
+  width: 60px;
+  height: 40px;
+  padding-right: 12px; 
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  background: none;
+  border: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  z-index: 2;
+  
+  color: #ffffff;
+  
+  transition: all 0.2s ease;
+}
 
+.filter-drawer-icon {
   width: 22px;
   height: 22px;
+  opacity: 0.6;
+  transition: opacity 0.15s ease;
+  will-change: opacity;
+}
+
+.filter-drawer-btn:hover .filter-drawer-icon {
+  opacity: 0.9;
+}
+
+/* Color for filter drawer icon */
+.filter-drawer-icon path,
+.filter-drawer-icon g {
+  stroke: currentColor;
+  fill: none;
+  color: #ffffff;
+}
+
+/* === FILTER DROPDOWN === */
+.filter-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 24px;
+  
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  
+  padding: 8px;
+  min-width: 160px;
+  
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  
+  z-index: 100;
+}
+
+.filter-dropdown.hidden {
+  display: none;
+}
+
+.filter-dropdown-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-option {
+  padding: 10px 14px;
+  
+  background: none;
+  border: none;
+  border-radius: 8px;
+  
+  color: #e4e4e4;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.filter-option:hover {
+  background: #2a2a2a;
+  color: #ffffff;
+}
+
+.filter-option.active {
+  background: #0c4273;
+  color: #ffffff;
+}
+
+.filter-option:active {
+  transform: scale(0.98);
+}
+
+.search-icon {
+  position: absolute;
+  left: 115px;
+  top: calc(20px + 22px);
+  transform: translateY(-50%);
+
+  width: 20px;
+  height: 20px;
 
   opacity: 0.3;
   pointer-events: none;
+
 
   transition:
   opacity 0.15s ease,
   transform 0.15s ease;
 }
 
-.search-bar input:focus + .search-icon,
-.search-bar input:not(:placeholder-shown) + .search-icon {
-  opacity: 0.85;
-  transform: translateY(-50%) translateX(-2px) scale(1.01);
+.search-bar input:focus ~ .search-icon,
+.search-bar input:not(:placeholder-shown) ~ .search-icon {
+  opacity: 0.9;
 }
 
 
@@ -125,27 +237,33 @@ body {
     opacity 0.2s ease,
     transform 0.15s ease,
     filter 0.2s ease;
+  
+  will-change: opacity;
 }
 
 .card:hover .card-icon {
-  opacity: 1;}
+  opacity: 1;
+}
 .like-btn:hover .card-icon {
-  transform: scale(1.18);}
+  opacity: 1;
+}
 .enlarge-btn:hover .card-icon {
-  transform: scale(1.12);}
+  opacity: 1;
+}
 .like-btn:active .card-icon,
 .enlarge-btn:active .card-icon {
-  transform: scale(0.92);}
+  opacity: 0.8;
+}
 
 .like-btn.liked .card-icon {
   animation: heart-pop-svg 0.35s ease; }
 
 @keyframes heart-pop-svg {
-   0% { transform: scale(1); opacity: 0.6;}
-  40% { transform: scale(1.3); opacity: 1;}
-  60% { transform: scale(0.8);}
-  80% { transform: scale(1.3);}
- 100% { transform: scale(1);}
+   0% { opacity: 0.6;}
+  40% { opacity: 1;}
+  60% { opacity: 0.85;}
+  80% { opacity: 1;}
+ 100% { opacity: 1;}
 }
 
 
@@ -245,7 +363,7 @@ body {
 
 
 
-    /*     ⸻⸻⸻⸻⸻⸻⸻⸻⸻  ﹑ 🌓 Modal
+    /*     ⸻⸻⸻⸻⸻⸻⸻⸻⸻  ﹑ 🌔 Modal
 */
 
 .modal {
@@ -309,6 +427,7 @@ body {
   .column {
     gap: 10px;
   }
+}
 
 @media (max-width: 640px) {
   
@@ -343,6 +462,15 @@ body {
   .enlarge-btn {
     right: 48px;
   }
+  
+  /* Filter dropdown adjustments */
+  .filter-drawer-btn {
+    left: 32px;
+  }
+  
+  .filter-dropdown {
+    left: 16px;
+  }
 }
 
 /* ☕ Small Phone */
@@ -359,7 +487,10 @@ body {
   .enlarge-btn {
     right: 44px;
   }
-}
+  
+  .filter-drawer-btn {
+    left: 28px;
+  }
 }
 
 /* ===========================
@@ -370,12 +501,13 @@ body {
 
 /* Smooth transition for icons */
 .nav-icon {
-  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  transition: opacity 0.2s ease-in-out;
+  will-change: opacity;
 }
 
 /* Subtle scale effect when icon becomes active */
 .nav-icon-btn.active .nav-icon {
-  transform: scale(1.05);
+  opacity: 1;
 }
 
 /* Smooth transition for nav buttons */
@@ -392,7 +524,8 @@ body {
   width: 24px;
   height: 24px;
   flex-shrink: 0;
-  transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  transition: opacity 0.2s ease-in-out;
+  will-change: opacity;
 }
 
 /* All icons inherit color from parent link */

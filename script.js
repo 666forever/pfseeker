@@ -24,6 +24,9 @@ function updatePageType(type) {
 // viewMode controls gallery source: "normal" | "liked"
 let viewMode = "normal";
 
+// activeTag controls tag filtering
+let activeTag = "all";
+
 /* =========================
    ELEMENTS
 ========================= */
@@ -105,6 +108,88 @@ function createColumns() {
 createColumns();
 
 /* =========================
+   FILTER DROPDOWN
+========================= */
+const filterDrawerBtn = document.getElementById('filterDrawerBtn');
+const filterDropdown = document.getElementById('filterDropdown');
+const searchInput = document.getElementById('searchInput');
+
+// Generate filter options in dropdown
+function createFilterOptions() {
+  const container = document.querySelector('.filter-dropdown-list');
+  if (!container) return;
+
+  // Hardcoded filter tags - these match common tags in images_list.js
+  const filterTags = [
+    { label: 'black', tag: 'black' },
+    { label: 'white', tag: 'white' },
+    { label: 'dark', tag: 'dark' },
+    { label: 'pink', tag: 'pink' },
+    { label: 'GIF', tag: 'gif' }  // Special case: filters by file extension
+  ];
+
+  filterTags.forEach(({ label, tag }) => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-option';
+    btn.dataset.tag = tag;
+    btn.textContent = label;
+    container.appendChild(btn);
+  });
+}
+
+createFilterOptions();
+
+// Toggle filter dropdown
+filterDrawerBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  filterDropdown.classList.toggle('hidden');
+  
+  // Swap icon between outline and filled
+  const useEl = filterDrawerBtn.querySelector('.filter-drawer-icon use');
+  if (filterDropdown.classList.contains('hidden')) {
+    useEl?.setAttribute('href', '#icon-filterdrawer');
+  } else {
+    useEl?.setAttribute('href', '#icon-filterdrawer-filled');
+  }
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!filterDropdown.contains(e.target) && !filterDrawerBtn.contains(e.target)) {
+    filterDropdown.classList.add('hidden');
+    const useEl = filterDrawerBtn?.querySelector('.filter-drawer-icon use');
+    useEl?.setAttribute('href', '#icon-filterdrawer');
+  }
+});
+
+// Handle filter option clicks
+filterDropdown?.addEventListener('click', (e) => {
+  const filterOption = e.target.closest('.filter-option');
+  if (filterOption) {
+    const tag = filterOption.dataset.tag;
+    filterByTag(tag);
+    
+    // Update active state
+    document.querySelectorAll('.filter-option').forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.tag === tag);
+    });
+    
+    // Keep dropdown open - don't close it
+  }
+});
+
+// Filter gallery by tag
+function filterByTag(tag) {
+  activeTag = tag;
+
+  // Reset and reload gallery with filter
+  index = 0;
+  loadedImages.clear();
+  createColumns();
+  loadBatch();
+}
+
+/* =========================
    SHUFFLE + MIXED FEED
 ========================= */
 // Fisher–Yates shuffle: shuffles in place and returns the array
@@ -118,42 +203,63 @@ function shuffleArray(arr) {
   return arr;
 }
 function getImageSource() {
+  let source;
+
   // 1. Liked = always global
   if (viewMode === "liked") {
-    return [...likedImages].map(key => {
+    source = [...likedImages].map(key => {
       const [type, file] = key.split("/");
       return { type, file };
     });
   }
-
   // 2. Explore = mixed (groundwork for tags later)
-  if (viewMode === "explore") {
+  else if (viewMode === "explore") {
     // If an explore-specific, precomputed source exists (created below), use it.
     if (Array.isArray(exploreImages) && exploreImages.length) {
-      return exploreImages;
+      source = exploreImages;
+    } else {
+      // Fallback: combine without `src` if no precomputed array exists
+      source = [
+        ...((pfpImages || []).map(img => ({
+          type: "pfp",
+          file: img.file,
+          tags: img.tags
+        })) || []),
+        ...((bannerImages || []).map(img => ({
+          type: "banner",
+          file: img.file,
+          tags: img.tags
+        })) || [])
+      ];
     }
-
-    // Fallback: combine without `src` if no precomputed array exists
-    return [
-      ...((pfpImages || []).map(img => ({
-        type: "pfp",
-        file: img.file,
-        tags: img.tags
-      })) || []),
-      ...((bannerImages || []).map(img => ({
-        type: "banner",
-        file: img.file,
-        tags: img.tags
-      })) || [])
-    ];
+  }
+  // 3. Default = current page only
+  else {
+    source = images.map(img => ({
+      type: pageType,
+      file: img.file,
+      tags: img.tags
+    }));
   }
 
-  // 3. Default = current page only
-  return images.map(img => ({
-    type: pageType,
-    file: img.file,
-    tags: img.tags
-  }));
+  // Apply tag filter
+  if (activeTag !== "all") {
+    if (activeTag === "gif") {
+      // Special case: Filter by file extension for GIFs
+      source = source.filter(img =>
+        img.file && img.file.toLowerCase().endsWith('.gif')
+      );
+    } else {
+      // Regular tag filtering: check if any tag includes the filter
+      source = source.filter(img =>
+        img.tags && img.tags.some(tag =>
+          tag.toLowerCase().includes(activeTag.toLowerCase())
+        )
+      );
+    }
+  }
+
+  return source;
 }
 
 /* =========================
@@ -276,6 +382,8 @@ gallery.addEventListener("click", e => {
     return;
   }
 });
+
+
 
 function toggleLike(filename, type) {
   const key = `${type}/${filename}`;
@@ -444,6 +552,11 @@ function resetGallery() {
   index = 0;
   loadedImages.clear();
   
+  // Reset filter dropdown buttons
+  document.querySelectorAll('.filter-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tag === activeTag);
+  });
+  
   // Recreate columns (handles responsive sizing)
   createColumns();
   
@@ -493,6 +606,7 @@ window.addEventListener("resize", () => {
 
 // Home route (front page)
 router.addRoute('/', () => {
+  activeTag = "all";
   updatePageType('pfp'); // Currently shows same content as pfps
   updateViewMode('/'); // Normal mode
   resetGallery();
@@ -500,6 +614,7 @@ router.addRoute('/', () => {
 
 // PFPs route (dedicated pfp gallery)
 router.addRoute('/pfps', () => {
+  activeTag = "all";
   updatePageType('pfp');
   updateViewMode('/pfps');
   resetGallery();
@@ -507,6 +622,7 @@ router.addRoute('/pfps', () => {
 
 // Banners route
 router.addRoute('/banners', () => {
+  activeTag = "all";
   updatePageType('banner');
   updateViewMode('/banners');
   resetGallery();
@@ -514,6 +630,7 @@ router.addRoute('/banners', () => {
 
 // Explore route
 router.addRoute('/explore', () => {
+  activeTag = "all";
   updatePageType('pfp'); // Doesn't matter for explore (uses both)
   updateViewMode('/explore');
   prepareExploreArray(); // Prepare mixed array before loading
@@ -522,6 +639,7 @@ router.addRoute('/explore', () => {
 
 // Liked route
 router.addRoute('/liked', () => {
+  activeTag = "all";
   updatePageType('pfp'); // Doesn't matter for liked (uses stored keys)
   updateViewMode('/liked');
   resetGallery();
