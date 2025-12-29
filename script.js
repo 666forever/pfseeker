@@ -190,6 +190,207 @@ function filterByTag(tag) {
 }
 
 /* =========================
+   SEARCH FUNCTIONALITY
+========================= */
+const searchResultsPanel = document.getElementById('searchResultsPanel');
+const searchTagsList = document.getElementById('searchTagsList');
+
+// Track active search state
+let activeSearch = {
+  term: null,
+  resultCount: 0,
+  dividerInserted: false
+};
+
+// Check if a search term has any matching results
+function hasSearchResults(query) {
+  if (!query.trim()) return false;
+
+  const lowerQuery = query.toLowerCase();
+  
+  // Get all images from pfp and banner
+  const allImages = [
+    ...pfpImages.map(img => ({ ...img, type: 'pfp' })),
+    ...bannerImages.map(img => ({ ...img, type: 'banner' }))
+  ];
+
+  // Check if ANY image matches the search query
+  return allImages.some(img => {
+    const filenameMatch = img.file.toLowerCase().includes(lowerQuery);
+    const tagsMatch = img.tags && img.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
+    return filenameMatch || tagsMatch;
+  });
+}
+
+// Show suggested tags as user types
+function showTagSuggestions(query) {
+  if (!query.trim()) {
+    searchResultsPanel.classList.add('hidden');
+    // Clear search divider when input is emptied
+    clearSearchDivider();
+    return;
+  }
+
+  const lowerQuery = query.toLowerCase();
+  
+  // Get all images from pfp and banner
+  const allImages = [
+    ...pfpImages.map(img => ({ ...img, type: 'pfp' })),
+    ...bannerImages.map(img => ({ ...img, type: 'banner' }))
+  ];
+
+  // Count tag occurrences across ALL images
+  const allTagCounts = new Map();
+  allImages.forEach(img => {
+    if (img.tags) {
+      img.tags.forEach(tag => {
+        allTagCounts.set(tag, (allTagCounts.get(tag) || 0) + 1);
+      });
+    }
+  });
+
+  // Find matching tags
+  const tagMatches = new Map();
+  allImages.forEach(img => {
+    if (img.tags) {
+      img.tags.forEach(tag => {
+        if (tag.toLowerCase().includes(lowerQuery)) {
+          tagMatches.set(tag, (tagMatches.get(tag) || 0) + 1);
+        }
+      });
+    }
+  });
+
+  // Filter and sort tags: only show tags with 10+ occurrences, sorted by count (descending)
+  const filteredTags = Array.from(tagMatches.entries())
+    .filter(([tag, matchCount]) => allTagCounts.get(tag) >= 10) // Only tags in 10+ images
+    .sort((a, b) => allTagCounts.get(b[0]) - allTagCounts.get(a[0])) // Sort by total count descending
+    .slice(0, 15); // Limit to top 15
+
+  // Render tags section
+  searchTagsList.innerHTML = '';
+  if (filteredTags.length > 0) {
+    filteredTags.forEach(([tag, matchCount]) => {
+      const totalCount = allTagCounts.get(tag);
+      const item = document.createElement('button');
+      item.className = 'search-tag-item';
+      item.textContent = `${tag} (${totalCount})`;
+      item.addEventListener('click', () => {
+        // Validate before executing search
+        if (hasSearchResults(tag)) {
+          searchInput.value = tag;
+          executeSearch(tag);
+          searchResultsPanel.classList.add('hidden');
+        } else {
+          // Show "No results" message if validation fails
+          searchTagsList.innerHTML = `<p style="color: #ff6b6b; font-size: 13px;">No results found for "${tag}"</p>`;
+        }
+      });
+      searchTagsList.appendChild(item);
+    });
+  } else {
+    searchTagsList.innerHTML = '<p style="color: #999; font-size: 13px;">No matching tags</p>';
+  }
+
+  searchResultsPanel.classList.remove('hidden');
+}
+
+// Clear search divider and reset search state
+function clearSearchDivider() {
+  // Clear active search state and search source so gallery returns to normal
+  activeSearch = {
+    term: null,
+    resultCount: 0,
+    dividerInserted: false,
+    searchSource: null
+  };
+
+  // Reset gallery to normal state
+  index = 0;
+  loadedImages.clear();
+  createColumns();
+  loadBatch();
+}
+
+// Execute search - filter gallery by search term
+function executeSearch(query) {
+  const lowerQuery = query.toLowerCase();
+  
+  // Get all images from pfp and banner
+  const allImages = [
+    ...pfpImages.map(img => ({ ...img, type: 'pfp' })),
+    ...bannerImages.map(img => ({ ...img, type: 'banner' }))
+  ];
+
+  // Filter images that match the search query (filename OR tags)
+  const matchingImages = allImages.filter(img => {
+    const filenameMatch = img.file.toLowerCase().includes(lowerQuery);
+    const tagsMatch = img.tags && img.tags.some(tag => tag.toLowerCase().includes(lowerQuery));
+    return filenameMatch || tagsMatch;
+  });
+
+  // Track active search and set search-only source
+  activeSearch = {
+    term: query,
+    resultCount: matchingImages.length,
+    dividerInserted: false,
+    searchSource: matchingImages
+  };
+
+  // Update gallery to show only matching results
+  activeTag = 'all'; // Reset active tag
+  index = 0;
+  loadedImages.clear();
+  createColumns();
+  loadBatch();
+}
+
+// Search input event listener - show tag suggestions
+searchInput?.addEventListener('input', (e) => {
+  showTagSuggestions(e.target.value);
+});
+
+// Handle search input focus - show panel if there's text
+searchInput?.addEventListener('focus', () => {
+  if (searchInput.value.trim()) {
+    showTagSuggestions(searchInput.value);
+  }
+});
+
+// Handle Enter key - execute search with validation
+searchInput?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const query = searchInput.value.trim();
+    if (query && hasSearchResults(query)) {
+      executeSearch(query);
+      searchResultsPanel.classList.add('hidden');
+      searchInput.blur();
+    } else if (query) {
+      // Show "No results" message if validation fails
+      searchTagsList.innerHTML = `<p style="color: #ff6b6b; font-size: 13px;">No results found for "${query}"</p>`;
+      searchResultsPanel.classList.remove('hidden');
+    }
+  }
+});
+
+// Handle click outside search panel and input
+document.addEventListener('click', (e) => {
+  const isSearchRelated = searchInput.contains(e.target) || searchResultsPanel.contains(e.target);
+  if (!isSearchRelated) {
+    searchResultsPanel.classList.add('hidden');
+  }
+});
+
+// Handle Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    searchResultsPanel.classList.add('hidden');
+    searchInput?.blur();
+  }
+});
+
+/* =========================
    SHUFFLE + MIXED FEED
 ========================= */
 // Fisher–Yates shuffle: shuffles in place and returns the array
@@ -203,6 +404,12 @@ function shuffleArray(arr) {
   return arr;
 }
 function getImageSource() {
+  // If a search is active, return the search-only source so infinite
+  // scroll loads only matching images.
+  if (activeSearch && activeSearch.term && Array.isArray(activeSearch.searchSource)) {
+    return activeSearch.searchSource;
+  }
+
   let source;
 
   // 1. Liked = always global
@@ -464,6 +671,8 @@ function loadBatch() {
   });
 
   index += batch.length;
+
+  // No divider insertion — search mode returns only matching images.
 }
 
 /* =========================
