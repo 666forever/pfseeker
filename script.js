@@ -860,8 +860,9 @@ window.addEventListener("resize", () => {
 // Home route (front page)
 router.addRoute('/', () => {
   activeTag = "all";
-  updatePageType('pfp'); // Currently shows same content as pfps
-  updateViewMode('/'); // Normal mode
+  updatePageType('pfp'); // Doesn't matter for explore (uses both)
+  updateViewMode('/explore'); // Use explore view mode
+  prepareExploreArray(); // Prepare mixed array before loading
   resetGallery();
 });
 
