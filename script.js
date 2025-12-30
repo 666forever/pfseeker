@@ -113,6 +113,8 @@ createColumns();
 const filterDrawerBtn = document.getElementById('filterDrawerBtn');
 const filterDropdown = document.getElementById('filterDropdown');
 const searchInput = document.getElementById('searchInput');
+const searchRow = document.querySelector('.search-row');
+const searchClearBtn = document.getElementById('searchClearBtn');
 
 // Generate filter options in dropdown
 function createFilterOptions() {
@@ -142,6 +144,13 @@ createFilterOptions();
 // Toggle filter dropdown
 filterDrawerBtn?.addEventListener('click', (e) => {
   e.stopPropagation();
+  // If search panel is open, close it first to prevent overlap
+  if (searchResultsPanel && !searchResultsPanel.classList.contains('hidden')) {
+    searchResultsPanel.classList.add('hidden');
+    searchInput?.blur();
+    if (searchClearBtn) searchClearBtn.classList.add('hidden');
+  }
+
   filterDropdown.classList.toggle('hidden');
   
   // Swap icon between outline and filled
@@ -224,68 +233,85 @@ function hasSearchResults(query) {
 
 // Show suggested tags as user types
 function showTagSuggestions(query) {
-  if (!query.trim()) {
-    searchResultsPanel.classList.add('hidden');
-    // Clear search divider when input is emptied
-    clearSearchDivider();
-    return;
-  }
+  // Show panel even when query is empty (clicking search bar should open suggestions)
+  const lowerQuery = (query || '').toLowerCase();
 
-  const lowerQuery = query.toLowerCase();
-  
-  // Get all images from pfp and banner
+  // Aggregate all tags from both pfp and banner images
   const allImages = [
     ...pfpImages.map(img => ({ ...img, type: 'pfp' })),
     ...bannerImages.map(img => ({ ...img, type: 'banner' }))
   ];
 
-  // Count tag occurrences across ALL images
-  const allTagCounts = new Map();
+  // Count occurrences of each tag
+  const tagCounts = new Map();
   allImages.forEach(img => {
-    if (img.tags) {
-      img.tags.forEach(tag => {
-        allTagCounts.set(tag, (allTagCounts.get(tag) || 0) + 1);
-      });
-    }
+    if (!img.tags) return;
+    img.tags.forEach(tag => {
+      if (typeof tag !== 'string') return;
+      
+      // Remove surrounding quotes (single or double) and trim
+      const cleanTag = tag.replace(/^['"]|['"]$/g, '').trim();
+      
+      // Skip invalid tags: empty, too short, or no Latin alphabet letters
+      if (!cleanTag || cleanTag.length < 2) return;
+      // Must START with a letter (no leading punctuation/special chars)
+      if (!/^[a-zA-Z]/.test(cleanTag)) return;
+      // Must be at least 50% letters (excludes tags like "??expression")
+      const letterCount = (cleanTag.match(/[a-zA-Z]/g) || []).length;
+      const letterRatio = letterCount / cleanTag.length;
+      if (letterRatio < 0.5) return;
+      
+      // If there's a search query, ensure the clean tag includes it
+      if (!lowerQuery || cleanTag.toLowerCase().includes(lowerQuery)) {
+        tagCounts.set(cleanTag, (tagCounts.get(cleanTag) || 0) + 1);
+      }
+    });
   });
 
-  // Find matching tags
-  const tagMatches = new Map();
-  allImages.forEach(img => {
-    if (img.tags) {
-      img.tags.forEach(tag => {
-        if (tag.toLowerCase().includes(lowerQuery)) {
-          tagMatches.set(tag, (tagMatches.get(tag) || 0) + 1);
-        }
-      });
-    }
-  });
+  // Convert to array of [tag, count], sort by count DESC, then take top 11
+  const filteredTags = Array.from(tagCounts.entries())
+    .sort((a, b) => b[1] - a[1]) // Sort by count descending
+    .slice(0, 11)
+    .map(([tag]) => tag); // Extract just the tag names
 
-  // Filter and sort tags: only show tags with 10+ occurrences, sorted by count (descending)
-  const filteredTags = Array.from(tagMatches.entries())
-    .filter(([tag, matchCount]) => allTagCounts.get(tag) >= 10) // Only tags in 10+ images
-    .sort((a, b) => allTagCounts.get(b[0]) - allTagCounts.get(a[0])) // Sort by total count descending
-    .slice(0, 15); // Limit to top 15
-
-  // Render tags section
+  // Render tags section without counts (clean list)
   searchTagsList.innerHTML = '';
   if (filteredTags.length > 0) {
-    filteredTags.forEach(([tag, matchCount]) => {
-      const totalCount = allTagCounts.get(tag);
+    filteredTags.forEach(tag => {
+      const cleanTag = (typeof tag === 'string') ? tag.replace(/^['"]|['"]$/g, '').trim() : String(tag);
       const item = document.createElement('button');
       item.className = 'search-tag-item';
-      item.textContent = `${tag} (${totalCount})`;
+
+      // Inline SVG icon (use <use href="#icon-search">)
+      const svgNS = 'http://www.w3.org/2000/svg';
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('class', 'search-tag-icon');
+      svg.setAttribute('width', '18');
+      svg.setAttribute('height', '18');
+      svg.setAttribute('viewBox', '0 0 24 24');
+      const use = document.createElementNS(svgNS, 'use');
+      use.setAttribute('href', '#icon-search');
+      svg.appendChild(use);
+
+      const span = document.createElement('span');
+      span.className = 'search-tag-text';
+      span.textContent = cleanTag;
+
+      item.appendChild(svg);
+      item.appendChild(span);
+
       item.addEventListener('click', () => {
-        // Validate before executing search
-        if (hasSearchResults(tag)) {
-          searchInput.value = tag;
-          executeSearch(tag);
+        if (hasSearchResults(cleanTag)) {
+          searchInput.value = cleanTag;
+          // show clear button when tag selected
+          searchClearBtn?.classList.remove('hidden');
+          executeSearch(cleanTag);
           searchResultsPanel.classList.add('hidden');
         } else {
-          // Show "No results" message if validation fails
-          searchTagsList.innerHTML = `<p style="color: #ff6b6b; font-size: 13px;">No results found for "${tag}"</p>`;
+          searchTagsList.innerHTML = `<p style="color: #ff6b6b; font-size: 13px;">No results found for "${cleanTag}"</p>`;
         }
       });
+
       searchTagsList.appendChild(item);
     });
   } else {
@@ -347,14 +373,20 @@ function executeSearch(query) {
 
 // Search input event listener - show tag suggestions
 searchInput?.addEventListener('input', (e) => {
-  showTagSuggestions(e.target.value);
+  const val = e.target.value || '';
+  showTagSuggestions(val);
+
+  // Toggle clear button visibility
+  if (searchClearBtn) {
+    if (val.trim()) searchClearBtn.classList.remove('hidden');
+    else searchClearBtn.classList.add('hidden');
+  }
 });
 
 // Handle search input focus - show panel if there's text
 searchInput?.addEventListener('focus', () => {
-  if (searchInput.value.trim()) {
-    showTagSuggestions(searchInput.value);
-  }
+  // Always show suggestions panel on focus (empty or not)
+  showTagSuggestions(searchInput.value || '');
 });
 
 // Handle Enter key - execute search with validation
@@ -365,6 +397,7 @@ searchInput?.addEventListener('keydown', (e) => {
     if (query && hasSearchResults(query)) {
       executeSearch(query);
       searchResultsPanel.classList.add('hidden');
+      searchClearBtn?.classList.remove('hidden');
       searchInput.blur();
     } else if (query) {
       // Show "No results" message if validation fails
@@ -374,9 +407,19 @@ searchInput?.addEventListener('keydown', (e) => {
   }
 });
 
-// Handle click outside search panel and input
+// Clear button behavior: clear input and close panel
+searchClearBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (searchInput) searchInput.value = '';
+  if (searchClearBtn) searchClearBtn.classList.add('hidden');
+  if (searchResultsPanel) searchResultsPanel.classList.add('hidden');
+  clearSearchDivider();
+  searchInput?.blur();
+});
+
+// Handle click outside search-area: close panel when clicking outside the entire search row
 document.addEventListener('click', (e) => {
-  const isSearchRelated = searchInput.contains(e.target) || searchResultsPanel.contains(e.target);
+  const isSearchRelated = searchRow && searchRow.contains(e.target);
   if (!isSearchRelated) {
     searchResultsPanel.classList.add('hidden');
   }
@@ -387,6 +430,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     searchResultsPanel.classList.add('hidden');
     searchInput?.blur();
+    if (searchClearBtn) searchClearBtn.classList.add('hidden');
   }
 });
 
