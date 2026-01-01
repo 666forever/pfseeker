@@ -4,8 +4,11 @@
 import { router } from "./router.js";
 import { pfpImages } from "./pfps/images_list.js";
 import { bannerImages } from "./banners/images_list.js";
-// Explorer prepared mixed array (module-scoped)
+
+// Prepared shuffled arrays (module-scoped)
 let exploreImages = [];
+let shuffledPfpImages = [];
+let shuffledBannerImages = [];
 
 // Page type and images will be set dynamically by router
 let pageType = "pfp";
@@ -196,6 +199,171 @@ function filterByTag(tag) {
   loadedImages.clear();
   createColumns();
   loadBatch();
+}
+
+/* =========================
+   SORT DROPDOWN & DAILY SHUFFLE
+========================= */
+
+const sortDrawerBtn = document.getElementById('sortDrawerBtn');
+const sortDropdown = document.getElementById('sortDropdown');
+
+// Current sort mode
+let currentSortMode = 'daily'; // Default to daily shuffle
+
+// Toggle sort dropdown
+sortDrawerBtn?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  
+  // Close search panel and filter dropdown if open
+  if (searchResultsPanel && !searchResultsPanel.classList.contains('hidden')) {
+    searchResultsPanel.classList.add('hidden');
+    searchInput?.blur();
+    if (searchClearBtn) searchClearBtn.classList.add('hidden');
+  }
+  if (filterDropdown && !filterDropdown.classList.contains('hidden')) {
+    filterDropdown.classList.add('hidden');
+    const useEl = filterDrawerBtn?.querySelector('.filter-drawer-icon use');
+    useEl?.setAttribute('href', '#icon-filterdrawer');
+  }
+
+  sortDropdown.classList.toggle('hidden');
+  
+  // Swap icon between outline and filled
+  const useEl = sortDrawerBtn.querySelector('.sort-drawer-icon use');
+  if (sortDropdown.classList.contains('hidden')) {
+    useEl?.setAttribute('href', '#icon-sort');
+  } else {
+    useEl?.setAttribute('href', '#icon-sort-filled');
+  }
+});
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (sortDropdown && !sortDropdown.contains(e.target) && !sortDrawerBtn?.contains(e.target)) {
+    sortDropdown.classList.add('hidden');
+    const useEl = sortDrawerBtn?.querySelector('.sort-drawer-icon use');
+    useEl?.setAttribute('href', '#icon-sort');
+  }
+});
+
+// Handle sort option clicks
+sortDropdown?.addEventListener('click', (e) => {
+  const sortOption = e.target.closest('.filter-option');
+  if (sortOption) {
+    const sortMode = sortOption.dataset.sort;
+    currentSortMode = sortMode;
+    
+    // Update active state
+    document.querySelectorAll('#sortDropdown .filter-option').forEach(opt => {
+      opt.classList.toggle('active', opt.dataset.sort === sortMode);
+    });
+    
+    // Store preference
+    localStorage.setItem('sortMode', sortMode);
+    
+    // Reset and reload gallery with new sort
+    index = 0;
+    loadedImages.clear();
+    createColumns();
+    loadBatch();
+    
+    // Close dropdown
+    sortDropdown.classList.add('hidden');
+    const useEl = sortDrawerBtn?.querySelector('.sort-drawer-icon use');
+    useEl?.setAttribute('href', '#icon-sort');
+  }
+});
+
+/* =========================
+   DAILY SHUFFLE LOGIC
+========================= */
+
+// Get today's date as string (YYYY-MM-DD)
+function getTodayString() {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+}
+
+// Apply daily shuffle to an array
+function applyDailyShuffle(arr, storageKey) {
+  if (currentSortMode !== 'daily') {
+    return arr; // Return original order if not in daily shuffle mode
+  }
+  
+  const today = getTodayString();
+  const lastShuffleDate = localStorage.getItem(`${storageKey}_date`);
+  
+  // If we've already shuffled today, use the stored order
+  if (lastShuffleDate === today) {
+    const stored = localStorage.getItem(`${storageKey}_order`);
+    if (stored) {
+      try {
+        const order = JSON.parse(stored);
+        // Reorder array based on stored indices
+        return order.map(idx => arr[idx]).filter(Boolean);
+      } catch (e) {
+        console.error('Failed to parse shuffle order', e);
+      }
+    }
+  }
+  
+  // New day or first time - create new shuffle
+  const indices = arr.map((_, i) => i);
+  shuffleArray(indices);
+  
+  // Store the shuffle order and date
+  localStorage.setItem(`${storageKey}_order`, JSON.stringify(indices));
+  localStorage.setItem(`${storageKey}_date`, today);
+  
+  // Return shuffled array
+  return indices.map(idx => arr[idx]);
+}
+
+// Override getImageSource to apply daily shuffle
+const originalGetImageSource = getImageSource;
+window.getImageSource = function() {
+  let source = originalGetImageSource();
+  
+  // Only apply daily shuffle on /pfps and /banners pages in normal mode
+  if (currentSortMode === 'daily' && viewMode === 'normal') {
+    if (pageType === 'pfp') {
+      source = applyDailyShuffle(source, 'pfp_shuffle');
+    } else if (pageType === 'banner') {
+      source = applyDailyShuffle(source, 'banner_shuffle');
+    }
+  }
+  
+  return source;
+};
+
+/* =========================
+   SHOW/HIDE SORT BUTTON BASED ON PAGE
+========================= */
+
+function updateSortButtonVisibility() {
+  if (!sortDrawerBtn) return;
+  
+  const currentRoute = router.getCurrentRoute();
+  
+  // Show sort button only on /pfps and /banners
+  if (currentRoute === '/pfps' || currentRoute === '/banners') {
+    sortDrawerBtn.classList.remove('hidden');
+  } else {
+    sortDrawerBtn.classList.add('hidden');
+    // Also close dropdown if it's open
+    sortDropdown?.classList.add('hidden');
+  }
+}
+
+// Load saved sort mode
+const savedSortMode = localStorage.getItem('sortMode');
+if (savedSortMode) {
+  currentSortMode = savedSortMode;
+  // Update active state in dropdown
+  document.querySelectorAll('#sortDropdown .filter-option').forEach(opt => {
+    opt.classList.toggle('active', opt.dataset.sort === savedSortMode);
+  });
 }
 
 /* =========================
@@ -520,11 +688,19 @@ function getImageSource() {
   }
   // 3. Default = current page only
   else {
-    source = images.map(img => ({
-      type: pageType,
-      file: img.file,
-      tags: img.tags
-    }));
+    // Use shuffled arrays if available for /pfps and /banners
+    if (pageType === "pfp" && shuffledPfpImages.length > 0) {
+      source = shuffledPfpImages;
+    } else if (pageType === "banner" && shuffledBannerImages.length > 0) {
+      source = shuffledBannerImages;
+    } else {
+      // Fallback to original arrays
+      source = images.map(img => ({
+        type: pageType,
+        file: img.file,
+        tags: img.tags
+      }));
+    }
   }
 
   // Apply tag filter
@@ -892,6 +1068,46 @@ function prepareExploreArray() {
 }
 
 /* =========================
+   PREPARE PFP ARRAY (SHUFFLED)
+========================= */
+function preparePfpArray() {
+  try {
+    const pfpList = Array.isArray(pfpImages)
+      ? pfpImages.map(img => ({
+          type: "pfp",
+          file: img.file,
+          tags: img.tags
+        }))
+      : [];
+
+    shuffleArray(pfpList);
+    shuffledPfpImages = pfpList;
+  } catch (err) {
+    console.error("Failed to prepare pfp array", err);
+  }
+}
+
+/* =========================
+   PREPARE BANNER ARRAY (SHUFFLED)
+========================= */
+function prepareBannerArray() {
+  try {
+    const bannerList = Array.isArray(bannerImages)
+      ? bannerImages.map(img => ({
+          type: "banner",
+          file: img.file,
+          tags: img.tags
+        }))
+      : [];
+
+    shuffleArray(bannerList);
+    shuffledBannerImages = bannerList;
+  } catch (err) {
+    console.error("Failed to prepare banner array", err);
+  }
+}
+
+/* =========================
    GALLERY RESET
 ========================= */
 function resetGallery() {
@@ -956,8 +1172,14 @@ router.addRoute('/', () => {
   activeTag = "all";
   updatePageType('pfp'); // Doesn't matter for explore (uses both)
   updateViewMode('/explore'); // Use explore view mode
-  prepareExploreArray(); // Prepare mixed array before loading
+  
+  // Only shuffle once per session - don't reshuffle if already prepared
+  if (!exploreImages || exploreImages.length === 0) {
+    prepareExploreArray();
+  }
+  
   hideImageDetail(); // Hide detail page if showing
+  updateSortButtonVisibility();
   resetGallery();
 });
 
@@ -966,7 +1188,14 @@ router.addRoute('/pfps', () => {
   activeTag = "all";
   updatePageType('pfp');
   updateViewMode('/pfps');
+  
+  // Only shuffle once per session - don't reshuffle if already prepared
+  if (!shuffledPfpImages || shuffledPfpImages.length === 0) {
+    preparePfpArray();
+  }
+  
   hideImageDetail(); // Hide detail page if showing
+  updateSortButtonVisibility();
   resetGallery();
 });
 
@@ -975,7 +1204,14 @@ router.addRoute('/banners', () => {
   activeTag = "all";
   updatePageType('banner');
   updateViewMode('/banners');
+  
+  // Only shuffle once per session - don't reshuffle if already prepared
+  if (!shuffledBannerImages || shuffledBannerImages.length === 0) {
+    prepareBannerArray();
+  }
+  
   hideImageDetail(); // Hide detail page if showing
+  updateSortButtonVisibility();
   resetGallery();
 });
 
@@ -994,6 +1230,7 @@ router.addRoute('/explore', () => {
   const comingFromDetailPage = imageDetailPage && !imageDetailPage.classList.contains('hidden');
   
   hideImageDetail(); // Hide detail page if showing
+  updateSortButtonVisibility();
   
   // Only reset gallery if NOT coming from detail page
   if (!comingFromDetailPage) {
@@ -1007,6 +1244,7 @@ router.addRoute('/liked', () => {
   updatePageType('pfp'); // Doesn't matter for liked (uses stored keys)
   updateViewMode('/liked');
   hideImageDetail(); // Hide detail page if showing
+  updateSortButtonVisibility();
   resetGallery();
 });
 

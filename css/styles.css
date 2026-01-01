@@ -6,7 +6,7 @@
 :root {
   /* Background Tiers */
   --bg-base: #1A1A1A;           /* Main background (locked) */
-  --bg-elevated: #1E1E1E;       /* Cards, panels (locked) */
+  --bg-elevated: #202020;       /* Cards, panels (locked) */
   --bg-overlay: #242424;        /* Modals, dropdowns, search panels */
   --bg-hover: #252525;          /* Subtle hover states */
   --bg-active: #2A2A2A;         /* Active/pressed states */
@@ -210,9 +210,9 @@ body {
 
 /* === SEARCH RESULTS PANEL === */
 .search-results-panel {
-  position: fixed;
+  position: absolute;
   top: 0;
-  left: var(--sidebar-width);
+  left: 0;
   right: 0;
   height: 600px;
   background: var(--bg-elevated);
@@ -489,7 +489,8 @@ body {
 }
 
 .card img {
-  width: 100%;
+  width: 101%; /* 1% larger to guarantee card fill */
+  margin-left: -0.5%; /* Center the oversized image */
   border-radius: 12px;
   
   opacity: 0;
@@ -851,7 +852,8 @@ body {
   
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start; /* Move to left instead of center */
+  padding-left: 10%; /* Position at ~25% from left edge */
 }
 
 .image-detail-page.hidden {
