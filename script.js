@@ -447,6 +447,40 @@ function shuffleArray(arr) {
   }
   return arr;
 }
+
+// Simple hash function to get consistent size for each filename
+function hashFilename(filename) {
+  let hash = 0;
+  for (let i = 0; i < filename.length; i++) {
+    hash = ((hash << 5) - hash) + filename.charCodeAt(i);
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  return Math.abs(hash);
+}
+
+// Get size class for a card based on filename (consistent sizing)
+function getCardSize(filename, type) {
+  // Apply size variations to:
+  // - PFPs in /pfps
+  // - Banners in /banners  
+  // - BOTH in /explore (for comparison)
+  const shouldApplyVariations = 
+    (type === 'pfp' && viewMode === 'normal' && pageType === 'pfp') ||
+    (type === 'banner' && viewMode === 'normal' && pageType === 'banner') ||
+    (viewMode === 'explore'); // Enable for explore
+  
+  if (!shouldApplyVariations) {
+    return 'size-medium'; // Default for liked
+  }
+  
+  const hash = hashFilename(filename);
+  const sizeIndex = hash % 3; // 0, 1, or 2
+  
+  // Equal distribution: 33% each
+  if (sizeIndex === 0) return 'size-small';
+  if (sizeIndex === 1) return 'size-medium';
+  return 'size-large';
+}
 function getImageSource() {
   // If a search is active, return the search-only source so infinite
   // scroll loads only matching images.
@@ -518,7 +552,11 @@ function getImageSource() {
 ========================= */
 function createCard(filename, type, isHighPriority = false, overrideSrc) {
   const card = document.createElement("div");
-  card.className = `card ${type}`;
+  
+  // Get size class for this card
+  const sizeClass = getCardSize(filename, type);
+  
+  card.className = `card ${type} ${sizeClass}`;
   const key = `${type}/${filename}`;
   card.dataset.key = key;
 
@@ -588,25 +626,7 @@ function createCard(filename, type, isHighPriority = false, overrideSrc) {
 /* =========================
    LIKE LOGIC
 ========================= */
-// Event delegation: handle like/enlarge clicks and double-tap like on images
-const _lastTapMap = new Map();
-gallery.addEventListener("pointerup", e => {
-  const img = e.target.closest("img");
-  if (!img || !gallery.contains(img)) return;
-  const key = img.dataset.key;
-  if (!key) return;
-  const now = Date.now();
-  const last = _lastTapMap.get(key) || 0;
-  if (now - last < 300) {
-    const [type, filename] = key.split("/");
-    toggleLike(filename, type);
-    const card = img.closest(".card");
-    const likeBtn = card?.querySelector(".like-btn");
-    likeBtn?.classList.toggle("liked");
-  }
-  _lastTapMap.set(key, now);
-});
-
+// Event delegation: handle like/enlarge clicks
 gallery.addEventListener("click", e => {
   const likeBtn = e.target.closest(".like-btn");
   if (likeBtn && gallery.contains(likeBtn)) {
@@ -627,9 +647,28 @@ gallery.addEventListener("click", e => {
     const key = card?.dataset.key;
     if (!key) return;
     const [type, filename] = key.split("/");
-    const imgEl = card.querySelector("img");
-    const src = imgEl?.dataset?.src || imgEl?.src || `/${type}s/images/${filename}`;
-    openModal(src, filename, type);
+    
+    // Save current route before navigating
+    previousRoute = router.getCurrentRoute();
+    
+    // Navigate to image detail page
+    router.navigate(`/${type}s/${filename}`);
+    return;
+  }
+  
+  // === ADDED: Click image to open detail view ===
+  const img = e.target.closest("img");
+  if (img && gallery.contains(img)) {
+    e.stopPropagation();
+    const key = img.dataset.key;
+    if (!key) return;
+    const [type, filename] = key.split("/");
+    
+    // Save current route before navigating
+    previousRoute = router.getCurrentRoute();
+    
+    // Navigate to image detail page
+    router.navigate(`/${type}s/${filename}`);
     return;
   }
 });
@@ -679,6 +718,61 @@ function syncModalLike() {
 modalLikeBtn?.addEventListener("click", () => {
   if (!modalCurrent) return;
   toggleLike(modalCurrent.filename, modalCurrent.type);
+});
+
+/* =========================
+   IMAGE DETAIL PAGE
+========================= */
+const imageDetailPage = document.getElementById('imageDetailPage');
+const detailImage = document.getElementById('detailImage');
+const detailBackBtn = document.getElementById('detailBackBtn');
+
+// Store scroll position and previous route before navigating to detail page
+let savedScrollPosition = 0;
+let previousRoute = '/';
+
+// Show image detail page
+function showImageDetail(filename, type) {
+  // Save current scroll position
+  savedScrollPosition = window.scrollY;
+  
+  // Build image source path
+  const src = `/${type}s/images/${filename}`;
+  
+  // Show detail page
+  detailImage.src = src;
+  detailImage.alt = filename;
+  imageDetailPage.classList.remove('hidden');
+  gallery.classList.add('hidden');
+  
+  // Hide search elements
+  const searchRow = document.querySelector('.search-row');
+  if (searchRow) searchRow.style.display = 'none';
+  
+  // Prevent scrolling the gallery underneath
+  document.body.style.overflow = 'hidden';
+}
+
+// Hide image detail page and return to gallery
+function hideImageDetail() {
+  imageDetailPage.classList.add('hidden');
+  gallery.classList.remove('hidden');
+  
+  // Show search elements
+  const searchRow = document.querySelector('.search-row');
+  if (searchRow) searchRow.style.display = '';
+  
+  // Re-enable scrolling
+  document.body.style.overflow = '';
+  
+  // Restore scroll position
+  window.scrollTo(0, savedScrollPosition);
+}
+
+// Back button click handler
+detailBackBtn?.addEventListener('click', () => {
+  // Navigate back to the saved previous route
+  router.navigate(previousRoute);
 });
 
 /* =========================
@@ -863,6 +957,7 @@ router.addRoute('/', () => {
   updatePageType('pfp'); // Doesn't matter for explore (uses both)
   updateViewMode('/explore'); // Use explore view mode
   prepareExploreArray(); // Prepare mixed array before loading
+  hideImageDetail(); // Hide detail page if showing
   resetGallery();
 });
 
@@ -871,6 +966,7 @@ router.addRoute('/pfps', () => {
   activeTag = "all";
   updatePageType('pfp');
   updateViewMode('/pfps');
+  hideImageDetail(); // Hide detail page if showing
   resetGallery();
 });
 
@@ -879,6 +975,7 @@ router.addRoute('/banners', () => {
   activeTag = "all";
   updatePageType('banner');
   updateViewMode('/banners');
+  hideImageDetail(); // Hide detail page if showing
   resetGallery();
 });
 
@@ -887,8 +984,21 @@ router.addRoute('/explore', () => {
   activeTag = "all";
   updatePageType('pfp'); // Doesn't matter for explore (uses both)
   updateViewMode('/explore');
-  prepareExploreArray(); // Prepare mixed array before loading
-  resetGallery();
+  
+  // Only shuffle once per session - don't reshuffle if already prepared
+  if (!exploreImages || exploreImages.length === 0) {
+    prepareExploreArray();
+  }
+  
+  // Check if we're returning from detail page BEFORE hiding it
+  const comingFromDetailPage = imageDetailPage && !imageDetailPage.classList.contains('hidden');
+  
+  hideImageDetail(); // Hide detail page if showing
+  
+  // Only reset gallery if NOT coming from detail page
+  if (!comingFromDetailPage) {
+    resetGallery();
+  }
 });
 
 // Liked route
@@ -896,7 +1006,17 @@ router.addRoute('/liked', () => {
   activeTag = "all";
   updatePageType('pfp'); // Doesn't matter for liked (uses stored keys)
   updateViewMode('/liked');
+  hideImageDetail(); // Hide detail page if showing
   resetGallery();
+});
+
+// Image detail routes
+router.addRoute('/pfps/:filename', (params) => {
+  showImageDetail(params.filename, 'pfp');
+});
+
+router.addRoute('/banners/:filename', (params) => {
+  showImageDetail(params.filename, 'banner');
 });
 
 // Initialize router - it will automatically load the current route

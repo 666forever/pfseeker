@@ -1,3 +1,52 @@
+/* ===========================
+   DESIGN TOKENS
+   Professional dark UI color system
+=========================== */
+
+:root {
+  /* Background Tiers */
+  --bg-base: #1A1A1A;           /* Main background (locked) */
+  --bg-elevated: #1E1E1E;       /* Cards, panels (locked) */
+  --bg-overlay: #242424;        /* Modals, dropdowns, search panels */
+  --bg-hover: #252525;          /* Subtle hover states */
+  --bg-active: #2A2A2A;         /* Active/pressed states */
+  
+  /* Text Hierarchy */
+  --text-primary: #E6E6E6;      /* Main content (locked) */
+  --text-secondary: #B3B3B3;    /* Secondary labels */
+  --text-tertiary: #808080;     /* Placeholder, subtle text */
+  --text-disabled: #4A4A4A;     /* Disabled states */
+  
+  /* Borders & Dividers */
+  --border-subtle: rgba(255, 255, 255, 0.06);   /* Minimal separation */
+  --border-medium: rgba(255, 255, 255, 0.12);   /* Standard borders */
+  --border-strong: rgba(255, 255, 255, 0.18);   /* Emphasized borders */
+  
+  /* Accent Colors (Desaturated) */
+  --accent-primary: #3A5F7D;    /* Primary actions, focus states */
+  --accent-hover: #4A6F8D;      /* Accent hover */
+  --accent-active: #2A4F6D;     /* Accent pressed */
+  
+  /* Interactive States */
+  --interactive-hover: rgba(255, 255, 255, 0.08);   /* General hover overlay */
+  --interactive-active: rgba(255, 255, 255, 0.12);  /* General active overlay */
+  --interactive-focus: var(--accent-primary);       /* Focus rings */
+  
+  /* Semantic Colors */
+  --semantic-like: #E85D5D;     /* Like/heart color (desaturated red) */
+  
+  /* Overlays & Shadows */
+  --overlay-dark: rgba(0, 0, 0, 0.85);     /* Modal overlays */
+  --shadow-medium: 0 8px 24px rgba(0, 0, 0, 0.4);  /* Dropdown shadows */
+  
+  /* Sidebar */
+  --sidebar-width: 67px;
+  --sidebar-bg: rgba(0, 0, 0, 0.15);
+  --sidebar-border: var(--border-subtle);
+  --sidebar-hover: var(--interactive-hover);
+  --sidebar-active: var(--interactive-active);
+}
+
 * {
   margin: 0;
   padding: 0;
@@ -6,8 +55,8 @@
 }
 
 body {
-  background: #080808;
-  color: #fff;
+  background: var(--bg-base);
+  color: var(--text-primary);
 }
 
     /*     ⸻⸻⸻⸻⸻⸻⸻⸻⸻ 🌑 ﹑ Search bar
@@ -15,9 +64,6 @@ body {
 
 .search-row {
   position: relative;
-}
-
-.search-row {
   z-index: 100;
 }
 
@@ -31,35 +77,31 @@ body {
 .search-bar input {
   width: 100%;
   height: 44px;
-
-  padding: 10px 68px 10px 118px; /* Right padding for clear button; left padding for filter button + search icon */
-
-  background: #242424;
-  border: 3px solid rgba(255, 255, 255, 0);
+  padding: 10px 68px 10px 118px;
+  
+  background: var(--bg-overlay);
+  border: 3px solid transparent;
   border-radius: 10px;
-
-  color: #e4e4e4;
+  
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: 600;
-
-
+  
   outline: none;
-  transition:
-    background 0.1s ease,
-    border-color 0.1s ease;
+  transition: background 0.1s ease, border-color 0.1s ease;
 }
 
 .search-bar input::placeholder {
-  color: #494949;
+  color: var(--text-disabled);
 }
 
 .search-bar input:hover {
-  background: #292929;
+  background: var(--bg-hover);
 }
 
 .search-bar input:focus {
-  background: #313131;
-  border: 3px solid #0c4273;
+  background: var(--bg-active);
+  border-color: var(--interactive-focus);
 }
 
 /* === FILTER DRAWER BUTTON === */
@@ -71,7 +113,7 @@ body {
   
   width: 60px;
   height: 40px;
-  padding-right: 12px; 
+  padding-right: 12px;
   
   display: flex;
   align-items: center;
@@ -79,12 +121,11 @@ body {
   
   background: none;
   border: none;
-  border-right: 1px solid rgba(255, 255, 255, 0.04);
+  border-right: 1px solid var(--border-subtle);
   cursor: pointer;
   z-index: 2;
   
-  color: #ffffff;
-  
+  color: var(--text-primary);
   transition: all 0.2s ease;
 }
 
@@ -100,12 +141,10 @@ body {
   opacity: 0.9;
 }
 
-/* Color for filter drawer icon */
 .filter-drawer-icon path,
 .filter-drawer-icon g {
   stroke: currentColor;
   fill: none;
-  color: #ffffff;
 }
 
 /* === FILTER DROPDOWN === */
@@ -114,14 +153,14 @@ body {
   top: calc(100% + 8px);
   left: 24px;
   
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-medium);
   border-radius: 12px;
   
   padding: 8px;
   min-width: 160px;
   
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-medium);
   
   opacity: 1;
   transform: translateY(0);
@@ -147,7 +186,7 @@ body {
   border: none;
   border-radius: 8px;
   
-  color: #e4e4e4;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 500;
   text-align: left;
@@ -157,13 +196,12 @@ body {
 }
 
 .filter-option:hover {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--interactive-hover);
 }
 
 .filter-option.active {
-  background: #0c4273;
-  color: #ffffff;
+  background: var(--accent-primary);
+  color: var(--text-primary);
 }
 
 .filter-option:active {
@@ -176,11 +214,11 @@ body {
   top: 0;
   left: var(--sidebar-width);
   right: 0;
-  height: 590px;
-  background: rgb(24, 24, 24);
+  height: 600px;
+  background: var(--bg-elevated);
   z-index: 99;
   overflow-y: auto;
-  padding: 40px 40px 40px 40px; /* Top padding to clear search bar */
+  padding: 35px 40px 0 40px;
 }
 
 .search-results-panel.hidden {
@@ -205,7 +243,7 @@ body {
   cursor: pointer;
   z-index: 3;
   
-  color: #ffffff;
+  color: var(--text-primary);
   opacity: 0.7;
   transition: opacity 0.2s ease;
 }
@@ -233,13 +271,13 @@ body {
 }
 
 .search-section-title {
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: 18px;
   font-weight: 600;
   text-transform: uppercase;
   margin-top: 50px;
   margin-bottom: 15px;
-  Margin-left: 70px;
+  margin-left: 70px;
   opacity: 1;
 }
 
@@ -254,24 +292,24 @@ body {
   background: none;
   border: none;
   border-radius: 8px;
-  color: #bebebe;
+  max-width: 30%;
+  color: var(--text-secondary);
   font-size: 18px;
   font-weight: 600;
   text-align: left;
   cursor: pointer;
-  transition: background 0.15s ease;
-
+  transition: background 0.15s ease, color 0.15s ease;
+  
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
 .search-tag-item:hover {
-  background: #2a2a2a;
-  color: #ffffff;
+  background: var(--interactive-hover);
+  color: var(--text-primary);
 }
 
-/* Icon inside tag item */
 .search-tag-icon {
   width: 18px;
   height: 18px;
@@ -285,30 +323,25 @@ body {
   opacity: 0.8;
 }
 
-
 .search-icon {
   position: absolute;
   left: 115px;
   top: calc(20px + 22px);
   transform: translateY(-50%);
-
+  
   width: 20px;
   height: 20px;
-
+  
   opacity: 0.3;
   pointer-events: none;
-
-
-  transition:
-  opacity 0.15s ease,
-  transform 0.15s ease;
+  
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .search-bar input:focus ~ .search-icon,
 .search-bar input:not(:placeholder-shown) ~ .search-icon {
   opacity: 0.9;
 }
-
 
     /*     ⸻⸻⸻⸻⸻⸻⸻⸻⸻ 🌙 ﹑ Like Button / Enlarge Button
 */
@@ -317,11 +350,11 @@ body {
 .enlarge-btn {
   width: 36px;
   height: 36px;
-
+  
   display: flex;
   align-items: center;
   justify-content: center;
-
+  
   pointer-events: auto;
   position: absolute;
   top: 10px;
@@ -351,43 +384,39 @@ body {
   width: 20px;
   height: 20px;
   display: block;
-
+  
   opacity: 0.85;
   pointer-events: none;
-
-  transition:
-    opacity 0.2s ease,
-    transform 0.15s ease,
-    filter 0.2s ease;
   
+  transition: opacity 0.2s ease, transform 0.15s ease, filter 0.2s ease;
   will-change: opacity;
 }
 
 .card:hover .card-icon {
   opacity: 1;
 }
-.like-btn:hover .card-icon {
-  opacity: 1;
-}
+
+.like-btn:hover .card-icon,
 .enlarge-btn:hover .card-icon {
   opacity: 1;
 }
+
 .like-btn:active .card-icon,
 .enlarge-btn:active .card-icon {
   opacity: 0.8;
 }
 
 .like-btn.liked .card-icon {
-  animation: heart-pop-svg 0.35s ease; }
-
-@keyframes heart-pop-svg {
-   0% { opacity: 0.6;}
-  40% { opacity: 1;}
-  60% { opacity: 0.85;}
-  80% { opacity: 1;}
- 100% { opacity: 1;}
+  animation: heart-pop-svg 0.35s ease;
 }
 
+@keyframes heart-pop-svg {
+  0% { opacity: 0.6; }
+  40% { opacity: 1; }
+  60% { opacity: 0.85; }
+  80% { opacity: 1; }
+  100% { opacity: 1; }
+}
 
     /*     ⸻⸻⸻⸻⸻⸻⸻⸻⸻ 🌒 ﹑ Gallery Images / Cards 
 */
@@ -396,7 +425,7 @@ body {
   gap: 1px;
   padding: 1px;
   min-height: 100vh;
-
+  
   display: flex;
   flex-direction: column;
   
@@ -422,13 +451,11 @@ body {
   border-radius: 16px;
   padding: 2px;
   overflow: hidden;
-
+  
   /* smooth entrance */
   opacity: 0;
   transform: translateY(16px) scale(0.96);
-  transition:
-    opacity 0.4s ease,
-    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: opacity 0.4s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .card.visible {
@@ -441,17 +468,22 @@ body {
   position: absolute;
   inset: 0;
   border-radius: 16px;
-  background:
-    radial-gradient(
-      ellipse at center,
-      rgba(0,0,0,0) 55%,
-      rgba(0,0,0,0.35) 100%
-    );
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0,0,0,0) 55%,
+    rgba(0,0,0,0.35) 100%
+  );
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
-
 }
+
+/* Disable overlay for size-variant cards to prevent background showing */
+.card.size-small::after,
+.card.size-large::after {
+  display: none;
+}
+
 .card:hover::after {
   opacity: 1;
 }
@@ -459,15 +491,14 @@ body {
 .card img {
   width: 100%;
   border-radius: 12px;
-
+  
   opacity: 0;
   transform: translateY(6px) scale(0.985);
   filter: blur(0px);
-
-  transition:
-    opacity 0.35s ease,
-    transform 0.35s ease,
-    filter 0.4s ease;
+  
+  cursor: pointer;
+  
+  transition: opacity 0.35s ease, transform 0.35s ease, filter 0.4s ease;
 }
 
 .card img.loaded {
@@ -483,7 +514,63 @@ body {
   object-fit: cover;
 }
 
+/* ===========================
+   NATURAL HEIGHT VARIETY
+=========================== */
 
+.card img {
+  width: 100%;
+  height: auto;
+}
+
+.card.pfp img {
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+
+/* ===========================
+   PFP SIZE VARIATIONS (Cropped Heights)
+=========================== */
+
+.card.pfp.size-small img {
+  height: 180px;
+  object-fit: cover;
+  aspect-ratio: unset;
+}
+
+.card.pfp.size-medium img {
+  height: 240px;
+  object-fit: cover;
+  aspect-ratio: unset;
+}
+
+.card.pfp.size-large img {
+  height: 320px;
+  object-fit: cover;
+  aspect-ratio: unset;
+}
+
+/* ===========================
+   BANNER SIZE VARIATIONS (Cropped Heights)
+=========================== */
+
+.card.banner.size-small img {
+  height: 100px;
+  object-fit: cover;
+  aspect-ratio: unset;
+}
+
+.card.banner.size-medium img {
+  height: 140px;
+  object-fit: cover;
+  aspect-ratio: unset;
+}
+
+.card.banner.size-large img {
+  height: 180px;
+  object-fit: cover;
+  aspect-ratio: unset;
+}
 
     /*     ⸻⸻⸻⸻⸻⸻⸻⸻⸻  ﹑ 🌔 Modal
 */
@@ -504,7 +591,7 @@ body {
 .modal-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.85);
+  background: var(--overlay-dark);
 }
 
 .modal-content {
@@ -525,7 +612,7 @@ body {
   background: none;
   border: none;
   font-size: 28px;
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
 }
 
@@ -536,7 +623,6 @@ body {
   transform: none;
 }
 
-
     /*     ⸻⸻⸻⸻⸻⸻⸻⸻⸻ 🌕 ﹑ Phone resizing
 */
 
@@ -545,47 +631,43 @@ body {
     padding: 16px;
     gap: 10px;
   }
-
+  
   .column {
     gap: 10px;
   }
 }
 
 @media (max-width: 640px) {
-  
   .gallery {
     padding: 12px;
     gap: 8px;
   }
-
+  
   .column {
     gap: 8px;
   }
-
-  /* cards */
+  
   .card {
     border-radius: 14px;
   }
-
+  
   .card img {
     border-radius: 10px;
   }
-
-  /* icons easier to tap */
+  
   .like-btn,
   .enlarge-btn {
     top: 8px;
   }
-
+  
   .like-btn {
     right: 8px;
   }
-
+  
   .enlarge-btn {
     right: 48px;
   }
   
-  /* Filter dropdown adjustments */
   .filter-drawer-btn {
     left: 32px;
   }
@@ -595,17 +677,15 @@ body {
   }
 }
 
-/* ☕ Small Phone */
 @media (max-width: 420px) {
   .gallery {
     padding: 10px;
   }
-
+  
   .logo-img {
     height: 44px;
   }
-
-  /* icons sit closer */
+  
   .enlarge-btn {
     right: 44px;
   }
@@ -617,22 +697,17 @@ body {
 
 /* ===========================
    ACTIVE NAVIGATION STATE
-   (Added for SPA router)
 =========================== */
 
-
-/* Smooth transition for icons */
 .nav-icon {
   transition: opacity 0.2s ease-in-out;
   will-change: opacity;
 }
 
-/* Subtle scale effect when icon becomes active */
 .nav-icon-btn.active .nav-icon {
   opacity: 1;
 }
 
-/* Smooth transition for nav buttons */
 .nav-icon-btn {
   transition: transform 0.2s ease-in-out;
 }
@@ -641,7 +716,6 @@ body {
    SVG ICON STYLING
 =========================== */
 
-/* SVG icon sizing */
 .nav-icon {
   width: 24px;
   height: 24px;
@@ -650,7 +724,6 @@ body {
   will-change: opacity;
 }
 
-/* All icons inherit color from parent link */
 .nav-icon path,
 .nav-icon circle,
 .nav-icon polyline,
@@ -658,19 +731,18 @@ body {
 .nav-icon rect,
 .nav-icon g {
   stroke: currentColor;
-  fill: none; /* Most icons are outline only */
+  fill: none;
 }
 
-/* Filled icons use fill: currentColor */
 .nav-icon[path][fill],
 .nav-icon g[fill] {
   fill: currentColor;
   stroke: none;
 }
 
-/* NAVIGATION LINK COLORS - ALL WHITE */
+/* NAVIGATION LINK COLORS */
 .nav-icon-btn {
-  color: #ffffff;
+  color: var(--text-primary);
   transition: all 0.2s ease-in-out;
 }
 
@@ -679,7 +751,7 @@ body {
 }
 
 .nav-icon-btn.active {
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -691,13 +763,11 @@ body {
    UI CARD ICON STYLING
 =========================== */
 
-/* Modal icon slightly larger */
 .modal-like .card-icon {
   width: 24px;
   height: 24px;
 }
 
-/* All card icon paths inherit color */
 .card-icon path,
 .card-icon circle,
 .card-icon polyline,
@@ -706,21 +776,25 @@ body {
   fill: none;
 }
 
-/* Button colors: outline white, liked red */
+/* Button colors */
 .like-btn {
-  color: #ffffff;
+  color: var(--text-primary);
 }
+
 .like-btn.liked {
-  color: #ee4e4e;
+  color: var(--semantic-like);
 }
+
 .enlarge-btn {
-  color: #ffffff;
+  color: var(--text-primary);
 }
+
 .modal-like {
-  color: #ffffff;
+  color: var(--text-primary);
 }
+
 .modal-like.liked {
-  color: #ee4e4e;
+  color: var(--semantic-like);
 }
 
 /* ===========================
@@ -731,10 +805,10 @@ body {
   position: absolute;
   top: 8px;
   left: 8px;
-  opacity: 0.9; /* always visible */
+  opacity: 0.9;
   transition: opacity 0.12s ease-in-out;
   pointer-events: none;
-  z-index: 2; /* above image, below buttons */
+  z-index: 2;
 }
 
 .card:hover .gif-badge {
@@ -748,10 +822,9 @@ body {
 }
 
 .gif-icon path {
-  fill: #ffffff;
+  fill: var(--text-primary);
 }
 
-/* Ensure buttons render above badge */
 .like-btn,
 .enlarge-btn {
   z-index: 3;
@@ -761,4 +834,73 @@ body {
   .gif-badge {
     opacity: 0.9;
   }
+}
+
+/* ===========================
+   IMAGE DETAIL PAGE
+=========================== */
+
+.image-detail-page {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  bottom: 0;
+  background: var(--bg-base);
+  z-index: 200;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-detail-page.hidden {
+  display: none;
+}
+
+.detail-back-btn {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  
+  width: 48px;
+  height: 48px;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  background: var(--interactive-hover);
+  border: none;
+  border-radius: 12px;
+  
+  color: var(--text-primary);
+  cursor: pointer;
+  
+  transition: all 0.2s ease;
+  z-index: 10;
+}
+
+.detail-back-btn:hover {
+  background: var(--interactive-active);
+  transform: scale(1.05);
+}
+
+.detail-back-btn:active {
+  transform: scale(0.95);
+}
+
+.detail-image-container {
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-image-container img {
+  max-width: 100%;
+  max-height: 90vh;
+  border-radius: 12px;
+  object-fit: contain;
 }

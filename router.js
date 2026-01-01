@@ -24,6 +24,45 @@ export class Router {
     this.routes.set(path, callback);
   }
   
+  // Match a path against registered routes and extract parameters
+  matchRoute(path) {
+    // First try exact match
+    if (this.routes.has(path)) {
+      return { callback: this.routes.get(path), params: {} };
+    }
+    
+    // Try pattern matching for dynamic routes
+    for (const [pattern, callback] of this.routes.entries()) {
+      if (!pattern.includes(':')) continue; // Skip if no parameters
+      
+      const patternParts = pattern.split('/');
+      const pathParts = path.split('/');
+      
+      if (patternParts.length !== pathParts.length) continue;
+      
+      const params = {};
+      let matches = true;
+      
+      for (let i = 0; i < patternParts.length; i++) {
+        if (patternParts[i].startsWith(':')) {
+          // Parameter - extract it
+          const paramName = patternParts[i].slice(1);
+          params[paramName] = decodeURIComponent(pathParts[i]);
+        } else if (patternParts[i] !== pathParts[i]) {
+          // Static part doesn't match
+          matches = false;
+          break;
+        }
+      }
+      
+      if (matches) {
+        return { callback, params };
+      }
+    }
+    
+    return null;
+  }
+  
   navigate(path, pushState = true) {
     // Normalize path
     if (path === '/index.html') path = '/'; // Only normalize index.html, keep / as /
@@ -34,9 +73,9 @@ export class Router {
     }
     if (path === '') path = '/';
     
-    const route = this.routes.get(path);
+    const match = this.matchRoute(path);
     
-    if (!route) {
+    if (!match) {
       console.warn(`No route found for: ${path}`);
       // Default to / (home) if route not found
       this.navigate('/', pushState);
@@ -54,8 +93,8 @@ export class Router {
     // Store current route
     this.currentRoute = path;
     
-    // Call the route's callback function
-    route();
+    // Call the route's callback function with extracted parameters
+    match.callback(match.params);
   }
   
   updateActiveNav(path) {
