@@ -573,56 +573,7 @@ body {
   aspect-ratio: unset;
 }
 
-    /*     ⸻⸻⸻⸻⸻⸻⸻⸻⸻  ﹑ 🌔 Modal
-*/
-
-.modal {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 999;
-}
-
-.modal.hidden {
-  display: none;
-}
-
-.modal-overlay {
-  position: absolute;
-  inset: 0;
-  background: var(--overlay-dark);
-}
-
-.modal-content {
-  position: relative;
-  z-index: 1;
-}
-
-.modal-content img {
-  max-width: 90vw;
-  max-height: 90vh;
-  border-radius: 12px;
-}
-
-.modal-close {
-  position: absolute;
-  top: -40px;
-  right: 0;
-  background: none;
-  border: none;
-  font-size: 28px;
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-.modal-like {
-  top: 12px;
-  right: 5px;
-  opacity: 1;
-  transform: none;
-}
+    /* Modal CSS removed: using image detail page instead */
 
     /*     ⸻⸻⸻⸻⸻⸻⸻⸻⸻ 🌕 ﹑ Phone resizing
 */
@@ -764,10 +715,7 @@ body {
    UI CARD ICON STYLING
 =========================== */
 
-.modal-like .card-icon {
-  width: 24px;
-  height: 24px;
-}
+/* .modal-like .card-icon removed (modal removed) */
 
 .card-icon path,
 .card-icon circle,
@@ -790,13 +738,7 @@ body {
   color: var(--text-primary);
 }
 
-.modal-like {
-  color: var(--text-primary);
-}
-
-.modal-like.liked {
-  color: var(--semantic-like);
-}
+/* .modal-like color rules removed (modal removed) */
 
 /* ===========================
    GIF BADGE

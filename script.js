@@ -36,34 +36,8 @@ let activeTag = "all";
 const gallery = document.getElementById("gallery");
 
 /* =========================
-   MODAL
+   MODAL (removed - using image detail page)
 ========================= */
-const modal = document.getElementById("imageModal");
-const modalImg = document.getElementById("modalImage");
-const modalClose = document.querySelector(".modal-close");
-const modalOverlay = document.querySelector(".modal-overlay");
-const modalLikeBtn = document.getElementById("modalLikeBtn");
-
-let modalCurrent = null;
-
-function openModal(src, filename, type) {
-  modalCurrent = { filename, type };
-  modalImg.src = src;
-  modal.classList.remove("hidden");
-  syncModalLike();
-}
-
-function closeModal() {
-  modal.classList.add("hidden");
-  modalImg.src = "";
-  modalCurrent = null;
-}
-
-modalClose?.addEventListener("click", closeModal);
-modalOverlay?.addEventListener("click", closeModal);
-document.addEventListener("keydown", e => {
-  if (e.key === "Escape") closeModal();
-});
 
 /* =========================
    STATE
@@ -165,14 +139,7 @@ filterDrawerBtn?.addEventListener('click', (e) => {
   }
 });
 
-// Close dropdown when clicking outside
-document.addEventListener('click', (e) => {
-  if (!filterDropdown.contains(e.target) && !filterDrawerBtn.contains(e.target)) {
-    filterDropdown.classList.add('hidden');
-    const useEl = filterDrawerBtn?.querySelector('.filter-drawer-icon use');
-    useEl?.setAttribute('href', '#icon-filterdrawer');
-  }
-});
+// (filter dropdown: handled by consolidated global click handler below)
 
 // Handle filter option clicks
 filterDropdown?.addEventListener('click', (e) => {
@@ -205,79 +172,14 @@ function filterByTag(tag) {
    SORT DROPDOWN & DAILY SHUFFLE
 ========================= */
 
-const sortDrawerBtn = document.getElementById('sortDrawerBtn');
-const sortDropdown = document.getElementById('sortDropdown');
-
-// Current sort mode
-let currentSortMode = 'daily'; // Default to daily shuffle
-
-// Toggle sort dropdown
-sortDrawerBtn?.addEventListener('click', (e) => {
-  e.stopPropagation();
-  
-  // Close search panel and filter dropdown if open
-  if (searchResultsPanel && !searchResultsPanel.classList.contains('hidden')) {
-    searchResultsPanel.classList.add('hidden');
-    searchInput?.blur();
-    if (searchClearBtn) searchClearBtn.classList.add('hidden');
-  }
-  if (filterDropdown && !filterDropdown.classList.contains('hidden')) {
-    filterDropdown.classList.add('hidden');
-    const useEl = filterDrawerBtn?.querySelector('.filter-drawer-icon use');
-    useEl?.setAttribute('href', '#icon-filterdrawer');
-  }
-
-  sortDropdown.classList.toggle('hidden');
-  
-  // Swap icon between outline and filled
-  const useEl = sortDrawerBtn.querySelector('.sort-drawer-icon use');
-  if (sortDropdown.classList.contains('hidden')) {
-    useEl?.setAttribute('href', '#icon-sort');
-  } else {
-    useEl?.setAttribute('href', '#icon-sort-filled');
-  }
-});
-
-// Close dropdown when clicking outside
-document.addEventListener('click', (e) => {
-  if (sortDropdown && !sortDropdown.contains(e.target) && !sortDrawerBtn?.contains(e.target)) {
-    sortDropdown.classList.add('hidden');
-    const useEl = sortDrawerBtn?.querySelector('.sort-drawer-icon use');
-    useEl?.setAttribute('href', '#icon-sort');
-  }
-});
-
-// Handle sort option clicks
-sortDropdown?.addEventListener('click', (e) => {
-  const sortOption = e.target.closest('.filter-option');
-  if (sortOption) {
-    const sortMode = sortOption.dataset.sort;
-    currentSortMode = sortMode;
-    
-    // Update active state
-    document.querySelectorAll('#sortDropdown .filter-option').forEach(opt => {
-      opt.classList.toggle('active', opt.dataset.sort === sortMode);
-    });
-    
-    // Store preference
-    localStorage.setItem('sortMode', sortMode);
-    
-    // Reset and reload gallery with new sort
-    index = 0;
-    loadedImages.clear();
-    createColumns();
-    loadBatch();
-    
-    // Close dropdown
-    sortDropdown.classList.add('hidden');
-    const useEl = sortDrawerBtn?.querySelector('.sort-drawer-icon use');
-    useEl?.setAttribute('href', '#icon-sort');
-  }
-});
+// Sort UI removed: sortDrawerBtn and sortDropdown handling deleted
 
 /* =========================
-   DAILY SHUFFLE LOGIC
+  DAILY SHUFFLE LOGIC
 ========================= */
+
+// Minimal sort mode state retained for daily-shuffle feature
+let currentSortMode = 'daily'; // default
 
 // Get today's date as string (YYYY-MM-DD)
 function getTodayString() {
@@ -341,30 +243,7 @@ window.getImageSource = function() {
    SHOW/HIDE SORT BUTTON BASED ON PAGE
 ========================= */
 
-function updateSortButtonVisibility() {
-  if (!sortDrawerBtn) return;
-  
-  const currentRoute = router.getCurrentRoute();
-  
-  // Show sort button only on /pfps and /banners
-  if (currentRoute === '/pfps' || currentRoute === '/banners') {
-    sortDrawerBtn.classList.remove('hidden');
-  } else {
-    sortDrawerBtn.classList.add('hidden');
-    // Also close dropdown if it's open
-    sortDropdown?.classList.add('hidden');
-  }
-}
-
-// Load saved sort mode
-const savedSortMode = localStorage.getItem('sortMode');
-if (savedSortMode) {
-  currentSortMode = savedSortMode;
-  // Update active state in dropdown
-  document.querySelectorAll('#sortDropdown .filter-option').forEach(opt => {
-    opt.classList.toggle('active', opt.dataset.sort === savedSortMode);
-  });
-}
+// updateSortButtonVisibility removed along with stored sort preferences
 
 /* =========================
    SEARCH FUNCTIONALITY
@@ -585,21 +464,39 @@ searchClearBtn?.addEventListener('click', (e) => {
   searchInput?.blur();
 });
 
-// Handle click outside search-area: close panel when clicking outside the entire search row
+// Consolidated global handlers for outside-click and Escape key
 document.addEventListener('click', (e) => {
+  // Close search results panel when clicking outside search row
   const isSearchRelated = searchRow && searchRow.contains(e.target);
   if (!isSearchRelated) {
-    searchResultsPanel.classList.add('hidden');
+    searchResultsPanel?.classList.add('hidden');
+  }
+
+  // Close filter dropdown when clicking outside it
+  if (filterDropdown && filterDrawerBtn) {
+    if (!filterDropdown.contains(e.target) && !filterDrawerBtn.contains(e.target)) {
+      filterDropdown.classList.add('hidden');
+      const useEl = filterDrawerBtn?.querySelector('.filter-drawer-icon use');
+      useEl?.setAttribute('href', '#icon-filterdrawer');
+    }
   }
 });
 
-// Handle Escape key
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    searchResultsPanel.classList.add('hidden');
-    searchInput?.blur();
-    if (searchClearBtn) searchClearBtn.classList.add('hidden');
+  if (e.key !== 'Escape') return;
+
+  // Close image detail page if open
+  if (imageDetailPage && !imageDetailPage.classList.contains('hidden')) {
+    hideImageDetail();
   }
+
+  // Close search panel and blur input
+  searchResultsPanel?.classList.add('hidden');
+  searchInput?.blur();
+  if (searchClearBtn) searchClearBtn.classList.add('hidden');
+
+  // Close filter dropdown
+  if (filterDropdown) filterDropdown.classList.add('hidden');
 });
 
 /* =========================
@@ -876,25 +773,9 @@ if (likedImages.has(key)) {
   }
 }
   localStorage.setItem("likedImages", JSON.stringify([...likedImages]));
-  syncModalLike();
 }
 
-function syncModalLike() {
-  if (!modalCurrent || !modalLikeBtn) return;
-
-  const key = `${modalCurrent.type}/${modalCurrent.filename}`;
-  const isLiked = likedImages.has(key);
-  modalLikeBtn.classList.toggle("liked", isLiked);
-
-  // Swap modal icon to match liked state
-  const useEl = modalLikeBtn.querySelector('use');
-  if (useEl) useEl.setAttribute('href', isLiked ? '#icon-heart-filled' : '#icon-heart-outline');
-}
-
-modalLikeBtn?.addEventListener("click", () => {
-  if (!modalCurrent) return;
-  toggleLike(modalCurrent.filename, modalCurrent.type);
-});
+/* syncModalLike and modalLikeBtn listener removed (modal removed) */
 
 /* =========================
    IMAGE DETAIL PAGE
@@ -1179,7 +1060,6 @@ router.addRoute('/', () => {
   }
   
   hideImageDetail(); // Hide detail page if showing
-  updateSortButtonVisibility();
   resetGallery();
 });
 
@@ -1195,7 +1075,6 @@ router.addRoute('/pfps', () => {
   }
   
   hideImageDetail(); // Hide detail page if showing
-  updateSortButtonVisibility();
   resetGallery();
 });
 
@@ -1211,7 +1090,6 @@ router.addRoute('/banners', () => {
   }
   
   hideImageDetail(); // Hide detail page if showing
-  updateSortButtonVisibility();
   resetGallery();
 });
 
@@ -1230,7 +1108,6 @@ router.addRoute('/explore', () => {
   const comingFromDetailPage = imageDetailPage && !imageDetailPage.classList.contains('hidden');
   
   hideImageDetail(); // Hide detail page if showing
-  updateSortButtonVisibility();
   
   // Only reset gallery if NOT coming from detail page
   if (!comingFromDetailPage) {
@@ -1244,7 +1121,6 @@ router.addRoute('/liked', () => {
   updatePageType('pfp'); // Doesn't matter for liked (uses stored keys)
   updateViewMode('/liked');
   hideImageDetail(); // Hide detail page if showing
-  updateSortButtonVisibility();
   resetGallery();
 });
 

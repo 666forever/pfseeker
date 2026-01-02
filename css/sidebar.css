@@ -5,9 +5,9 @@
    ========================= */
 
 :root {
-  --sidebar-width: 67px;
+  --sidebar-width: 75px;
   --sidebar-bg: rgba(0, 0, 0, 0.151);
-  --sidebar-border: rgba(255, 255, 255, 0.02);
+  --sidebar-border: rgba(255, 255, 255, 0.1);
   --sidebar-hover-bg: rgba(255, 255, 255, 0.08);
   --sidebar-active-bg: rgba(255, 255, 255, 0.12);
   --sidebar-indicator: #ffffff;
@@ -95,9 +95,7 @@
   border-radius: 8px;
 }
 
-.nav-label {
-  display: none;
-}
+/* .nav-label removed — not used in markup (kept intentionally empty) */
 
 .nav-icon-btn  {
   fill: #fff;
