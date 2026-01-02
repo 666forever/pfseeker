@@ -100,6 +100,21 @@
       <symbol id="icon-expand" viewBox="0 0 24 24">
         <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"><path d="M14.3 20.34h3.32c1.48 0 2.66-1.19 2.66-2.66V6.38c0-1.47-1.18-2.66-2.66-2.66H6.32c-1.48 0-2.66 1.19-2.66 2.66V9.7"/><path d="M10.97 15.69v1.99c0 1.47-1.2 2.66-2.66 2.66H6.32c-1.46 0-2.66-1.19-2.66-2.66v-1.99c0-1.47 1.2-2.66 2.66-2.66h1.99c1.46 0 2.66 1.19 2.66 2.66m1.33-7.98h3.99v3.99m0-3.99-3.65 3.65"/></g>
       </symbol>
+      
+      <!-- Download icon -->
+      <symbol id="icon-download" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+          <path d="M12 3v13m0 0l-4-4m4 4l4-4M3 17v2a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-2"/>
+        </g>
+      </symbol>
+      
+      <!-- Share/Link icon -->
+      <symbol id="icon-link" viewBox="0 0 24 24">
+        <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+        </g>
+      </symbol>
     </defs>
   </svg>
 
@@ -159,8 +174,47 @@
         </svg>
       </button>
       
-      <div class="detail-image-container">
-        <img id="detailImage" alt="" />
+      <div class="detail-content">
+        <div class="detail-main">
+          <!-- Fixed-width image container -->
+          <div class="detail-image-container">
+            <img id="detailImage" alt="" />
+          </div>
+          
+          <!-- Action buttons beneath image -->
+          <div class="detail-actions">
+            <button class="detail-action-btn" id="detailLikeBtn" aria-label="Like">
+              <svg class="action-icon" width="20" height="20" aria-hidden="true">
+                <use href="#icon-heart-outline"></use>
+              </svg>
+            </button>
+            
+            <button class="detail-action-btn" id="detailDownloadBtn" aria-label="Download">
+              <svg class="action-icon" width="20" height="20" aria-hidden="true">
+                <use href="#icon-download"></use>
+              </svg>
+            </button>
+            
+            <button class="detail-action-btn" id="detailShareBtn" aria-label="Copy link">
+              <svg class="action-icon" width="20" height="20" aria-hidden="true">
+                <use href="#icon-link"></use>
+              </svg>
+            </button>
+          </div>
+          
+          <!-- Tags display (minimalistic) -->
+          <div class="detail-tags" id="detailTags">
+            <!-- Tags will be inserted here by JS -->
+          </div>
+        </div>
+        
+        <!-- Similar images section -->
+        <div class="detail-similar">
+          <h3 class="similar-title">Similar Images</h3>
+          <div class="similar-grid" id="similarGrid">
+            <!-- Similar images will be inserted here by JS -->
+          </div>
+        </div>
       </div>
     </div>
     <!-- === END IMAGE DETAIL PAGE === -->

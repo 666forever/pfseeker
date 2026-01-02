@@ -788,7 +788,7 @@ const detailBackBtn = document.getElementById('detailBackBtn');
 let savedScrollPosition = 0;
 let previousRoute = '/';
 
-// Show image detail page
+// === ENHANCED: Show image detail page with tags, actions, and similar images ===
 function showImageDetail(filename, type) {
   // Save current scroll position
   savedScrollPosition = window.scrollY;
@@ -808,6 +808,112 @@ function showImageDetail(filename, type) {
   
   // Prevent scrolling the gallery underneath
   document.body.style.overflow = 'hidden';
+  
+  // === Find image metadata ===
+  const imageList = type === 'pfp' ? pfpImages : bannerImages;
+  const imageData = imageList.find(img => img.file === filename);
+  const imageTags = imageData?.tags || [];
+  
+  // === Display tags (minimalistic) ===
+  const detailTagsContainer = document.getElementById('detailTags');
+  if (detailTagsContainer && imageTags.length > 0) {
+    detailTagsContainer.innerHTML = '';
+    imageTags.forEach(tag => {
+      const tagBtn = document.createElement('button');
+      tagBtn.className = 'detail-tag';
+      tagBtn.textContent = tag;
+      tagBtn.addEventListener('click', () => {
+        // Navigate back and filter by this tag
+        router.navigate(previousRoute);
+        setTimeout(() => {
+          filterByTag(tag.toLowerCase());
+        }, 100);
+      });
+      detailTagsContainer.appendChild(tagBtn);
+    });
+  } else if (detailTagsContainer) {
+    detailTagsContainer.innerHTML = '';
+  }
+  
+  // === Sync like button state ===
+  const detailLikeBtn = document.getElementById('detailLikeBtn');
+  const key = `${type}/${filename}`;
+  if (detailLikeBtn) {
+    const isLiked = likedImages.has(key);
+    detailLikeBtn.classList.toggle('liked', isLiked);
+    const useEl = detailLikeBtn.querySelector('.action-icon use');
+    if (useEl) {
+      useEl.setAttribute('href', isLiked ? '#icon-heart-filled' : '#icon-heart-outline');
+    }
+  }
+  
+  // === Load similar images (based on matching tags) ===
+  loadSimilarImages(imageTags, type, filename);
+}
+
+// === Load similar images based on shared tags ===
+function loadSimilarImages(tags, currentType, currentFilename) {
+  const similarGrid = document.getElementById('similarGrid');
+  if (!similarGrid) return;
+  
+  // Clear existing similar images
+  similarGrid.innerHTML = '';
+  
+  if (!tags || tags.length === 0) {
+    similarGrid.innerHTML = '<p style="color: var(--text-secondary); font-size: 14px;">No similar images found</p>';
+    return;
+  }
+  
+  // Get all images from both categories
+  const allImages = [
+    ...pfpImages.map(img => ({ ...img, type: 'pfp' })),
+    ...bannerImages.map(img => ({ ...img, type: 'banner' }))
+  ];
+  
+  // Filter images that share at least one tag
+  const similarImages = allImages
+    .filter(img => {
+      // Exclude the current image
+      if (img.type === currentType && img.file === currentFilename) return false;
+      
+      // Check if it shares any tags
+      if (!img.tags || img.tags.length === 0) return false;
+      return img.tags.some(tag => tags.includes(tag));
+    })
+    .map(img => {
+      // Count how many tags match
+      const matchCount = img.tags.filter(tag => tags.includes(tag)).length;
+      return { ...img, matchCount };
+    })
+    .sort((a, b) => b.matchCount - a.matchCount) // Sort by most matching tags
+    .slice(0, 12); // Show up to 12 similar images
+  
+  if (similarImages.length === 0) {
+    similarGrid.innerHTML = '<p style="color: var(--text-secondary); font-size: 14px;">No similar images found</p>';
+    return;
+  }
+  
+  // Render similar image cards
+  similarImages.forEach(img => {
+    const card = document.createElement('div');
+    card.className = 'similar-card';
+    card.dataset.type = img.type;
+    card.dataset.filename = img.file;
+    
+    const imgEl = document.createElement('img');
+    imgEl.src = `/${img.type}s/images/${img.file}`;
+    imgEl.alt = img.file;
+    imgEl.loading = 'lazy';
+    
+    card.appendChild(imgEl);
+    
+    // Click to navigate to that image's detail page
+    card.addEventListener('click', () => {
+      router.navigate(`/${img.type}s/${img.file}`);
+    });
+    
+    similarGrid.appendChild(card);
+  });
 }
 
 // Hide image detail page and return to gallery
@@ -830,6 +936,73 @@ function hideImageDetail() {
 detailBackBtn?.addEventListener('click', () => {
   // Navigate back to the saved previous route
   router.navigate(previousRoute);
+});
+
+// === ACTION BUTTON HANDLERS ===
+
+// Like button on detail page
+const detailLikeBtn = document.getElementById('detailLikeBtn');
+detailLikeBtn?.addEventListener('click', () => {
+  const filename = detailImage.alt;
+  const src = detailImage.src;
+  
+  // Determine type from src path
+  const type = src.includes('/pfps/') ? 'pfp' : 'banner';
+  
+  toggleLike(filename, type);
+  
+  // Update button state
+  const key = `${type}/${filename}`;
+  const isLiked = likedImages.has(key);
+  detailLikeBtn.classList.toggle('liked', isLiked);
+  
+  const useEl = detailLikeBtn.querySelector('.action-icon use');
+  if (useEl) {
+    useEl.setAttribute('href', isLiked ? '#icon-heart-filled' : '#icon-heart-outline');
+  }
+});
+
+// Download button on detail page
+const detailDownloadBtn = document.getElementById('detailDownloadBtn');
+detailDownloadBtn?.addEventListener('click', () => {
+  const filename = detailImage.alt;
+  const src = detailImage.src;
+  
+  // Create temporary link and trigger download
+  const link = document.createElement('a');
+  link.href = src;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+});
+
+// Share/Copy link button on detail page
+const detailShareBtn = document.getElementById('detailShareBtn');
+detailShareBtn?.addEventListener('click', async () => {
+  const currentURL = window.location.href;
+  
+  try {
+    await navigator.clipboard.writeText(currentURL);
+    
+    // Visual feedback: change icon briefly
+    const useEl = detailShareBtn.querySelector('.action-icon use');
+    if (useEl) {
+      // Temporarily show a check mark or change color
+      detailShareBtn.style.borderColor = 'var(--text-primary)';
+      detailShareBtn.style.color = 'var(--text-primary)';
+      
+      setTimeout(() => {
+        detailShareBtn.style.borderColor = '';
+        detailShareBtn.style.color = '';
+      }, 1000);
+    }
+  } catch (err) {
+    console.error('Failed to copy link:', err);
+    // Fallback: show alert
+    alert('Link copied to clipboard!');
+  }
 });
 
 /* =========================

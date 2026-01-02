@@ -792,10 +792,7 @@ body {
   background: var(--bg-base);
   z-index: 200;
   
-  display: flex;
-  align-items: center;
-  justify-content: flex-start; /* Move to left instead of center */
-  padding-left: 10%; /* Position at ~25% from left edge */
+  overflow-y: auto;
 }
 
 .image-detail-page.hidden {
@@ -803,9 +800,9 @@ body {
 }
 
 .detail-back-btn {
-  position: absolute;
+  position: fixed;
   top: 30px;
-  left: 30px;
+  left: calc(var(--sidebar-width) + 30px);
   
   width: 48px;
   height: 48px;
@@ -834,17 +831,203 @@ body {
   transform: scale(0.95);
 }
 
+.detail-content {
+  padding: 100px 40px 40px;
+  
+  display: flex;
+  gap: 60px;
+  
+  min-height: 100vh;
+}
+
+.detail-main {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Fixed-width image container */
 .detail-image-container {
-  max-width: 90vw;
-  max-height: 90vh;
+  width: 600px;
+  max-width: 100%;
+  
   display: flex;
   align-items: center;
   justify-content: center;
+  
+  background: var(--bg-elevated);
+  border-radius: 16px;
+  padding: 20px;
 }
 
 .detail-image-container img {
-  max-width: 100%;
-  max-height: 90vh;
+  width: 100%;
+  height: auto;
   border-radius: 12px;
-  object-fit: contain;
+  display: block;
+}
+
+/* Action buttons beneath image */
+.detail-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.detail-action-btn {
+  width: 44px;
+  height: 44px;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: 10px;
+  
+  color: var(--text-primary);
+  cursor: pointer;
+  
+  transition: all 0.2s ease;
+}
+
+.detail-action-btn:hover {
+  background: var(--interactive-hover);
+  border-color: var(--border-secondary);
+  transform: translateY(-2px);
+}
+
+.detail-action-btn:active {
+  transform: translateY(0);
+}
+
+.detail-action-btn.liked {
+  color: var(--accent-red);
+  border-color: var(--accent-red);
+}
+
+.action-icon {
+  display: block;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
+}
+
+.detail-action-btn:hover .action-icon {
+  opacity: 1;
+}
+
+/* Minimalistic tags display */
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 0;
+  justify-content: center;
+}
+
+.detail-tag {
+  padding: 6px 12px;
+  
+  background: none;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.detail-tag:hover {
+  border-color: var(--border-secondary);
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+/* Similar images section */
+.detail-similar {
+  flex: 1;
+  min-width: 0;
+}
+
+.similar-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 20px 0;
+}
+
+.similar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.similar-card {
+  position: relative;
+  background: var(--bg-elevated);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  aspect-ratio: 1; /* Square cards */
+  
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.similar-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+}
+
+.similar-card img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover; /* Fills card without distortion */
+  transition: opacity 0.2s ease;
+}
+
+.similar-card:hover img {
+  opacity: 0.9;
+}
+
+/* Responsive adjustments */
+@media (max-width: 1200px) {
+  .detail-content {
+    flex-direction: column;
+    gap: 40px;
+  }
+  
+  .detail-main {
+    align-items: center;
+  }
+  
+  .similar-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .detail-content {
+    padding: 80px 20px 20px;
+  }
+  
+  .detail-back-btn {
+    left: calc(var(--sidebar-width) + 20px);
+    top: 20px;
+  }
+  
+  .detail-image-container {
+    width: 100%;
+    padding: 15px;
+  }
+  
+  .similar-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
 }
