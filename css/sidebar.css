@@ -27,7 +27,7 @@
   flex-direction: column;
   align-items: center;
 
-  padding: 20px 0;
+  padding: 10px 0;
   gap: 24px;
 
   border-right: 1px solid var(--sidebar-border);
@@ -44,20 +44,41 @@
 }
 
 .sidebar-middle {
-  margin-top: 20px;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
   gap: 44px;
 }
 
-.logo-img {
-  height: 60px;
-  opacity: 1;
-  transition: opacity 0.25s ease;
+.logo-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  width: 50px;
+  height: 50px;
+  
+  background: #2a2a2a; /* Flat circle background color */
+  border-radius: 50%; /* Makes it circular */
+  overflow: hidden; /* Clips anything outside circle */
+  flex-shrink: 0; /* Prevent shrinking */
+  
+  color: #E85D5D;
+  transition: opacity 0.25s ease, background 0.25s ease;
 }
 
-.logo-img:hover {
-  opacity: 0.8;
+.logo-link:hover {
+  opacity: 0.9;
+  background: #1a1a1a; /* Slightly lighter on hover */
+}
+
+.logo-svg {
+  display: block;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0; /* Prevent shrinking */
+  margin: 0; /* No spacing */
+  padding: 0;
 }
 
 .nav-icon-btn {
