@@ -918,13 +918,42 @@ body {
   opacity: 1;
 }
 
-/* Minimalistic tags display */
+/* Minimalistic tags display - CONTAINED */
 .detail-tags {
+  max-width: 600px; /* Match image container width */
+  max-height: 80px; /* Limit to ~2-3 rows */
+  
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 12px 0;
-  justify-content: center;
+  padding: 12px;
+  
+  overflow-y: auto; /* Scroll if too many tags */
+  overflow-x: hidden; /* No horizontal scroll */
+  
+  background: var(--bg-elevated);
+  border-radius: 10px;
+  
+  /* Custom scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+}
+
+.detail-tags::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-tags::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.detail-tags::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 3px;
+}
+
+.detail-tags::-webkit-scrollbar-thumb:hover {
+  background: var(--border-secondary);
 }
 
 .detail-tag {
@@ -975,11 +1004,22 @@ body {
   cursor: pointer;
   aspect-ratio: 1; /* Square cards */
   
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  /* Fade-in animation - matches gallery cards */
+  opacity: 0;
+  transform: translateY(12px) scale(0.96);
+  transition:
+    opacity 0.4s ease,
+    transform 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.2s ease;
+}
+
+.similar-card.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
 .similar-card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-4px) scale(1);
   box-shadow: 0 8px 16px rgba(0,0,0,0.3);
 }
 
@@ -988,10 +1028,24 @@ body {
   height: 100%;
   display: block;
   object-fit: cover; /* Fills card without distortion */
-  transition: opacity 0.2s ease;
+  
+  /* Image fade-in */
+  opacity: 0;
+  transform: scale(0.985);
+  filter: blur(2px);
+  transition:
+    opacity 0.35s ease,
+    transform 0.35s ease,
+    filter 0.4s ease;
 }
 
-.similar-card:hover img {
+.similar-card img.loaded {
+  opacity: 1;
+  transform: scale(1);
+  filter: blur(0);
+}
+
+.similar-card:hover img.loaded {
   opacity: 0.9;
 }
 
@@ -1024,6 +1078,11 @@ body {
   .detail-image-container {
     width: 100%;
     padding: 15px;
+  }
+  
+  .detail-tags {
+    max-width: 100%; /* Full width on mobile */
+    max-height: 100px; /* Slightly taller on mobile */
   }
   
   .similar-grid {

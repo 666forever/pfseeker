@@ -894,7 +894,7 @@ function loadSimilarImages(tags, currentType, currentFilename) {
   }
   
   // Render similar image cards
-  similarImages.forEach(img => {
+  similarImages.forEach((img, index) => {
     const card = document.createElement('div');
     card.className = 'similar-card';
     card.dataset.type = img.type;
@@ -904,6 +904,18 @@ function loadSimilarImages(tags, currentType, currentFilename) {
     imgEl.src = `/${img.type}s/images/${img.file}`;
     imgEl.alt = img.file;
     imgEl.loading = 'lazy';
+    
+    // Add fade-in animation on load
+    imgEl.addEventListener('load', () => {
+      imgEl.classList.add('loaded');
+      card.classList.add('visible');
+    });
+    
+    // Stagger the card appearance
+    const delay = index * 35; // 35ms between each card
+    setTimeout(() => {
+      card.classList.add('visible');
+    }, delay);
     
     card.appendChild(imgEl);
     
