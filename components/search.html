@@ -1,0 +1,39 @@
+<div class="search-row">
+  <div class="search-bar">
+    <button class="filter-drawer-btn" id="filterDrawerBtn" aria-label="Filter">
+      <svg class="filter-drawer-icon" width="22" height="22" aria-hidden="true">
+        <use href="#icon-filterdrawer"></use>
+      </svg>
+    </button>
+    
+    <input type="search" placeholder="Search" id="searchInput" />
+    <button class="search-clear-btn hidden" id="searchClearBtn" aria-label="Clear search">
+      <svg class="search-clear-icon" width="20" height="20" aria-hidden="true">
+        <use href="#icon-xmark"></use>
+      </svg>
+    </button>
+    <svg class="search-icon" width="20" height="20" aria-hidden="true">
+      <use href="#icon-search"></use>
+    </svg>
+  </div>
+  
+  <!-- Filter Dropdown -->
+  <div class="filter-dropdown hidden" id="filterDropdown">
+    <div class="filter-dropdown-list">
+      <button class="filter-option active" data-tag="all">All</button>
+      <!-- Tag buttons will be generated here by JS -->
+    </div>
+  </div>
+
+  <!-- Search Results Panel -->
+  <div class="search-results-panel hidden" id="searchResultsPanel">
+    <div class="search-results-content">
+      <div class="search-section" id="tagsSection">
+        <h3 class="search-section-title">Suggested Tags</h3>
+        <div class="search-tags-list" id="searchTagsList">
+          <!-- Tag items will be dynamically inserted here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

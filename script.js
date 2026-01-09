@@ -1320,3 +1320,17 @@ router.addRoute('/banners/:filename', (params) => {
 
 // Initialize router - it will automatically load the current route
 router.init();
+
+/* =========================
+   SEARCH EVENT LISTENER (for mobile search)
+========================= */
+// Expose filterByTag globally so mobile search can use it
+window.filterByTag = filterByTag;
+
+// Listen for search events from mobile/desktop search
+document.addEventListener('pfseeker-search', (e) => {
+  const query = e.detail.query;
+  if (query) {
+    executeSearch(query);
+  }
+});

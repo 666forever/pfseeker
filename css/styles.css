@@ -664,6 +664,110 @@ body {
 }
 
 /* ===========================
+   MOBILE SEARCH OVERLAY
+=========================== */
+
+/* Mobile search overlay (full-width panel) */
+.mobile-search-overlay {
+  display: none; /* Hidden by default (desktop) */
+  position: fixed;
+  top: 64px; /* Below mobile navbar */
+  left: 0;
+  right: 0;
+  z-index: 998;
+  
+  background: var(--bg-base);
+  border-bottom: 1px solid var(--border-subtle);
+  
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.mobile-search-overlay.hidden {
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+
+.mobile-search-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+}
+
+.mobile-search-input {
+  flex: 1;
+  height: 48px;
+  padding: 12px 20px;
+  
+  background: var(--bg-overlay);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  
+  color: var(--text-primary);
+  font-size: 16px;
+  font-weight: 500;
+  
+  outline: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.mobile-search-input::placeholder {
+  color: var(--text-disabled);
+}
+
+.mobile-search-input:focus {
+  background: var(--bg-active);
+  border-color: var(--interactive-focus);
+}
+
+.mobile-search-close {
+  width: 48px;
+  height: 48px;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  background: var(--bg-elevated);
+  border: none;
+  border-radius: 10px;
+  
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mobile-search-close:hover {
+  background: var(--interactive-hover);
+  transform: scale(1.05);
+}
+
+.mobile-search-close:active {
+  transform: scale(0.95);
+}
+
+.mobile-search-close img {
+  width: 22px;
+  height: 22px;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+
+/* Mobile: Show mobile search overlay, hide desktop search */
+@media (max-width: 768px) {
+  .mobile-search-overlay {
+    display: block;
+  }
+  
+  /* Hide desktop search bar */
+  .search-row {
+    display: none !important;
+  }
+}
+
+/* ===========================
    ACTIVE NAVIGATION STATE
 =========================== */
 
@@ -1104,5 +1208,39 @@ body {
   .similar-grid {
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
     gap: 12px;
+  }
+}
+
+/* ===========================
+   MOBILE: Limit card heights to 1:1 and 4:3 only
+=========================== */
+
+@media (max-width: 768px) {
+  /* PFP cards on mobile - only 1:1 and 4:3 */
+  .card.pfp.size-small img,
+  .card.pfp.size-medium img {
+    height: auto;
+    aspect-ratio: 1 / 1; /* Square */
+    object-fit: cover;
+  }
+  
+  .card.pfp.size-large img {
+    height: auto;
+    aspect-ratio: 4 / 3; /* 4:3 landscape */
+    object-fit: cover;
+  }
+  
+  /* Banner cards on mobile - only 1:1 and 4:3 */
+  .card.banner.size-small img,
+  .card.banner.size-medium img {
+    height: auto;
+    aspect-ratio: 1 / 1; /* Square */
+    object-fit: cover;
+  }
+  
+  .card.banner.size-large img {
+    height: auto;
+    aspect-ratio: 4:3; /* 4:3 landscape */
+    object-fit: cover;
   }
 }
