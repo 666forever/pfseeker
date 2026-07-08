@@ -49,7 +49,7 @@ const currentUser = publicShell ? await getOptionalUser(Astro) : null;
     <link rel="canonical" href={canonical} />
     <title>{pageTitle}</title>
   </head>
-  <body>
+  <body data-authenticated={currentUser ? "true" : "false"}>
     <a class="skip-link" href="#content">Skip to content</a>
     <div class="site-shell">
       {publicShell && <SiteHeader currentUser={currentUser} />}

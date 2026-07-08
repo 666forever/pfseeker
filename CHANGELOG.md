@@ -56,3 +56,6 @@
 - Updated FAQ, Privacy, database, server architecture, migration, audit, and implementation-plan docs for Phase 10 authentication.
 - Recorded Phase 10 production verification for Cloudflare Pages SSR, Discord OAuth callback, `/account`, session persistence, and logout.
 - Documented the deployed Pages advanced-mode `_worker.js` compatibility layer, `pages_build_output_dir = "./dist/client"`, and Node `24.16.0` Cloudflare build pin.
+- Added Phase 11 authenticated multiple collections with private D1 collections, collection items, owner-scoped repository methods, authenticated mutation endpoints, signed-out save prompts, and collection detail management.
+- Removed production use of anonymous localStorage collection behavior and documented the no-import product decision.
+- Applied `0003_synced_collections.sql` locally, to preview, and to production with repeat migration checks showing no pending migrations.

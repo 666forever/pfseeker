@@ -1808,6 +1808,22 @@ select {
   list-style: none;
 }
 
+.collection-list--summaries .collection-item {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.collection-picker [data-collection-picker-list] {
+  display: grid;
+  gap: var(--space-2);
+  margin-block: var(--space-4);
+}
+
+.collection-picker__row {
+  width: 100%;
+  justify-content: flex-start;
+  text-align: left;
+}
+
 .collection-item {
   display: grid;
   grid-template-columns: 8rem minmax(0, 1fr) auto;

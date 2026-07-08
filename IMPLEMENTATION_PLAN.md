@@ -237,7 +237,7 @@ Goal: Add secure account identity.
 
 Dependencies: Phase 9.
 
-Status: Complete for open Discord identity and D1-backed sessions, including production verification on 2026-07-08. Phase 11 has not started and must not begin until explicitly requested.
+Status: Complete for open Discord identity and D1-backed sessions, including production verification on 2026-07-08.
 
 Work:
 
@@ -257,17 +257,33 @@ Completion criteria:
 - Tests cover OAuth state and session helpers. Completed through auth utility tests, migration shape tests, controlled local D1 session smoke checks, and route smoke checks.
 - Cloudflare Pages SSR deployment works in production through the Pages advanced-mode `_worker.js` compatibility layer from commit `f41c81a9`.
 
-## Phase 11: Synced Accounts and Collections
+## Phase 11: Authenticated Multiple Collections
 
-Goal: Let authenticated users persist and manage collections.
+Goal: Let authenticated users create and manage multiple private collections synced through D1.
 
 Dependencies: Phases 7 and 10.
 
+Status: Implemented on feature branch `phase-11-synced-collections` pending Cloudflare preview deployment verification. Phase 12 has not started.
+
+Work:
+
+- Remove production use of anonymous localStorage collection state. Completed in source by replacing `pfseeker.collection.v1` runtime code.
+- Add D1 schema for `collections` and `collection_items`. Completed in `migrations/0003_synced_collections.sql`.
+- Add server-only collection repository. Completed in `src/server/repositories/collections.ts`.
+- Add authenticated collection mutation endpoints with same-origin mutation checks. Completed under `src/pages/api/collections/`.
+- Replace `/collections` with authenticated list and detail routes. Completed.
+- Add multi-collection save picker for gallery cards and asset detail pages. Completed.
+- Keep collections private only. Public publishing is deferred.
+- Adapt ZIP downloads for owner-only collection detail pages using server-resolved asset metadata. Completed.
+
 Completion criteria:
 
-- Anonymous collection sync uses explicit conflict handling.
-- Users can create, edit, reorder, publish, and delete collections.
-- Authorization is enforced server-side.
+- Signed-out users are prompted to sign in and return to the originating page before saving.
+- Signed-in users can create multiple named private collections, add/remove assets, rename, reorder, delete, and download ZIPs.
+- Ownership is enforced server-side on every mutation.
+- Local, preview, and production D1 migrations are applied and repeated with no pending migrations. Completed on 2026-07-08.
+- No anonymous collection import is retained by product decision.
+- Public publishing remains deferred and no nonfunctional toggle is shown.
 
 ## Phase 12: Signed Submissions
 

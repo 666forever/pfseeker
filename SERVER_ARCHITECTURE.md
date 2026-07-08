@@ -18,11 +18,19 @@ Authentication also flows through server-only modules:
 - `src/server/auth/*` owns Discord OAuth, state hashing, session hashing, cookie handling, redirect validation, and current-user helpers.
 - Pages and endpoints call these helpers instead of issuing raw auth SQL.
 
+Authenticated collections flow through server-only modules:
+
+- `src/server/repositories/collections.ts` owns collection and collection-item SQL.
+- `src/server/services/collection-api.ts` centralizes authenticated repository access, same-origin mutation checks, request body validation, and JSON error responses.
+- Pages and endpoints derive the owner from `requireUser`; clients never provide owner IDs.
+
 ## Current repository behavior
 
 The D1 repository reads published assets, categories, and tags from D1 and maps rows into the same public asset shape used by seed data. Search and taxonomy filters still run through `src/lib/search.ts`, preserving Phase 8 URL behavior.
 
 This is acceptable for the current seed-scale dataset. Later phases can push search into SQL or a dedicated search system if needed, but the URL contract and matching behavior must stay compatible.
+
+The collection repository lists owned collections, reads one owned collection, creates, renames, deletes, adds assets, removes assets, and reorders items. Collection names are validated centrally, duplicate names are allowed, and visibility is private-only in Phase 11.
 
 ## Endpoint foundation
 
@@ -72,9 +80,23 @@ Arbitrary Pages preview URLs are not registered Discord callbacks. Local OAuth u
 
 Production OAuth was manually verified on 2026-07-08: sign-in opens Discord identity access, callback completes, `/account` renders for the authenticated user, refresh preserves the session, and POST logout returns the user to signed-out state. Arbitrary preview OAuth remains intentionally unsupported until a stable preview callback is registered.
 
+## Collection routes
+
+Phase 11 adds authenticated private collection behavior:
+
+- `/collections` requires sign-in and lists the current user's collections.
+- `/collections/[collectionId]` requires sign-in and returns 404 for missing or non-owned collections.
+- `/api/collections` lists and creates owned collections.
+- `/api/collections/[collectionId]` renames or deletes an owned collection.
+- `/api/collections/[collectionId]/items/[assetId]` adds or removes an existing asset.
+- `/api/collections/[collectionId]/reorder` persists a complete ordered asset ID list.
+
+JSON/API mutations return `401` when signed out. HTML collection routes redirect to `/auth/discord` with a safe return path. Mutation endpoints validate content type, body size, Origin/Referer, names, asset existence, and ownership before writing. Public collection publishing is deferred.
+
 ## Security notes
 
 - No secrets are read by browser code.
 - No user identity, IP address, or user agent is stored in Phase 9 download events.
 - Phase 10 auth secrets remain server-only, OAuth state is single-use, session tokens are stored as hashes in D1, redirects are allowlisted, and logout revokes server-side state.
-- Future authenticated and abuse-prone endpoints need rate limiting, broader CSRF protection where applicable, and server-side authorization.
+- Phase 11 collection mutations require active sessions, validate same-origin Origin/Referer, and enforce server-side ownership.
+- Future authenticated and abuse-prone endpoints need rate limiting and broader Phase 16 hardening.

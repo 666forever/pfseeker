@@ -2,6 +2,8 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { discordAvatarUrl } from "@/server/auth/discord";
 import { getOptionalUser } from "@/server/auth/session";
+import { getD1DatabaseAsync } from "@/server/db/d1";
+import { CollectionRepository } from "@/server/repositories/collections";
 
 const currentUser = await getOptionalUser(Astro);
 
@@ -13,6 +15,12 @@ if (!currentUser) {
 }
 
 const { user } = currentUser;
+const collectionRepository = new CollectionRepository(
+  await getD1DatabaseAsync(Astro.locals),
+);
+const collectionCount = await collectionRepository.countOwnedCollections(
+  user.id,
+);
 const displayName = user.globalName || user.username;
 const avatar = discordAvatarUrl(user);
 const dateFormatter = new Intl.DateTimeFormat("en", {
@@ -73,6 +81,18 @@ const lastLoginAt = dateFormatter.format(new Date(user.lastLoginAt));
           <dt>Session</dt>
           <dd>
             Stored as an opaque HTTP-only cookie and a hashed D1 session record.
+          </dd>
+        </div>
+        <div>
+          <dt>Collections</dt>
+          <dd>
+            <a href="/collections">
+              {
+                collectionCount === 1
+                  ? "1 private synced collection"
+                  : `${collectionCount} private synced collections`
+              }
+            </a>
           </dd>
         </div>
       </dl>

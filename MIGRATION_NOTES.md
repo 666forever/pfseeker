@@ -87,7 +87,7 @@ The following will be needed before production content migration can happen:
 5. Add a small original seed manifest to validate pages and UI. Completed with generated local development media.
 6. Build read-only public discovery. Completed for seed PFPs, banners, icons, categories, search, and sorting.
 7. Add crawlable asset detail pages for every seed asset. Completed.
-8. Add local collections and downloads. Completed for anonymous browser-local seed collections.
+8. Add local collections and downloads. Phase 7 completed anonymous browser-local seed collections; Phase 11 replaces production collection behavior with authenticated D1-backed private collections.
 9. Expand search and taxonomy filtering. Completed for server-rendered seed-data search.
 10. Introduce D1 and server behavior. Completed for Phase 9: local, preview, and production D1 bindings are configured as `DB`; preview is seeded with development seed media; production schema is migrated and intentionally unseeded.
 11. Add Discord auth and D1-backed sessions. Completed for Phase 10 with open ordinary-user sign-in.
@@ -101,11 +101,12 @@ The following will be needed before production content migration can happen:
 - Asset slugs require collision handling and redirects if changed later.
 - Download counts and leaderboards need clear aggregation rules.
 - Anonymous collections must not be automatically trusted as authenticated data.
-- Phase 7 local collections store only browser-local ordered seed asset IDs; later account sync needs explicit conflict handling and server-side validation.
+- Phase 11 removes production use of the Phase 7 local collection store. No anonymous collection import is retained because the production site was recently launched and product policy does not require preserving local anonymous collection data.
+- Phase 11 private collections store owned collection names and ordered asset IDs in D1. Ownership is derived from the authenticated session on every mutation.
 - Phase 8 seed-data search defines the URL contract and filtering semantics; later D1-backed search should preserve canonicalization, category compatibility, tag normalization, and truthful sort behavior.
 - Phase 9 preserves that URL contract by applying the same search/filter functions to D1 repository results while the dataset is small. If filtering moves into SQL later, it must preserve the same canonical URL and matching semantics.
 - The `downloads` table stores event rows, not fake aggregate counts. Public counts and leaderboards should be derived only from real events.
-- Phase 10 `users`, `sessions`, and `oauth_states` support identity and session state only. They do not include guild membership, Discord roles, bot behavior, email, passwords, synced collections, submissions, reports, or admin flags.
+- Phase 10 `users`, `sessions`, and `oauth_states` support identity and session state only. Phase 11 adds private synced collections and collection items. They do not include guild membership, Discord roles, bot behavior, email, passwords, submissions, reports, public publishing, or admin flags.
 - Discord access tokens and refresh tokens are not stored. Only the local opaque session token hash is persisted.
 - Arbitrary Cloudflare preview URLs are not registered Discord callbacks; stable preview OAuth needs its own registered redirect before it can be enabled.
 - Submission metadata must be validated before publishing.
@@ -117,7 +118,7 @@ The following will be needed before production content migration can happen:
 - `www.pfseeker.com` should redirect to the canonical host.
 - Placeholder routes should not be published.
 - Account, submission, and admin routes should not appear as working surfaces until server-side behavior and authorization exist.
-- `/account` now appears as a working authenticated identity surface only. It does not imply synced collections, uploads, creator status, moderation, or admin behavior.
+- `/account` now appears as a working authenticated identity surface with a truthful private collection count. It does not imply uploads, creator status, moderation, or admin behavior.
 
 ## Asset migration risks
 
@@ -179,4 +180,4 @@ The assessed website should remain a checklist of product capabilities and imple
 - The Cloudflare adapter's generated `SESSION` KV binding remains unused by pfseeker in Phase 10.
 - Production OAuth was manually verified on `https://pfseeker.com` on 2026-07-08, including sign-in, callback, `/account`, refresh persistence, and logout.
 - Production SSR is deployed on Cloudflare Pages through the advanced-mode `_worker.js` compatibility layer from commit `f41c81a9`; arbitrary preview OAuth remains intentionally unsupported because no arbitrary preview callback is registered.
-- Phase 10 is complete. Phase 11 has not started.
+- Phase 11 authenticated multiple collections are implemented pending Cloudflare preview deployment verification. Phase 12 has not started.

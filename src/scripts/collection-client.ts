@@ -1,276 +1,260 @@
-import { seedAssets, type SeedAsset } from "@/data/assets";
-import {
-  buildSeedImageDescriptor,
-  getAssetRoute,
-  galleryKindConfigs,
-} from "@/data/discovery";
-import {
-  addAsset,
-  clearCollection,
-  collectionCount,
-  COLLECTION_STORAGE_KEY,
-  defaultCollectionState,
-  loadCollection,
-  moveAsset,
-  removeAsset,
-  renameCollection,
-  resolveCollectionItems,
-  saveCollection,
-  type CollectionState,
-  type StorageLike,
-} from "@/lib/collection";
+import type { SeedAsset } from "@/data/assets";
 import { createCollectionZip, type ZipProgress } from "@/lib/collection-zip";
 
-const assetsById = new Map(seedAssets.map((asset) => [asset.id, asset]));
+interface CollectionSummary {
+  id: string;
+  name: string;
+  itemCount: number;
+  visibility: "private";
+}
+
+interface CollectionListResponse {
+  collections: CollectionSummary[];
+  containing: string[];
+}
+
+type AssetForZip = SeedAsset;
+
+const isAuthenticated = document.body.dataset.authenticated === "true";
 const liveRegion = document.createElement("div");
 liveRegion.className = "visually-hidden";
 liveRegion.setAttribute("role", "status");
 liveRegion.setAttribute("aria-live", "polite");
 document.body.append(liveRegion);
 
-let storage: StorageLike | undefined;
-let storageWarning = "";
-let state = defaultCollectionState();
+let activeAssetId = "";
+let activeAssetTitle = "";
+let pickerDialog: HTMLDialogElement | null = null;
 let activeZipController: AbortController | undefined;
 
 function announce(message: string): void {
   liveRegion.textContent = message;
 }
 
-function getStorage(): StorageLike | undefined {
-  try {
-    const testKey = `${COLLECTION_STORAGE_KEY}.test`;
-    window.localStorage.setItem(testKey, "1");
-    window.localStorage.removeItem(testKey);
-    return window.localStorage;
-  } catch {
-    storageWarning =
-      "Browser storage is unavailable. Collection changes will work for this page view only.";
-    return undefined;
+function sameOriginHeaders(): HeadersInit {
+  return {
+    "content-type": "application/json",
+  };
+}
+
+function currentReturnPath(): string {
+  return `${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
+function signInHref(): string {
+  return `/auth/discord?returnTo=${encodeURIComponent(currentReturnPath())}`;
+}
+
+function ensurePickerDialog(): HTMLDialogElement {
+  if (pickerDialog) return pickerDialog;
+
+  const dialog = document.createElement("dialog");
+  dialog.className = "dialog collection-picker";
+  dialog.setAttribute("data-overlay", "");
+  dialog.innerHTML = `
+    <div class="dialog__panel">
+      <header class="dialog__header">
+        <div>
+          <h2 id="collection-picker-title">Save to collections</h2>
+          <p data-collection-picker-description></p>
+        </div>
+        <button class="icon-button" type="button" data-dialog-close aria-label="Close dialog">x</button>
+      </header>
+      <div class="dialog__body">
+        <div data-collection-picker-status role="status" aria-live="polite"></div>
+        <div data-collection-picker-list></div>
+        <form class="collection-rename" data-collection-picker-create>
+          <label for="collection-picker-name">New collection</label>
+          <input id="collection-picker-name" name="name" maxlength="80" autocomplete="off" />
+          <button class="button button--secondary button--md" type="submit">Create</button>
+        </form>
+        <div class="dialog-actions">
+          <a class="button button--secondary button--md" data-collection-picker-signin href="/auth/discord">Sign in with Discord</a>
+          <button class="button button--ghost button--md" type="button" data-dialog-close>Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.append(dialog);
+  pickerDialog = dialog;
+  return dialog;
+}
+
+function closeDialog(dialog: HTMLDialogElement): void {
+  dialog.close();
+  dialog.removeAttribute("data-open");
+  document.documentElement.removeAttribute("data-overlay-lock");
+}
+
+function openDialog(dialog: HTMLDialogElement): void {
+  if (!dialog.open) dialog.showModal();
+  dialog.setAttribute("data-open", "true");
+  document.documentElement.dataset.overlayLock = "true";
+  dialog
+    .querySelector<HTMLElement>("[data-autofocus], button, a, input")
+    ?.focus();
+}
+
+async function loadCollections(
+  assetId: string,
+): Promise<CollectionListResponse> {
+  const response = await fetch(
+    `/api/collections?assetId=${encodeURIComponent(assetId)}`,
+    {
+      headers: { accept: "application/json" },
+    },
+  );
+  if (!response.ok) throw new Error("Collections could not be loaded.");
+  return (await response.json()) as CollectionListResponse;
+}
+
+async function mutateCollection(
+  url: string,
+  method: "POST" | "DELETE",
+): Promise<void> {
+  const response = await fetch(url, {
+    method,
+    headers: sameOriginHeaders(),
+    body: method === "POST" ? "{}" : undefined,
+  });
+  if (!response.ok) throw new Error("Collection could not be updated.");
+}
+
+function renderSignedOutPrompt(dialog: HTMLDialogElement): void {
+  dialog
+    .querySelector<HTMLElement>("[data-collection-picker-list]")
+    ?.replaceChildren();
+  const status = dialog.querySelector<HTMLElement>(
+    "[data-collection-picker-status]",
+  );
+  const description = dialog.querySelector<HTMLElement>(
+    "[data-collection-picker-description]",
+  );
+  const createForm = dialog.querySelector<HTMLFormElement>(
+    "[data-collection-picker-create]",
+  );
+  const signIn = dialog.querySelector<HTMLAnchorElement>(
+    "[data-collection-picker-signin]",
+  );
+
+  if (description) {
+    description.textContent = activeAssetTitle
+      ? `Sign in to save ${activeAssetTitle} into private synced collections.`
+      : "Sign in to save assets into private synced collections.";
+  }
+  if (status) {
+    status.textContent =
+      "Anonymous browsing and downloads stay available, but saving requires Discord sign-in.";
+  }
+  if (createForm) createForm.hidden = true;
+  if (signIn) {
+    signIn.hidden = false;
+    signIn.href = signInHref();
   }
 }
 
-function persist(nextState: CollectionState, message?: string): void {
-  state = nextState;
-
-  if (storage) {
-    try {
-      saveCollection(storage, state);
-    } catch {
-      storageWarning =
-        "Collection changes could not be saved. Your browser may be out of storage space.";
-    }
-  }
-
-  render();
-  document.dispatchEvent(new CustomEvent("pfseeker:collection-change"));
-
-  if (message) {
-    announce(message);
-  }
-}
-
-function createButton(label: string, disabled = false): HTMLButtonElement {
+function collectionButton(
+  collection: CollectionSummary,
+  containsAsset: boolean,
+): HTMLButtonElement {
   const button = document.createElement("button");
-  button.className = "button button--ghost button--sm";
   button.type = "button";
-  button.textContent = label;
-  button.disabled = disabled;
+  button.className = "button button--ghost button--md collection-picker__row";
+  button.dataset.collectionId = collection.id;
+  button.dataset.collectionAction = containsAsset ? "remove" : "add";
+  button.textContent = `${containsAsset ? "Remove from" : "Add to"} ${collection.name} (${collection.itemCount})`;
   return button;
 }
 
-function assetKindLabel(asset: SeedAsset): string {
-  return galleryKindConfigs[asset.kind].singularLabel;
-}
-
-function renderToggle(button: HTMLButtonElement): void {
-  const assetId = button.dataset.assetId ?? "";
-  const asset = assetsById.get(assetId);
-  const saved = state.assetIds.includes(assetId);
-
-  button.disabled = !asset;
-  button.textContent = saved ? "Remove from collection" : "Add to collection";
-  button.setAttribute("aria-pressed", String(saved));
-  button.setAttribute(
-    "aria-label",
-    asset
-      ? `${saved ? "Remove" : "Add"} ${asset.title} ${saved ? "from" : "to"} collection`
-      : "Collection action unavailable",
+function renderPicker(
+  dialog: HTMLDialogElement,
+  response: CollectionListResponse,
+): void {
+  const description = dialog.querySelector<HTMLElement>(
+    "[data-collection-picker-description]",
   );
+  const status = dialog.querySelector<HTMLElement>(
+    "[data-collection-picker-status]",
+  );
+  const list = dialog.querySelector<HTMLElement>(
+    "[data-collection-picker-list]",
+  );
+  const createForm = dialog.querySelector<HTMLFormElement>(
+    "[data-collection-picker-create]",
+  );
+  const signIn = dialog.querySelector<HTMLAnchorElement>(
+    "[data-collection-picker-signin]",
+  );
+  const containing = new Set(response.containing);
+
+  if (description) {
+    description.textContent = `Choose where to save ${activeAssetTitle || "this asset"}.`;
+  }
+  if (status) {
+    status.textContent =
+      response.collections.length === 0
+        ? "Create a collection to save this asset."
+        : "Existing collections loaded.";
+  }
+  if (createForm) createForm.hidden = false;
+  if (signIn) signIn.hidden = true;
+  if (!list) return;
+
+  list.replaceChildren();
+  response.collections.forEach((collection) => {
+    list.append(collectionButton(collection, containing.has(collection.id)));
+  });
 }
 
-function renderHeaderCount(): void {
-  const count = collectionCount(state);
-  document
-    .querySelectorAll<HTMLElement>("[data-collection-count]")
-    .forEach((node) => {
-      node.textContent = String(count);
-      node.setAttribute(
-        "aria-label",
-        count === 1 ? "1 saved asset" : `${count} saved assets`,
-      );
-    });
-}
+async function openSavePicker(button: HTMLButtonElement): Promise<void> {
+  activeAssetId = button.dataset.assetId ?? "";
+  activeAssetTitle = button.dataset.assetTitle ?? "";
+  const dialog = ensurePickerDialog();
 
-function renderWarning(): void {
-  document
-    .querySelectorAll<HTMLElement>("[data-collection-storage-warning]")
-    .forEach((node) => {
-      node.hidden = !storageWarning;
-      node.textContent = storageWarning;
-    });
-}
-
-function renderCollectionPage(): void {
-  const page = document.querySelector<HTMLElement>("[data-collection-page]");
-  if (!page) {
+  if (!isAuthenticated) {
+    renderSignedOutPrompt(dialog);
+    openDialog(dialog);
+    announce("Sign in to save assets into synced collections.");
     return;
   }
 
-  const input = page.querySelector<HTMLInputElement>(
-    "[data-collection-name-input]",
+  const status = dialog.querySelector<HTMLElement>(
+    "[data-collection-picker-status]",
   );
-  const count = page.querySelector<HTMLElement>("[data-collection-page-count]");
-  const list = page.querySelector<HTMLOListElement>("[data-collection-list]");
-  const empty = page.querySelector<HTMLElement>("[data-collection-empty]");
-  const clearOpen = page.querySelector<HTMLButtonElement>(
-    "[data-collection-clear-open]",
-  );
-  const download = page.querySelector<HTMLButtonElement>(
-    "[data-collection-download]",
-  );
-  const missingPanel = page.querySelector<HTMLElement>(
-    "[data-collection-missing]",
-  );
-  const missingList = page.querySelector<HTMLUListElement>(
-    "[data-collection-missing-list]",
-  );
-
-  if (input && document.activeElement !== input) {
-    input.value = state.name;
-  }
-
-  const resolved = resolveCollectionItems(state);
-  const available = resolved.filter((item) => item.asset);
-  const missing = resolved.filter((item) => item.missing);
-
-  if (count) {
-    count.textContent =
-      state.assetIds.length === 1
-        ? "1 saved item in this browser."
-        : `${state.assetIds.length} saved items in this browser.`;
-  }
-
-  if (empty) {
-    empty.hidden = state.assetIds.length > 0;
-  }
-
-  if (clearOpen) {
-    clearOpen.disabled = state.assetIds.length === 0;
-  }
-
-  if (download) {
-    download.disabled = available.length === 0 || !!activeZipController;
-  }
-
-  if (list) {
-    list.replaceChildren();
-    available.forEach(({ asset }, index) => {
-      if (!asset) {
-        return;
-      }
-
-      const image = buildSeedImageDescriptor(asset);
-      const item = document.createElement("li");
-      item.className = "collection-item";
-
-      const preview = document.createElement("a");
-      preview.className = "collection-item__preview";
-      preview.href = getAssetRoute(asset);
-      preview.setAttribute("aria-label", `Open ${asset.title}`);
-      preview.style.aspectRatio = image.aspectRatio;
-
-      const img = document.createElement("img");
-      img.src = image.src;
-      img.alt = image.alt;
-      img.width = image.width;
-      img.height = image.height;
-      img.loading = "lazy";
-      preview.append(img);
-
-      const body = document.createElement("div");
-      body.className = "collection-item__body";
-
-      const title = document.createElement("h3");
-      title.textContent = asset.title;
-      const meta = document.createElement("p");
-      meta.textContent = `${assetKindLabel(asset)} / ${asset.width} x ${asset.height} / ${asset.format.toUpperCase()}`;
-      body.append(title, meta);
-
-      const controls = document.createElement("div");
-      controls.className = "collection-item__controls";
-      const up = createButton("Move up", index === 0);
-      up.dataset.collectionMove = "up";
-      up.dataset.assetId = asset.id;
-      up.setAttribute("aria-label", `Move ${asset.title} up`);
-      const down = createButton("Move down", index === available.length - 1);
-      down.dataset.collectionMove = "down";
-      down.dataset.assetId = asset.id;
-      down.setAttribute("aria-label", `Move ${asset.title} down`);
-      const remove = createButton("Remove");
-      remove.dataset.collectionRemove = asset.id;
-      remove.setAttribute(
-        "aria-label",
-        `Remove ${asset.title} from collection`,
-      );
-      controls.append(up, down, remove);
-
-      item.append(preview, body, controls);
-      list.append(item);
-    });
-  }
-
-  if (missingPanel && missingList) {
-    missingPanel.hidden = missing.length === 0;
-    missingList.replaceChildren();
-    missing.forEach((item) => {
-      const li = document.createElement("li");
-      const span = document.createElement("span");
-      span.textContent = item.id;
-      const button = createButton("Remove missing item");
-      button.dataset.collectionRemove = item.id;
-      li.append(span, button);
-      missingList.append(li);
-    });
-  }
-}
-
-function render(): void {
-  document
-    .querySelectorAll<HTMLButtonElement>("[data-collection-toggle]")
-    .forEach(renderToggle);
-  renderHeaderCount();
-  renderWarning();
-  renderCollectionPage();
-}
-
-function initializeState(): void {
-  storage = getStorage();
-
-  if (!storage) {
-    state = defaultCollectionState();
-    return;
-  }
+  if (status) status.textContent = "Loading collections.";
+  openDialog(dialog);
 
   try {
-    const result = loadCollection(storage);
-    state = result.state;
-    storageWarning = result.warning ?? "";
+    renderPicker(dialog, await loadCollections(activeAssetId));
   } catch {
-    state = defaultCollectionState();
-    storageWarning =
-      "Collection storage could not be read. A clean local collection is active until you save again.";
+    if (status) status.textContent = "Collections could not be loaded.";
+    announce("Collections could not be loaded.");
   }
+}
+
+async function refreshPicker(message: string): Promise<void> {
+  if (!pickerDialog || !activeAssetId) return;
+  renderPicker(pickerDialog, await loadCollections(activeAssetId));
+  announce(message);
+}
+
+async function createCollection(form: HTMLFormElement): Promise<void> {
+  const formData = new FormData(form);
+  const name = String(formData.get("name") ?? "");
+  const response = await fetch("/api/collections", {
+    method: "POST",
+    headers: sameOriginHeaders(),
+    body: JSON.stringify({ name }),
+  });
+  if (!response.ok) throw new Error("Collection could not be created.");
+  form.reset();
+  await refreshPicker("Collection created.");
+}
+
+function readZipAssets(): AssetForZip[] {
+  const source = document.getElementById("collection-zip-assets");
+  if (!source?.textContent) return [];
+  return JSON.parse(source.textContent) as AssetForZip[];
 }
 
 async function runZipDownload(): Promise<void> {
@@ -286,15 +270,15 @@ async function runZipDownload(): Promise<void> {
   const download = document.querySelector<HTMLButtonElement>(
     "[data-collection-download]",
   );
-  const assets = resolveCollectionItems(state)
-    .map((item) => item.asset)
-    .filter((asset): asset is SeedAsset => asset !== undefined);
+  const detail = document.querySelector<HTMLElement>(
+    "[data-collection-detail]",
+  );
+  const assets = readZipAssets();
 
   if (assets.length === 0) {
     announce("There are no available assets to download.");
-    if (status) {
+    if (status)
       status.textContent = "There are no available assets to download.";
-    }
     return;
   }
 
@@ -302,7 +286,7 @@ async function runZipDownload(): Promise<void> {
   panel?.removeAttribute("hidden");
   cancel?.removeAttribute("hidden");
   if (download) download.disabled = true;
-  if (failures) failures.replaceChildren();
+  failures?.replaceChildren();
 
   const onProgress = (next: ZipProgress) => {
     if (status) status.textContent = next.message;
@@ -321,21 +305,18 @@ async function runZipDownload(): Promise<void> {
   activeZipController = undefined;
   cancel?.setAttribute("hidden", "");
   if (download) download.disabled = false;
-
-  if (failures) {
-    failures.replaceChildren();
-    result.failures.forEach((failure) => {
-      const li = document.createElement("li");
-      li.textContent = `${failure.title}: ${failure.reason}`;
-      failures.append(li);
-    });
-  }
+  failures?.replaceChildren();
+  result.failures.forEach((failure) => {
+    const li = document.createElement("li");
+    li.textContent = `${failure.title}: ${failure.reason}`;
+    failures?.append(li);
+  });
 
   if (result.blob) {
     const url = URL.createObjectURL(result.blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "pfseeker-local-collection.zip";
+    link.download = detail?.dataset.zipFilename ?? "pfseeker-collection.zip";
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -350,61 +331,124 @@ async function runZipDownload(): Promise<void> {
           : "Collection ZIP could not be created.";
   if (status) status.textContent = finalMessage;
   announce(finalMessage);
-  render();
 }
 
-initializeState();
-render();
+async function reorderFromButton(button: HTMLButtonElement): Promise<void> {
+  const item = button.closest<HTMLElement>("[data-asset-id]");
+  const list = button.closest<HTMLOListElement>("[data-collection-list]");
+  const detail = document.querySelector<HTMLElement>(
+    "[data-collection-detail]",
+  );
+  if (!item || !list || !detail?.dataset.collectionId) return;
+
+  const sibling =
+    button.dataset.collectionMove === "up"
+      ? item.previousElementSibling
+      : item.nextElementSibling;
+  if (!(sibling instanceof HTMLElement)) return;
+
+  if (button.dataset.collectionMove === "up") {
+    list.insertBefore(item, sibling);
+  } else {
+    list.insertBefore(sibling, item);
+  }
+
+  const assetIds = Array.from(
+    list.querySelectorAll<HTMLElement>("[data-asset-id]"),
+  ).map((row) => row.dataset.assetId ?? "");
+
+  const response = await fetch(
+    `/api/collections/${detail.dataset.collectionId}/reorder`,
+    {
+      method: "POST",
+      headers: sameOriginHeaders(),
+      body: JSON.stringify({ assetIds }),
+    },
+  );
+  if (!response.ok) {
+    window.location.reload();
+    return;
+  }
+  announce("Collection order saved.");
+  window.location.reload();
+}
+
+async function removeFromDetail(button: HTMLButtonElement): Promise<void> {
+  const detail = document.querySelector<HTMLElement>(
+    "[data-collection-detail]",
+  );
+  const assetId = button.dataset.collectionRemove;
+  if (!detail?.dataset.collectionId || !assetId) return;
+  await mutateCollection(
+    `/api/collections/${detail.dataset.collectionId}/items/${encodeURIComponent(assetId)}`,
+    "DELETE",
+  );
+  announce("Asset removed from collection.");
+  window.location.reload();
+}
+
+async function deleteCurrentCollection(): Promise<void> {
+  const detail = document.querySelector<HTMLElement>(
+    "[data-collection-detail]",
+  );
+  if (!detail?.dataset.collectionId) return;
+  await mutateCollection(
+    `/api/collections/${detail.dataset.collectionId}`,
+    "DELETE",
+  );
+  window.location.href = "/collections";
+}
 
 document.addEventListener("click", (event) => {
   const target = event.target;
   if (!(target instanceof HTMLElement)) return;
 
+  const close = target.closest<HTMLElement>("[data-dialog-close]");
+  if (close) {
+    const dialog = close.closest<HTMLDialogElement>("dialog");
+    if (dialog?.open) closeDialog(dialog);
+  }
+
   const toggle = target.closest<HTMLButtonElement>("[data-collection-toggle]");
   if (toggle) {
-    const assetId = toggle.dataset.assetId ?? "";
-    const asset = assetsById.get(assetId);
-    if (!asset) return;
-    const saved = state.assetIds.includes(assetId);
-    persist(
-      saved ? removeAsset(state, assetId) : addAsset(state, assetId),
-      saved
-        ? `${asset.title} removed from collection.`
-        : `${asset.title} added to collection.`,
+    void openSavePicker(toggle);
+    return;
+  }
+
+  const pickerAction = target.closest<HTMLButtonElement>(
+    "[data-collection-action]",
+  );
+  if (pickerAction && activeAssetId) {
+    const collectionId = pickerAction.dataset.collectionId;
+    const action = pickerAction.dataset.collectionAction;
+    if (!collectionId || (action !== "add" && action !== "remove")) return;
+    void mutateCollection(
+      `/api/collections/${collectionId}/items/${encodeURIComponent(activeAssetId)}`,
+      action === "add" ? "POST" : "DELETE",
+    ).then(() =>
+      refreshPicker(
+        action === "add"
+          ? "Asset added to collection."
+          : "Asset removed from collection.",
+      ),
     );
     return;
   }
 
   const remove = target.closest<HTMLButtonElement>("[data-collection-remove]");
   if (remove) {
-    const assetId = remove.dataset.collectionRemove ?? "";
-    const asset = assetsById.get(assetId);
-    persist(
-      removeAsset(state, assetId),
-      asset
-        ? `${asset.title} removed from collection.`
-        : "Missing item removed from collection.",
-    );
+    void removeFromDetail(remove);
     return;
   }
 
   const move = target.closest<HTMLButtonElement>("[data-collection-move]");
   if (move) {
-    const assetId = move.dataset.assetId ?? "";
-    const direction = move.dataset.collectionMove === "up" ? -1 : 1;
-    const asset = assetsById.get(assetId);
-    persist(
-      moveAsset(state, assetId, direction),
-      asset
-        ? `${asset.title} moved ${direction === -1 ? "up" : "down"}.`
-        : "Item moved.",
-    );
-    move.focus();
+    void reorderFromButton(move);
     return;
   }
 
-  if (target.closest("[data-collection-clear-confirm]")) {
-    persist(clearCollection(state), "Collection cleared.");
+  if (target.closest("[data-collection-delete]")) {
+    void deleteCurrentCollection();
     return;
   }
 
@@ -415,51 +459,18 @@ document.addEventListener("click", (event) => {
 
   if (target.closest("[data-zip-cancel]")) {
     activeZipController?.abort();
-    return;
-  }
-
-  if (target.closest("[data-collection-name-cancel]")) {
-    render();
   }
 });
 
 document.addEventListener("submit", (event) => {
   const form = event.target;
   if (
-    !(form instanceof HTMLFormElement) ||
-    !form.matches("[data-collection-rename]")
+    form instanceof HTMLFormElement &&
+    form.matches("[data-collection-picker-create]")
   ) {
-    return;
+    event.preventDefault();
+    void createCollection(form).catch(() => {
+      announce("Collection could not be created.");
+    });
   }
-
-  event.preventDefault();
-  const input = form.querySelector<HTMLInputElement>(
-    "[data-collection-name-input]",
-  );
-  const feedback = document.querySelector<HTMLElement>(
-    "[data-collection-rename-feedback]",
-  );
-
-  try {
-    persist(renameCollection(state, input?.value ?? ""), "Collection renamed.");
-    if (input) input.value = state.name;
-    if (feedback) feedback.textContent = "Collection renamed.";
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Name is not valid.";
-    if (feedback) feedback.textContent = message;
-    announce(message);
-  }
-});
-
-window.addEventListener("storage", (event) => {
-  if (event.key !== COLLECTION_STORAGE_KEY || !storage) {
-    return;
-  }
-
-  const result = loadCollection(storage);
-  state = result.state;
-  storageWarning = result.warning ?? "";
-  render();
-  announce("Collection updated in another tab.");
 });

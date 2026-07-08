@@ -2,9 +2,9 @@
 
 ## Current status
 
-The project has completed the audit, engineering foundation, design primitives, global public shell, Cloudinary media abstraction, seed galleries, asset detail pages, anonymous local collections, expanded search, D1 server layer, and Phase 10 Discord authentication.
+The project has completed the audit, engineering foundation, design primitives, global public shell, Cloudinary media abstraction, seed galleries, asset detail pages, expanded search, D1 server layer, Phase 10 Discord authentication, and Phase 11 authenticated private collections.
 
-Phase 10 adds open Discord sign-in with `identify` scope only, D1-backed users, one-time OAuth state records, opaque sessions, POST logout, protected `/account`, server-rendered header auth state, and safe auth errors. Production OAuth and logout were manually verified on `https://pfseeker.com` on 2026-07-08. All authenticated users are ordinary users. Synced collections, submissions, moderation, creators, admin workflows, guild checks, bot behavior, and role systems remain future work; Phase 11 has not started.
+Phase 10 adds open Discord sign-in with `identify` scope only, D1-backed users, one-time OAuth state records, opaque sessions, POST logout, protected `/account`, server-rendered header auth state, and safe auth errors. Production OAuth and logout were manually verified on `https://pfseeker.com` on 2026-07-08. Phase 11 requires sign-in for collection features, stores multiple private collections in D1, and removes anonymous local collection persistence. All authenticated users are ordinary users. Submissions, moderation, creators, admin workflows, guild checks, bot behavior, role systems, and public collection publishing remain future work; Phase 12 has not started.
 
 ## Product identity
 
@@ -72,7 +72,7 @@ Client JavaScript is reserved for:
 
 - search/filter refinement where progressive enhancement is useful
 - lightboxes
-- local collections implemented by `src/scripts/collection-client.ts`
+- authenticated collection picker and detail controls implemented by `src/scripts/collection-client.ts`
 - ZIP progress and cancellation implemented through `src/lib/collection-zip.ts`
 - dialogs/drawers/dropdowns
 - authenticated account workflows
@@ -94,13 +94,13 @@ Persist stable Cloudinary public IDs and metadata. Do not persist transformed Cl
 
 Seed records intentionally store durable local development media references and metadata only. They exclude fake creator accounts, download counts, rankings, and user IDs.
 
-Anonymous local collection state is browser-only and versioned at `pfseeker.collection.v1`. The stored model contains only the schema version, collection name, ordered asset IDs, and timestamps. It is resolved against the current seed catalogue at render time and must not be treated as trusted server data in later authenticated phases.
+Authenticated collection state is stored in D1 through `collections` and `collection_items`. Collection ownership is derived from the active session, not client input. Collection names are private, duplicate names are allowed, and item order is stored as normalized integer positions. The former anonymous `pfseeker.collection.v1` browser storage model is no longer used in production code and no import path is retained.
 
 Search and taxonomy filtering is centralized in `src/lib/search.ts`. It parses URL parameters, canonicalizes filter URLs, applies deterministic server-side filtering, derives orientation from dimensions, maps palette metadata to restrained color families, and validates taxonomy assumptions for the current seed dataset.
 
 The D1 repository currently loads published rows and applies the same search/filter functions in application code. This preserves Phase 8 URL and matching behavior while the dataset is small. Later production-scale search can push filtering into indexed SQL or a dedicated search service if profiling shows that is needed.
 
-Authenticated users, sessions, and OAuth state now exist for Phase 10 identity only. Synced collections, submissions, moderation events, reports, and creator attribution remain future schema additions. Do not add placeholder creator rows, fake roles, or fake download counts.
+Authenticated users, sessions, OAuth state, private collections, and collection items now exist. Submissions, moderation events, reports, public collection publishing, and creator attribution remain future schema additions. Do not add placeholder creator rows, fake roles, or fake download counts.
 
 ## Cloudinary boundary
 
@@ -172,7 +172,8 @@ Public routes:
 - `/icons` implemented as seed gallery
 - `/icons/[category]` implemented
 - `/icon/[slug]` implemented for seed assets
-- `/collections` implemented as anonymous browser-local collection management
+- `/collections` implemented as authenticated private collection management
+- `/collections/[collectionId]` implemented as authenticated private collection detail
 - `/collection/[slug]`
 - `/creators`
 - `/creator/[slug-or-id]`
@@ -223,7 +224,7 @@ Foundation scripts should include:
 
 Later phases add Playwright E2E coverage for public routes, overlays, galleries, collections, downloads, auth, submissions, moderation, mobile navigation, and keyboard behavior.
 
-Current unit coverage includes collection schema validation, browser-storage parsing, local collection operations, missing-ID resolution, ZIP filename generation, controlled concurrency, partial failure, all-failure, empty, cancellation behavior, search query normalization, canonical filter serialization, type/category compatibility, tag matching, color mapping, orientation derivation, combined filters, sort behavior, active-filter URLs, result-count wording, and taxonomy validation.
+Current unit coverage includes collection naming validation, reorder payload validation, migration shape checks, repository ownership checks, duplicate prevention, add/remove/reorder behavior, invalid asset rejection, ZIP filename generation, controlled concurrency, partial failure, all-failure, empty, cancellation behavior, search query normalization, canonical filter serialization, type/category compatibility, tag matching, color mapping, orientation derivation, combined filters, sort behavior, active-filter URLs, result-count wording, and taxonomy validation.
 
 Phase 9 unit coverage adds D1 migration-shape checks, seed SQL generation checks, seed repository search parity, D1 row mapping, and download-event insert behavior through a fake D1 boundary.
 
