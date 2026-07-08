@@ -21,6 +21,19 @@ Phase 10 implements open Discord sign-in for ordinary pfseeker users.
 
 Local development should use the localhost redirect in `.env`. Production should use the `https://pfseeker.com` redirect configured in Cloudflare. Arbitrary Cloudflare preview deployment URLs are not registered and should show a configuration error rather than reusing production OAuth settings.
 
+## Production verification
+
+Production OAuth was manually verified on 2026-07-08 at `https://pfseeker.com`.
+
+- The Astro SSR site loads through Cloudflare Pages.
+- Discord sign-in opens and requests the approved identity access.
+- The production callback completes at `https://pfseeker.com/auth/discord/callback`.
+- Authenticated users reach `/account`.
+- Signed-in state persists after page refresh.
+- Logout revokes the session and returns the user to the signed-out state.
+
+Cloudflare Pages deploys the SSR runtime through the Pages advanced-mode `_worker.js` compatibility layer added in commit `f41c81a9`. The root Pages configuration uses `pages_build_output_dir = "./dist/client"` and Cloudflare builds run on Node `24.16.0`.
+
 ## Environment
 
 Required server-side variables:
@@ -115,4 +128,4 @@ Phase 10 tests cover migration shape, safe return-path validation, Discord autho
 
 ## Future work
 
-Phase 11 may add synced collections for authenticated users. Moderator/admin roles, submissions, reports, upload signing, rate limiting, and full CSRF coverage remain later phases and must be implemented with server-side authorization.
+Phase 10 is complete. Phase 11 has not started. Phase 11 may add synced collections for authenticated users. Moderator/admin roles, submissions, reports, upload signing, rate limiting, and full CSRF coverage remain later phases and must be implemented with server-side authorization.

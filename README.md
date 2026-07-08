@@ -58,3 +58,7 @@ Preview contains development seed media for validation. Production has the Phase
 ## Authentication
 
 Discord sign-in is implemented with the approved client ID, `identify` scope only, D1-backed opaque sessions, and no guild, role, bot, moderation, or admin behavior. See `AUTHENTICATION.md`.
+
+Production OAuth was manually verified on `https://pfseeker.com` on 2026-07-08. The production callback is `https://pfseeker.com/auth/discord/callback`. Arbitrary preview OAuth remains intentionally unsupported until a stable preview callback is registered.
+
+Cloudflare Pages runs the Astro SSR deployment through the Pages advanced-mode `_worker.js` compatibility layer, with `pages_build_output_dir = "./dist/client"` and Node `24.16.0` for builds.

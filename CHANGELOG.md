@@ -54,3 +54,5 @@
 - Replaced deprecated `typescript-eslint` flat-config helper usage with a plain exported config array.
 - Normalized active brand references to `.pfseeker®`.
 - Updated FAQ, Privacy, database, server architecture, migration, audit, and implementation-plan docs for Phase 10 authentication.
+- Recorded Phase 10 production verification for Cloudflare Pages SSR, Discord OAuth callback, `/account`, session persistence, and logout.
+- Documented the deployed Pages advanced-mode `_worker.js` compatibility layer, `pages_build_output_dir = "./dist/client"`, and Node `24.16.0` Cloudflare build pin.

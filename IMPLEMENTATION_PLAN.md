@@ -237,7 +237,7 @@ Goal: Add secure account identity.
 
 Dependencies: Phase 9.
 
-Status: Complete for open Discord identity and D1-backed sessions. Do not begin Phase 11 until explicitly requested.
+Status: Complete for open Discord identity and D1-backed sessions, including production verification on 2026-07-08. Phase 11 has not started and must not begin until explicitly requested.
 
 Work:
 
@@ -252,9 +252,10 @@ Work:
 
 Completion criteria:
 
-- Auth flow works locally with configured secrets. OAuth initiation and route behavior were verified locally; live Discord account completion is not automated.
+- Auth flow works locally with configured secrets and in production. OAuth initiation and route behavior were verified locally; production Discord sign-in, callback, `/account`, refresh persistence, and logout were manually verified on `https://pfseeker.com`.
 - Unauthorized users cannot access protected routes. `/account` redirects unauthenticated requests to Discord sign-in.
 - Tests cover OAuth state and session helpers. Completed through auth utility tests, migration shape tests, controlled local D1 session smoke checks, and route smoke checks.
+- Cloudflare Pages SSR deployment works in production through the Pages advanced-mode `_worker.js` compatibility layer from commit `f41c81a9`.
 
 ## Phase 11: Synced Accounts and Collections
 

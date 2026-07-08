@@ -50,6 +50,8 @@ Cloudflare Pages project `pfseeker` exists. Pages dashboard bindings were manual
 - Preview `DB` -> `pfseeker-preview`
 - Production `DB` -> `pfseeker-production`
 
+Cloudflare Pages SSR deployment is verified in production. Commit `f41c81a9` adds the Pages advanced-mode `_worker.js` compatibility layer, `pages_build_output_dir = "./dist/client"`, and the Node `24.16.0` build pin. The production deployment was merged through commit `1374e1a` on `main` and manually verified on `https://pfseeker.com`.
+
 ## Authentication routes
 
 Phase 10 adds:
@@ -67,6 +69,8 @@ Sessions are opaque D1 sessions. The browser receives only an HTTP-only `pfseeke
 The installed Cloudflare adapter can still mention a generated `SESSION` KV binding during builds. pfseeker does not use that KV binding in Phase 10; D1 is the session store.
 
 Arbitrary Pages preview URLs are not registered Discord callbacks. Local OAuth uses localhost, and production OAuth uses `https://pfseeker.com/auth/discord/callback`.
+
+Production OAuth was manually verified on 2026-07-08: sign-in opens Discord identity access, callback completes, `/account` renders for the authenticated user, refresh preserves the session, and POST logout returns the user to signed-out state. Arbitrary preview OAuth remains intentionally unsupported until a stable preview callback is registered.
 
 ## Security notes
 

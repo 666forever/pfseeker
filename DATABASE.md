@@ -100,6 +100,13 @@ Authentication migration verification on 2026-07-06:
 - Production asset/download data remained unchanged: 0 assets and 0 downloads.
 - Session foreign keys cascade on user deletion, token hashes are unique, and lookup/expiry indexes exist.
 
+Production auth runtime verification on 2026-07-08:
+
+- Production Astro SSR deployment works on Cloudflare Pages.
+- Production Discord OAuth callback works at `https://pfseeker.com/auth/discord/callback`.
+- D1-backed session persistence and logout were manually verified through `/account`.
+- No Discord tokens or secrets are stored in D1 by Phase 10.
+
 ## Cloudflare Pages binding status
 
 Wrangler can see the existing Pages project `pfseeker`. Pages dashboard bindings were manually confirmed after Phase 9 remote provisioning:
@@ -108,3 +115,5 @@ Wrangler can see the existing Pages project `pfseeker`. Pages dashboard bindings
 - Production environment binding: `DB` -> `pfseeker-production`
 
 Dashboard path: Cloudflare Dashboard -> Workers & Pages -> `pfseeker` -> Settings -> Functions -> D1 database bindings.
+
+The active Cloudflare Pages deployment uses `pages_build_output_dir = "./dist/client"` and the generated Pages advanced-mode `_worker.js` to run the Astro SSR entrypoint while preserving the `DB` binding.

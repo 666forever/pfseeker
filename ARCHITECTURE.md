@@ -4,7 +4,7 @@
 
 The project has completed the audit, engineering foundation, design primitives, global public shell, Cloudinary media abstraction, seed galleries, asset detail pages, anonymous local collections, expanded search, D1 server layer, and Phase 10 Discord authentication.
 
-Phase 10 adds open Discord sign-in with `identify` scope only, D1-backed users, one-time OAuth state records, opaque sessions, POST logout, protected `/account`, server-rendered header auth state, and safe auth errors. All authenticated users are ordinary users. Synced collections, submissions, moderation, creators, admin workflows, guild checks, bot behavior, and role systems remain future work.
+Phase 10 adds open Discord sign-in with `identify` scope only, D1-backed users, one-time OAuth state records, opaque sessions, POST logout, protected `/account`, server-rendered header auth state, and safe auth errors. Production OAuth and logout were manually verified on `https://pfseeker.com` on 2026-07-08. All authenticated users are ordinary users. Synced collections, submissions, moderation, creators, admin workflows, guild checks, bot behavior, and role systems remain future work; Phase 11 has not started.
 
 ## Product identity
 
@@ -127,6 +127,8 @@ Cloudflare config is centralized in `wrangler.toml` and Astro's Cloudflare adapt
 The required D1 binding name is `DB`. `wrangler.toml` maps local state and `env.preview` to `pfseeker-preview` (`4418e176-f912-4de8-b8d2-75dd531a80e4`) and `env.production` to `pfseeker-production` (`be2bcba3-2857-4c32-84f5-64010c8a23a3`). Both remote databases were verified in `WEUR`.
 
 Current note: the installed Cloudflare adapter auto-enables a `SESSION` KV binding. That default remains visible in build output, but Phase 10 explicitly uses D1-backed opaque sessions instead of that KV binding.
+
+Cloudflare Pages SSR is deployed with the Pages advanced-mode compatibility layer from commit `f41c81a9`: `npm run build` prepares `dist/client/_worker.js`, the root Wrangler file sets `pages_build_output_dir = "./dist/client"`, and Cloudflare builds use Node `24.16.0`. This keeps D1-backed SSR on Pages rather than converting the app to a static site.
 
 Server-side behavior should live in Pages Functions or Worker-compatible modules for:
 

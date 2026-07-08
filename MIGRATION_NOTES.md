@@ -177,3 +177,6 @@ The assessed website should remain a checklist of product capabilities and imple
 - No guild membership, Discord role, Discord bot, moderator, administrator, email, password, or Discord token storage was added.
 - The raw session token lives only in the HTTP-only cookie; D1 stores an HMAC hash for lookup and revocation.
 - The Cloudflare adapter's generated `SESSION` KV binding remains unused by pfseeker in Phase 10.
+- Production OAuth was manually verified on `https://pfseeker.com` on 2026-07-08, including sign-in, callback, `/account`, refresh persistence, and logout.
+- Production SSR is deployed on Cloudflare Pages through the advanced-mode `_worker.js` compatibility layer from commit `f41c81a9`; arbitrary preview OAuth remains intentionally unsupported because no arbitrary preview callback is registered.
+- Phase 10 is complete. Phase 11 has not started.

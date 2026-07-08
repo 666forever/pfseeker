@@ -4,9 +4,9 @@ Audit date: 2026-07-05
 
 ## Scope
 
-This audit covers the current contents of `C:\Users\hk\Documents\pfseeker-codex-project`, including project instructions, planning documents, production source, environment examples, reference material, and safe validation commands.
+This audit originally covered `C:\Users\hk\Documents\pfseeker-codex-project`. Active work now occurs in `C:\Users\hk\Documents\GitHub\pfseeker`, including project instructions, planning documents, production source, environment examples, reference material, and safe validation commands.
 
-Current checkpoint: Phase 10 Discord authentication and sessions are implemented, with D1-backed auth tables migrated locally, to preview, and to production. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
+Current checkpoint: Phase 10 Discord authentication and sessions are implemented and production-verified. D1-backed auth tables are migrated locally, to preview, and to production. Production Astro SSR, Discord OAuth callback, `/account`, session persistence, and logout were manually verified on `https://pfseeker.com` on 2026-07-08. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
 
 ## Source-of-truth documents read
 
@@ -74,6 +74,8 @@ Current committed baseline before Phase 10:
 - `922e5c3 feat: expand search and taxonomy`
 - `e65b496 feat: add local D1 database and server layer`
 - `494c46d chore: complete D1 environment provisioning`
+- `f41c81a9 fix: correct Cloudflare Pages SSR deployment`
+- `1374e1a` merge commit on `main` containing the Pages SSR compatibility fix.
 
 The pre-foundation audit originally found no `.git/` directory; that is no longer true.
 
@@ -88,6 +90,7 @@ Phase 10 Discord authentication is now implemented in the working tree. The proj
 - `eslint.config.js`
 - `vitest.config.ts`
 - `wrangler.toml`
+- `.node-version`
 - `DATABASE.md`
 - `SERVER_ARCHITECTURE.md`
 - `AUTHENTICATION.md`
@@ -135,6 +138,7 @@ Phase 10 Discord authentication is now implemented in the working tree. The proj
 - `tests/auth.test.ts`
 - `.github/workflows/ci.yml`
 - `scripts/run-astro.mjs`
+- `scripts/prepare-pages-ssr.mjs`
 
 Still missing:
 
@@ -269,6 +273,9 @@ Existing:
 - `migrations/0001_initial_schema.sql` defines the initial local D1 schema for assets, categories, tags, join tables, and download events.
 - `astro.config.mjs` uses `@astrojs/cloudflare`.
 - `wrangler.toml` defines project name, compatibility date, public site URL, local D1 binding, preview D1 binding, and production D1 binding.
+- `wrangler.toml` sets `pages_build_output_dir = "./dist/client"` for Cloudflare Pages SSR deployment.
+- `.node-version` pins Cloudflare Pages builds to Node `24.16.0`.
+- `scripts/prepare-pages-ssr.mjs` prepares the generated Astro SSR output for Pages advanced mode by creating `dist/client/_worker.js`.
 - `src/server/db/d1.ts` defines the Cloudflare runtime binding boundary.
 - `src/server/repositories/` contains seed and D1 repository implementations.
 - `src/pages/api/downloads.ts` provides the first server endpoint foundation for download events.
@@ -281,9 +288,13 @@ Configured D1 environments:
 
 Missing:
 
-- Pages Functions directory
 - security headers and redirects configuration
-- final Pages vs Workers deployment mode decision for the current Cloudflare adapter generation
+
+Cloudflare Pages SSR deployment decision:
+
+- The current Astro Cloudflare adapter emits a Workers-shaped server bundle.
+- pfseeker deploys that SSR bundle to Cloudflare Pages through Pages advanced mode with a generated `dist/client/_worker.js`.
+- No generic `/functions` directory is required for the deployed model.
 
 ## Cloudinary-related files
 
@@ -370,8 +381,8 @@ Reference broken/missing material:
 
 - Production D1 gallery content and dynamic product workflows beyond asset reads, download-event foundation, and authentication.
 - Cloudinary upload signing and persisted media data.
-- Live production OAuth verification after deployment of the Phase 10 code.
-- Authenticated synced collections, submissions, moderation, reports, creators, and admin workflows.
+- Production content import remains incomplete; production auth itself is verified.
+- Authenticated synced collections, submissions, moderation, reports, creators, and admin workflows. Phase 11 has not started.
 - Broader automated tests and CI coverage beyond the current foundation checks.
 
 ## What is broken
@@ -754,6 +765,21 @@ Commands run from `C:\Users\hk\Documents\pfseeker-codex-project` after adding Di
 | `npm run test`                         | Passed: 7 test files, 78 tests.                                                                                                                                                                                                                                                                      |
 | `npm run build`                        | Passed after stopping the local preview server that held a Windows lock on `dist/client`: `astro check` reports 0 errors, 0 warnings, 0 hints across 103 files, and the Cloudflare server build completed.                                                                                           |
 
+## Production verification after Cloudflare Pages SSR compatibility fix
+
+Manual production verification on `https://pfseeker.com` completed on 2026-07-08:
+
+- Production deployment succeeded from merge commit `1374e1a` on `main`.
+- The Astro SSR site loads successfully on Cloudflare Pages.
+- The deployed Pages compatibility layer from commit `f41c81a9` is active: root `wrangler.toml` uses `pages_build_output_dir = "./dist/client"`, the build produces a Pages advanced-mode `_worker.js`, and Cloudflare builds use Node `24.16.0`.
+- Discord sign-in opens and requests the approved identity access only.
+- Production OAuth callback completes at `https://pfseeker.com/auth/discord/callback`.
+- The authenticated user reaches `/account`.
+- Signed-in state persists after page refresh.
+- Logout works and returns the user to the signed-out state.
+- Arbitrary Cloudflare preview OAuth remains intentionally unsupported because arbitrary preview hostnames are not registered Discord callbacks.
+- Phase 10 is complete. Phase 11 has not started.
+
 ## Audit conclusion
 
-Phase 10 implementation is complete pending commit. The local schema, server repository boundary, public route integration, seed SQL generation, D1 environment configuration, local migration and seed, preview migration and seed, production migration, download-event endpoint foundation, Discord OAuth routes, D1-backed opaque sessions, account identity page, logout, documentation, and tests are implemented. Production remains intentionally unseeded with development SVG data, and live production OAuth verification remains pending deployment of the Phase 10 code.
+Phase 10 is complete and production-verified. The local schema, server repository boundary, public route integration, seed SQL generation, D1 environment configuration, local migration and seed, preview migration and seed, production migration, download-event endpoint foundation, Discord OAuth routes, D1-backed opaque sessions, account identity page, logout, Pages SSR compatibility layer, documentation, tests, and production OAuth verification are complete. Production remains intentionally unseeded with development SVG data. Phase 11 has not started.
