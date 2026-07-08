@@ -9,7 +9,26 @@ Phase 11 replaces anonymous browser-local collections with private, account-owne
 - Anonymous users may not save assets or create collections.
 - Clicking Save while signed out opens a sign-in prompt that links to `/auth/discord` with a safe return path back to the current page.
 - No anonymous local collection import is retained by product decision.
+- Phase 11 production verification is complete.
 - Phase 12 has not started.
+
+## Production verification
+
+Manual production verification on `https://pfseeker.com` confirmed:
+
+- signed-out users cannot use collections;
+- signed-out Save prompts Discord sign-in;
+- `/collections` requires authentication;
+- signed-in users can create multiple named private collections;
+- assets can be saved into more than one collection;
+- duplicate saves are prevented;
+- collections can be renamed;
+- items can be reordered and removed;
+- collection ZIP download works;
+- collections can be deleted;
+- collection data persists after refresh and after sign-out/sign-in;
+- no anonymous localStorage collection is created;
+- production deployment is healthy.
 
 ## Storage model
 
@@ -94,4 +113,4 @@ The collection picker uses a dialog with keyboard focus handling from the shared
 
 ## Testing strategy
 
-Phase 11 coverage includes collection name validation, reorder validation, migration shape, repository ownership checks, duplicate prevention, add/remove/reorder behavior, invalid asset rejection, ZIP path safety, ZIP concurrency, partial failures, empty downloads, and cancellation. D1 migrations are applied locally, to preview, and to production before release verification.
+Phase 11 coverage includes collection name validation, reorder validation, migration shape, repository ownership checks, duplicate prevention, add/remove/reorder behavior, invalid asset rejection, ZIP path safety, ZIP concurrency, partial failures, empty downloads, and cancellation. D1 migrations are applied locally, to preview, and to production. Production behavior was manually verified after deployment.

@@ -93,6 +93,8 @@ Phase 11 adds authenticated private collection behavior:
 
 JSON/API mutations return `401` when signed out. HTML collection routes redirect to `/auth/discord` with a safe return path. Mutation endpoints validate content type, body size, Origin/Referer, names, asset existence, and ownership before writing. Public collection publishing is deferred.
 
+Production collection verification was completed manually on `https://pfseeker.com`: signed-out users are blocked and prompted to sign in from Save, authenticated users can create multiple private collections, save an asset into more than one collection, avoid duplicate saves, rename, reorder, remove items, download ZIPs, persist collection data across refresh and sign-out/sign-in, and delete collections. No anonymous localStorage collection is created.
+
 ## Security notes
 
 - No secrets are read by browser code.

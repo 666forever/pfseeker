@@ -6,7 +6,7 @@ Audit date: 2026-07-05
 
 This audit originally covered `C:\Users\hk\Documents\pfseeker-codex-project`. Active work now occurs in `C:\Users\hk\Documents\GitHub\pfseeker`, including project instructions, planning documents, production source, environment examples, reference material, and safe validation commands.
 
-Current checkpoint: Phase 11 authenticated multiple collections are implemented on `phase-11-synced-collections` pending Cloudflare preview deployment verification. Phase 10 Discord authentication and sessions are implemented and production-verified. Phase 11 removes production anonymous localStorage collection behavior, adds private D1-backed collections and collection items, and keeps public publishing deferred. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
+Current checkpoint: Phase 11 authenticated multiple collections are complete and production-verified. Phase 10 Discord authentication and sessions are implemented and production-verified. Phase 11 removes production anonymous localStorage collection behavior, adds private D1-backed collections and collection items, and keeps public publishing deferred. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
 
 ## Source-of-truth documents read
 
@@ -144,8 +144,9 @@ Still missing:
 
 - production public assets
 - image manifest
-- authenticated synced collection behavior
+- public collection publishing
 - submissions, moderation, reports, creators, and admin flows
+- full E2E tests
 
 ## Existing pages
 
@@ -443,7 +444,7 @@ Immediate foundation files still missing:
 Later product files:
 
 - submission/moderation flows
-- authenticated collection sync logic
+- public collection publishing
 - full E2E tests
 
 ## Security issues and risks
@@ -778,8 +779,8 @@ Manual production verification on `https://pfseeker.com` completed on 2026-07-08
 - Signed-in state persists after page refresh.
 - Logout works and returns the user to the signed-out state.
 - Arbitrary Cloudflare preview OAuth remains intentionally unsupported because arbitrary preview hostnames are not registered Discord callbacks.
-- Phase 11 authenticated multiple collections are implemented pending Cloudflare preview deployment verification. Phase 12 has not started.
+- Phase 11 authenticated multiple collections are complete and production-verified. Phase 12 has not started.
 
 ## Audit conclusion
 
-Phase 11 authenticated multiple collections are implemented pending Cloudflare preview deployment verification. The local schema, server repository boundary, public route integration, seed SQL generation, D1 environment configuration, local migration and seed, preview migration and seed, production migration, download-event endpoint foundation, Discord OAuth routes, D1-backed opaque sessions, account identity page, logout, Pages SSR compatibility layer, documentation, tests, and production OAuth verification are complete through Phase 10. Phase 11 adds private D1 collections and removes anonymous collection persistence. Production remains intentionally unseeded with development SVG data. Phase 12 has not started.
+Phase 11 authenticated multiple collections are complete and production-verified. The local schema, server repository boundary, public route integration, seed SQL generation, D1 environment configuration, local migration and seed, preview migration and seed, production migration, download-event endpoint foundation, Discord OAuth routes, D1-backed opaque sessions, account identity page, logout, Pages SSR compatibility layer, documentation, tests, and production OAuth verification are complete through Phase 10. Phase 11 adds private D1 collections and removes anonymous collection persistence. Production collection creation, rename, add/remove, reorder, ZIP download, persistence, deletion, duplicate prevention, and access protection were manually verified on `https://pfseeker.com`. Production remains intentionally unseeded with development SVG data. Phase 12 has not started.

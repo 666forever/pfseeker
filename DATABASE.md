@@ -126,6 +126,15 @@ Collection migration verification:
 - Local integrity checks confirmed deleting a collection deletes its items, deleting a user deletes owned collections and items, and invalid asset references are rejected.
 - No fake production collections were seeded.
 
+Production collection runtime verification:
+
+- Phase 11 collection behavior was manually verified on `https://pfseeker.com`.
+- Authenticated users can create multiple private D1-backed collections, rename collections, add/remove/reorder items, delete collections, and download collection ZIP files.
+- Collection data persists after refresh and after sign-out/sign-in.
+- Signed-out users cannot access collection management.
+- No anonymous localStorage collection is created.
+- Public collection publishing remains deferred.
+
 ## Cloudflare Pages binding status
 
 Wrangler can see the existing Pages project `pfseeker`. Pages dashboard bindings were manually confirmed after Phase 9 remote provisioning:

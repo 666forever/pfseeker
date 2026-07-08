@@ -180,4 +180,5 @@ The assessed website should remain a checklist of product capabilities and imple
 - The Cloudflare adapter's generated `SESSION` KV binding remains unused by pfseeker in Phase 10.
 - Production OAuth was manually verified on `https://pfseeker.com` on 2026-07-08, including sign-in, callback, `/account`, refresh persistence, and logout.
 - Production SSR is deployed on Cloudflare Pages through the advanced-mode `_worker.js` compatibility layer from commit `f41c81a9`; arbitrary preview OAuth remains intentionally unsupported because no arbitrary preview callback is registered.
-- Phase 11 authenticated multiple collections are implemented pending Cloudflare preview deployment verification. Phase 12 has not started.
+- Phase 11 authenticated multiple collections are complete and production-verified. Phase 12 has not started.
+- Production collection creation, rename, add/remove, reorder, ZIP download, persistence after refresh and sign-out/sign-in, deletion, signed-out access protection, and signed-out Save sign-in prompt were manually verified on `https://pfseeker.com`.

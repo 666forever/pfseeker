@@ -263,7 +263,7 @@ Goal: Let authenticated users create and manage multiple private collections syn
 
 Dependencies: Phases 7 and 10.
 
-Status: Implemented on feature branch `phase-11-synced-collections` pending Cloudflare preview deployment verification. Phase 12 has not started.
+Status: Complete, including production verification on `https://pfseeker.com`. Phase 12 has not started.
 
 Work:
 
@@ -284,6 +284,7 @@ Completion criteria:
 - Local, preview, and production D1 migrations are applied and repeated with no pending migrations. Completed on 2026-07-08.
 - No anonymous collection import is retained by product decision.
 - Public publishing remains deferred and no nonfunctional toggle is shown.
+- Production collection creation, rename, add/remove, reorder, ZIP download, persistence, deletion, duplicate prevention, and access protection were manually verified.
 
 ## Phase 12: Signed Submissions
 

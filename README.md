@@ -66,3 +66,5 @@ Cloudflare Pages runs the Astro SSR deployment through the Pages advanced-mode `
 ## Collections
 
 Collections require Discord sign-in. Signed-in users can create multiple private D1-backed collections, save assets from gallery cards or asset detail pages, reorder and remove items, rename or delete collections, and download owner-only ZIP files. Anonymous users may browse, search, preview, and download individual assets, but cannot save assets or create collections. The former localStorage collection model is removed from production behavior and no anonymous import path is retained.
+
+Phase 11 production verification is complete on `https://pfseeker.com`: collection creation, rename, add/remove, duplicate prevention, reorder, ZIP download, persistence after refresh and sign-out/sign-in, deletion, signed-out access protection, and signed-out Save sign-in prompting were manually verified. Public collection publishing remains deferred, and Phase 12 has not started.
