@@ -1,0 +1,18 @@
+---
+interface Props {
+  title: string;
+  message: string;
+}
+
+const { title, message } = Astro.props;
+---
+
+<section
+  class="empty-state"
+  aria-labelledby={`${title.toLowerCase().replaceAll(" ", "-")}-title`}
+>
+  <p class="empty-state__mark" aria-hidden="true">∅</p>
+  <h3 id={`${title.toLowerCase().replaceAll(" ", "-")}-title`}>{title}</h3>
+  <p>{message}</p>
+  <slot />
+</section>

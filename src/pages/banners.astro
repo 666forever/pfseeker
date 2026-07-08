@@ -1,0 +1,26 @@
+---
+import GalleryView from "@/components/gallery/GalleryView.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { galleryKindConfigs } from "@/data/discovery";
+import { canonicalSearchPath, parseSearchFilters } from "@/lib/search";
+import { getContentRepository } from "@/server/repositories";
+
+const config = galleryKindConfigs.banner;
+const context = { basePath: config.path, fixedType: "banner" as const };
+const filters = parseSearchFilters(Astro.url.searchParams, context);
+const repository = await getContentRepository(Astro.locals);
+const assets = await repository.searchAssets(filters);
+---
+
+<BaseLayout
+  title={config.title}
+  description={config.description}
+  canonicalPath={canonicalSearchPath(Astro.url.searchParams, context)}
+>
+  <GalleryView
+    config={config}
+    assets={assets}
+    filters={filters}
+    context={context}
+  />
+</BaseLayout>

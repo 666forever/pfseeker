@@ -1,0 +1,32 @@
+---
+import { getCategoriesForKind, type SeedCategory } from "@/data/categories";
+import { galleryKindConfigs, getCategoryRoute } from "@/data/discovery";
+import type { AssetKind } from "@/lib/media";
+
+interface Props {
+  kind: AssetKind;
+  activeCategory?: SeedCategory;
+}
+
+const { kind, activeCategory } = Astro.props;
+const config = galleryKindConfigs[kind];
+const categories = getCategoriesForKind(kind);
+---
+
+<nav class="category-nav" aria-label={`${config.pluralLabel} categories`}>
+  <a href={config.path} aria-current={!activeCategory ? "true" : undefined}>
+    All
+  </a>
+  {
+    categories.map((category) => (
+      <a
+        href={getCategoryRoute(kind, category)}
+        aria-current={
+          activeCategory?.slug === category.slug ? "true" : undefined
+        }
+      >
+        {category.name}
+      </a>
+    ))
+  }
+</nav>

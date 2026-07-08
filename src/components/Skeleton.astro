@@ -1,0 +1,13 @@
+---
+interface Props {
+  label?: string;
+  shape?: "text" | "block" | "avatar";
+}
+
+const { label = "Loading content", shape = "block" } = Astro.props;
+---
+
+<span
+  class:list={["skeleton", `skeleton--${shape}`]}
+  role="status"
+  aria-label={label}></span>

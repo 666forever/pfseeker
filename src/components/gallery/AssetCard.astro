@@ -1,0 +1,69 @@
+---
+import {
+  buildSeedImageDescriptor,
+  getAssetRoute,
+  getCategoryRoute,
+} from "@/data/discovery";
+import { getCategory } from "@/data/categories";
+import type { SeedAsset } from "@/data/assets";
+
+interface Props {
+  asset: SeedAsset;
+  priority?: boolean;
+}
+
+const { asset, priority = false } = Astro.props;
+const image = buildSeedImageDescriptor(asset);
+const primaryCategory = getCategory(asset.categories[0]);
+const assetRoute = getAssetRoute(asset);
+---
+
+<article
+  class:list={["asset-card", `asset-card--${asset.kind}`]}
+  aria-label={asset.title}
+>
+  <a
+    class="asset-card__primary"
+    href={assetRoute}
+    aria-label={`View ${asset.title}`}
+  >
+    <div class="asset-card__media" style={`aspect-ratio: ${image.aspectRatio}`}>
+      <img
+        src={image.src}
+        srcset={image.srcset}
+        sizes={image.sizes}
+        alt={image.alt}
+        width={image.width}
+        height={image.height}
+        loading={priority ? "eager" : "lazy"}
+        decoding="async"
+      />
+    </div>
+    <div class="asset-card__title">
+      <h2>{asset.title}</h2>
+      <p>{asset.tags.slice(0, 3).join(" / ")}</p>
+    </div>
+  </a>
+  <div class="asset-card__body">
+    <button
+      class="asset-card__save"
+      type="button"
+      data-collection-toggle
+      data-asset-id={asset.id}
+      aria-label={`Add ${asset.title} to collection`}
+      disabled
+    >
+      Add to collection
+    </button>
+    {
+      primaryCategory && (
+        <a
+          class="asset-card__category"
+          href={getCategoryRoute(asset.kind, primaryCategory)}
+        >
+          {primaryCategory.name}
+        </a>
+      )
+    }
+  </div>
+</article>

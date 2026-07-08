@@ -1,0 +1,44 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="Privacy"
+  description="Early-stage privacy notice for the current pfseeker development site."
+>
+  <section class="page-shell prose-page" aria-labelledby="privacy-title">
+    <div class="page-hero">
+      <p class="eyebrow">Privacy</p>
+      <h1 id="privacy-title">Early-stage privacy notice</h1>
+      <p>
+        This notice describes the current development site. It must be expanded
+        before submissions, analytics, uploads, reports, moderation, or synced
+        collections launch.
+      </p>
+    </div>
+    <section aria-labelledby="privacy-current">
+      <h2 id="privacy-current">Current site</h2>
+      <p>
+        Public browsing does not require an account. Anonymous collection data
+        is stored only in this browser using local storage and is not synced to
+        pfseeker servers.
+      </p>
+      <p>
+        If you sign in with Discord, pfseeker stores your Discord user ID,
+        username, global display name when available, avatar hash when
+        available, account timestamps, and a hashed local session record. The
+        raw session token is kept only in an HTTP-only cookie. pfseeker does not
+        store Discord email, guild membership, roles, access tokens, refresh
+        tokens, passwords, or bot-derived data in this phase.
+      </p>
+    </section>
+    <section aria-labelledby="privacy-future">
+      <h2 id="privacy-future">Future functionality</h2>
+      <p>
+        Synced collections, submissions, moderation, reports, production
+        analytics, advertising, and media uploads will require a fuller privacy
+        policy before they are enabled.
+      </p>
+    </section>
+  </section>
+</BaseLayout>

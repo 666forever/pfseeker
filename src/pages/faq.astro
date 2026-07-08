@@ -1,0 +1,67 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="FAQ"
+  description="Current answers about pfseeker browsing, planned content types, hosting, collections, submissions, and reporting."
+>
+  <section class="page-shell prose-page" aria-labelledby="faq-title">
+    <div class="page-hero">
+      <p class="eyebrow">FAQ</p>
+      <h1 id="faq-title">Current project answers</h1>
+      <p>
+        These answers reflect the site as it exists now and clearly mark planned
+        features.
+      </p>
+    </div>
+    <section aria-labelledby="faq-one">
+      <h2 id="faq-one">What is pfseeker?</h2>
+      <p>
+        pfseeker is being built as a curated discovery platform for profile
+        pictures, banners, icons, and visual collections.
+      </p>
+    </section>
+    <section aria-labelledby="faq-two">
+      <h2 id="faq-two">Does browsing require an account?</h2>
+      <p>
+        No. Public browsing remains useful without an account. Discord sign-in
+        is available for account identity and uses the Discord <code
+          >identify</code
+        >
+        scope only. pfseeker does not require a Discord server membership, bot, role,
+        or email address.
+      </p>
+    </section>
+    <section aria-labelledby="faq-three">
+      <h2 id="faq-three">How will images be hosted?</h2>
+      <p>
+        Media delivery is planned around Cloudinary for responsive previews,
+        transformations, and original downloads.
+      </p>
+    </section>
+    <section aria-labelledby="faq-four">
+      <h2 id="faq-four">How will collections work?</h2>
+      <p>
+        Anonymous collections now save asset IDs in this browser only. They can
+        be renamed, reordered, cleared, and downloaded as a ZIP. Synced account
+        collections are planned later and are not part of the current sign-in
+        release.
+      </p>
+    </section>
+    <section aria-labelledby="faq-five">
+      <h2 id="faq-five">Can users submit images?</h2>
+      <p>
+        Submissions are planned but not enabled. They will require account
+        authentication, validation, and moderation before launch.
+      </p>
+    </section>
+    <section aria-labelledby="faq-six">
+      <h2 id="faq-six">How will copyright or reports work?</h2>
+      <p>
+        Reporting and moderation workflows are planned. Final policies must be
+        completed before user uploads or public reports launch.
+      </p>
+    </section>
+  </section>
+</BaseLayout>

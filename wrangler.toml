@@ -1,0 +1,35 @@
+name = "pfseeker"
+compatibility_date = "2026-07-04"
+
+[vars]
+PUBLIC_SITE_URL = "https://pfseeker.com"
+
+# Local Wrangler D1 state uses preview database metadata but writes to the local
+# .wrangler persistence directory unless a command uses --remote.
+[[d1_databases]]
+binding = "DB"
+database_name = "pfseeker-preview"
+database_id = "4418e176-f912-4de8-b8d2-75dd531a80e4"
+migrations_dir = "migrations"
+
+[env.preview]
+
+[env.preview.vars]
+PUBLIC_SITE_URL = "https://pfseeker.com"
+
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "pfseeker-preview"
+database_id = "4418e176-f912-4de8-b8d2-75dd531a80e4"
+migrations_dir = "migrations"
+
+[env.production]
+
+[env.production.vars]
+PUBLIC_SITE_URL = "https://pfseeker.com"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "pfseeker-production"
+database_id = "be2bcba3-2857-4c32-84f5-64010c8a23a3"
+migrations_dir = "migrations"

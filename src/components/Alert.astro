@@ -1,0 +1,17 @@
+---
+interface Props {
+  tone?: "info" | "success" | "warning" | "danger";
+  title: string;
+}
+
+const { tone = "info", title } = Astro.props;
+---
+
+<section
+  class:list={["alert", `alert--${tone}`]}
+  role={tone === "danger" ? "alert" : "status"}
+  aria-live="polite"
+>
+  <strong>{title}</strong>
+  <p><slot /></p>
+</section>

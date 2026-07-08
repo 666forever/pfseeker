@@ -1,0 +1,82 @@
+---
+import AssetGrid from "@/components/gallery/AssetGrid.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getAssetsByKind, galleryKindConfigs } from "@/data/discovery";
+
+const featuredPfps = getAssetsByKind("pfp").slice(0, 4);
+const featuredBanners = getAssetsByKind("banner").slice(0, 3);
+const entryPoints = [
+  galleryKindConfigs.pfp,
+  galleryKindConfigs.banner,
+  galleryKindConfigs.icon,
+];
+---
+
+<BaseLayout
+  title="pfseeker"
+  description="pfseeker is a curated discovery platform for profile pictures, banners, icons, and aesthetic image collections."
+>
+  <section class="hero-section" aria-labelledby="home-title">
+    <div class="hero-copy">
+      <p class="eyebrow">Profile seeker</p>
+      <h1 id="home-title">.pfseekerÂ®</h1>
+      <p>
+        A curated, image-first platform for profile pictures, banners, icons,
+        and visual collections. This seed library validates the public discovery
+        architecture before the production database is introduced.
+      </p>
+    </div>
+    <div class="hero-panel" aria-label="Current build status">
+      <p class="panel-kicker">Seed gallery</p>
+      <p>
+        Browse original local seed media across PFPs, banners, and icons. No
+        fake counts, creators, rankings, or borrowed reference assets are used.
+      </p>
+    </div>
+  </section>
+
+  <section class="home-section" aria-labelledby="home-entry-title">
+    <div class="section-heading">
+      <p class="eyebrow">Browse</p>
+      <h2 id="home-entry-title">Start with a content type</h2>
+      <p>
+        Each route is server-rendered from the same typed seed dataset and
+        taxonomy.
+      </p>
+    </div>
+    <div class="entry-grid">
+      {
+        entryPoints.map((entry) => (
+          <a class="entry-card" href={entry.path}>
+            <span>{entry.pluralLabel}</span>
+            <small>{entry.description}</small>
+          </a>
+        ))
+      }
+    </div>
+  </section>
+
+  <section class="home-section" aria-labelledby="home-pfps-title">
+    <div class="section-heading">
+      <p class="eyebrow">Recent PFPs</p>
+      <h2 id="home-pfps-title">Profile-picture seeds</h2>
+    </div>
+    <AssetGrid
+      assets={featuredPfps}
+      emptyTitle="No profile-picture seeds"
+      emptyMessage="Seed profile-picture records are required before homepage previews can render."
+    />
+  </section>
+
+  <section class="home-section" aria-labelledby="home-banners-title">
+    <div class="section-heading">
+      <p class="eyebrow">Recent banners</p>
+      <h2 id="home-banners-title">Wide-format seeds</h2>
+    </div>
+    <AssetGrid
+      assets={featuredBanners}
+      emptyTitle="No banner seeds"
+      emptyMessage="Seed banner records are required before homepage previews can render."
+    />
+  </section>
+</BaseLayout>

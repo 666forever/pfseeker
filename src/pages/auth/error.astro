@@ -1,0 +1,36 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+
+const reason = Astro.url.searchParams.get("reason") ?? "unknown";
+const messages: Record<string, string> = {
+  denied: "Discord sign-in was cancelled before pfseeker received access.",
+  state: "The sign-in request expired or could not be verified.",
+  "missing-code": "Discord did not return a sign-in code.",
+  configuration: "Authentication is not configured for this environment.",
+  discord: "Discord could not complete the sign-in request.",
+  unavailable: "Authentication is temporarily unavailable.",
+  unknown: "Authentication could not be completed.",
+};
+const message = messages[reason] ?? messages.unknown;
+Astro.response.status = reason === "denied" ? 403 : 400;
+---
+
+<BaseLayout
+  title="Sign-in problem"
+  description="Discord sign-in could not be completed."
+  noindex
+>
+  <section class="page-shell" aria-labelledby="auth-error-title">
+    <div class="page-hero">
+      <p class="eyebrow">Authentication</p>
+      <h1 id="auth-error-title">Sign-in problem</h1>
+      <p>{message}</p>
+      <div class="hero-actions">
+        <a class="button button--secondary button--md" href="/auth/discord">
+          Try Discord sign-in again
+        </a>
+        <a class="button button--ghost button--md" href="/">Return home</a>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

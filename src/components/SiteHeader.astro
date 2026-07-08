@@ -1,0 +1,128 @@
+---
+import Drawer from "@/components/Drawer.astro";
+import SiteSearch from "@/components/SiteSearch.astro";
+import { primaryNavItems, isActivePath, parseSearchQuery } from "@/lib/shell";
+import { siteConfig } from "@/lib/config";
+import { discordAvatarUrl } from "@/server/auth/discord";
+import type { CurrentUser } from "@/server/auth/types";
+
+interface Props {
+  currentUser: CurrentUser | null;
+}
+
+const currentPath = Astro.url.pathname;
+const { currentUser } = Astro.props;
+const searchValue =
+  currentPath === "/search" ? parseSearchQuery(Astro.url.searchParams) : "";
+const displayName = currentUser
+  ? currentUser.user.globalName || currentUser.user.username
+  : "";
+const avatar = currentUser ? discordAvatarUrl(currentUser.user) : "";
+---
+
+<header class="site-header" aria-label="Site header">
+  <a class="brand-link" href="/" aria-label="pfseeker home">
+    <span class="brand-mark">{siteConfig.brandMark}</span>
+  </a>
+
+  <nav class="site-nav site-nav--desktop" aria-label="Primary navigation">
+    {
+      primaryNavItems.map((item) => (
+        <a
+          class="site-nav__link"
+          href={item.href}
+          aria-current={
+            isActivePath(currentPath, item.href) ? "page" : undefined
+          }
+          class:list={{ "is-active": isActivePath(currentPath, item.href) }}
+        >
+          {item.label}
+        </a>
+      ))
+    }
+  </nav>
+
+  <div class="site-header__actions">
+    <SiteSearch id="site-search-desktop" value={searchValue} />
+    <a class="shell-action shell-action--collections" href="/collections">
+      Collections
+      <span class="collection-count" data-collection-count aria-live="polite"
+      ></span>
+    </a>
+    {
+      currentUser ? (
+        <a class="shell-action shell-action--account" href="/account">
+          <img
+            src={avatar}
+            width="24"
+            height="24"
+            alt=""
+            loading="eager"
+            decoding="async"
+          />
+          <span>{displayName}</span>
+        </a>
+      ) : (
+        <a class="shell-action shell-action--account" href="/auth/discord">
+          Sign in with Discord
+        </a>
+      )
+    }
+    <button
+      class="icon-button site-header__menu"
+      type="button"
+      data-drawer-open="mobile-navigation"
+      aria-label="Open navigation"
+    >
+      <span class="menu-glyph" aria-hidden="true"></span>
+    </button>
+  </div>
+</header>
+
+<Drawer
+  id="mobile-navigation"
+  title="Navigation"
+  description="Browse public pfseeker sections and search the prepared library."
+  side="right"
+>
+  <SiteSearch id="site-search-mobile" value={searchValue} variant="mobile" />
+  <nav class="mobile-nav" aria-label="Mobile primary navigation">
+    {
+      primaryNavItems.map((item) => (
+        <a
+          class="site-nav__link"
+          href={item.href}
+          aria-current={
+            isActivePath(currentPath, item.href) ? "page" : undefined
+          }
+          class:list={{ "is-active": isActivePath(currentPath, item.href) }}
+        >
+          {item.label}
+        </a>
+      ))
+    }
+  </nav>
+  <a class="button button--secondary button--md" href="/collections">
+    Open collections
+    <span class="collection-count" data-collection-count aria-live="polite"
+    ></span>
+  </a>
+  {
+    currentUser ? (
+      <>
+        <a class="button button--ghost button--md" href="/account">
+          Account
+        </a>
+        <form method="post" action="/auth/logout">
+          <button class="button button--ghost button--md" type="submit">
+            Sign out
+          </button>
+        </form>
+      </>
+    ) : (
+      <a class="button button--ghost button--md" href="/auth/discord">
+        Sign in with Discord
+      </a>
+    )
+  }
+</Drawer>

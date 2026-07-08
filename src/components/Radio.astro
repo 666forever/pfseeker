@@ -1,0 +1,33 @@
+---
+interface Props {
+  id: string;
+  name: string;
+  label: string;
+  value: string;
+  checked?: boolean;
+  disabled?: boolean;
+}
+
+const {
+  id,
+  name,
+  label,
+  value,
+  checked = false,
+  disabled = false,
+} = Astro.props;
+---
+
+<label class="choice" for={id}>
+  <input
+    id={id}
+    class="choice__input"
+    type="radio"
+    name={name}
+    value={value}
+    checked={checked}
+    disabled={disabled}
+  />
+  <span class="choice__box choice__box--radio" aria-hidden="true"></span>
+  <span class="choice__label">{label}</span>
+</label>

@@ -1,0 +1,61 @@
+---
+import GalleryView from "@/components/gallery/GalleryView.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { galleryKindConfigs } from "@/data/discovery";
+import { getCategoryForKind } from "@/data/categories";
+import { canonicalSearchPath, parseSearchFilters } from "@/lib/search";
+import { getContentRepository } from "@/server/repositories";
+
+const config = galleryKindConfigs.banner;
+const slug = Astro.params.category ?? "";
+const category = getCategoryForKind("banner", slug);
+const context = {
+  basePath: `${config.path}/${slug}`,
+  fixedType: "banner" as const,
+  fixedCategory: category?.slug,
+};
+const filters = parseSearchFilters(Astro.url.searchParams, context);
+
+if (!category) {
+  Astro.response.status = 404;
+}
+
+const assets = category
+  ? await (await getContentRepository(Astro.locals)).searchAssets(filters)
+  : [];
+---
+
+<BaseLayout
+  title={category ? `${category.name} Banners` : "Category Not Found"}
+  description={category?.description ??
+    "The requested pfseeker banner category does not exist."}
+  noindex={!category}
+  canonicalPath={category
+    ? canonicalSearchPath(Astro.url.searchParams, context)
+    : Astro.url.pathname}
+>
+  {
+    category ? (
+      <GalleryView
+        config={config}
+        assets={assets}
+        filters={filters}
+        context={context}
+        activeCategory={category}
+      />
+    ) : (
+      <section class="page-shell" aria-labelledby="missing-category-title">
+        <div class="page-hero">
+          <p class="eyebrow">Banners</p>
+          <h1 id="missing-category-title">Category not found</h1>
+          <p>
+            This banner category is not part of the current pfseeker taxonomy.
+          </p>
+          <a class="button button--secondary button--md" href="/banners">
+            Browse banners
+          </a>
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>

@@ -1,0 +1,44 @@
+---
+import AssetDetailView from "@/components/detail/AssetDetailView.astro";
+import { getAssetMetaDescription } from "@/data/discovery";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { getContentRepository } from "@/server/repositories";
+
+const repository = await getContentRepository(Astro.locals);
+const asset = await repository.getAssetByKindAndSlug(
+  "pfp",
+  Astro.params.slug ?? "",
+);
+const relatedAssets = asset ? await repository.getRelatedAssets(asset) : [];
+
+if (!asset) {
+  Astro.response.status = 404;
+}
+---
+
+<BaseLayout
+  title={asset ? asset.title : "Profile Picture Not Found"}
+  description={asset
+    ? getAssetMetaDescription(asset)
+    : "The requested pfseeker profile-picture seed asset does not exist."}
+  noindex={!asset}
+>
+  {
+    asset ? (
+      <AssetDetailView asset={asset} relatedAssets={relatedAssets} />
+    ) : (
+      <section class="page-shell" aria-labelledby="missing-asset-title">
+        <div class="page-hero">
+          <p class="eyebrow">Profile picture</p>
+          <h1 id="missing-asset-title">Asset not found</h1>
+          <p>
+            This profile-picture seed asset is not available under this route.
+          </p>
+          <a class="button button--secondary button--md" href="/pfps">
+            Browse profile pictures
+          </a>
+        </div>
+      </section>
+    )
+  }
+</BaseLayout>

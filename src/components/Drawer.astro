@@ -1,0 +1,36 @@
+---
+interface Props {
+  id: string;
+  title: string;
+  description?: string;
+  side?: "left" | "right";
+}
+
+const { id, title, description, side = "right" } = Astro.props;
+---
+
+<dialog
+  id={id}
+  class:list={["drawer", `drawer--${side}`]}
+  data-overlay
+  aria-labelledby={`${id}-title`}
+  aria-describedby={description ? `${id}-description` : undefined}
+>
+  <div class="drawer__panel">
+    <header class="dialog__header">
+      <div>
+        <h2 id={`${id}-title`}>{title}</h2>
+        {description && <p id={`${id}-description`}>{description}</p>}
+      </div>
+      <button
+        class="icon-button"
+        type="button"
+        data-drawer-close
+        aria-label="Close drawer">×</button
+      >
+    </header>
+    <div class="dialog__body">
+      <slot />
+    </div>
+  </div>
+</dialog>
