@@ -1,8 +1,11 @@
 name = "pfseeker"
 compatibility_date = "2026-07-04"
+pages_build_output_dir = "./dist/client"
 
 [vars]
 PUBLIC_SITE_URL = "https://pfseeker.com"
+DISCORD_CLIENT_ID = "1523444161951437050"
+DISCORD_REDIRECT_URI = "http://localhost:4321/auth/discord/callback"
 
 # Local Wrangler D1 state uses preview database metadata but writes to the local
 # .wrangler persistence directory unless a command uses --remote.
@@ -27,6 +30,8 @@ migrations_dir = "migrations"
 
 [env.production.vars]
 PUBLIC_SITE_URL = "https://pfseeker.com"
+DISCORD_CLIENT_ID = "1523444161951437050"
+DISCORD_REDIRECT_URI = "https://pfseeker.com/auth/discord/callback"
 
 [[env.production.d1_databases]]
 binding = "DB"
