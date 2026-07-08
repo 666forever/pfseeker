@@ -39,6 +39,10 @@
 - Added Phase 10 Discord OAuth sign-in with `identify` scope only, D1-backed users, one-time OAuth states, opaque sessions, account identity page, server-rendered header auth state, POST logout, and safe auth errors.
 - Added `AUTHENTICATION.md` documenting open sign-in policy, redirect URIs, D1 session architecture, cookie behavior, preview limitations, and future authorization work.
 - Added auth tests for migration shape, redirect validation, Discord URL construction, user mapping, avatar URLs, token generation, hashing, and cookie attributes.
+- Added Phase 12 signed pending submissions with authenticated `/submissions`, `/submissions/new`, and `/submissions/[submissionId]` routes.
+- Added direct signed Cloudinary upload intents, server-side Cloudinary verification, SHA-256 content hashing, pending namespace checks, owner-only cancellation, and safe submission API responses.
+- Added `SUBMISSIONS.md` documenting authenticated-only policy, accepted formats, file limits, metadata rules, content rules, upload flow, D1 schema, cancellation, quotas, duplicate behavior, privacy model, tests, and deferred moderation.
+- Added submission tests for metadata validation, source URL safety, allowed formats, file limits, dimension limits, status validation, migration shape, upload namespace checks, ownership, quota enforcement, duplicate handling, upload-intent expiry/replay prevention, cancellation removal, and SVG rejection.
 
 ### Changed
 
@@ -60,3 +64,6 @@
 - Removed production use of anonymous localStorage collection behavior and documented the no-import product decision.
 - Applied `0003_synced_collections.sql` locally, to preview, and to production with repeat migration checks showing no pending migrations.
 - Recorded Phase 11 production verification for authenticated-only access, multiple private collections, D1-backed persistence, duplicate prevention, rename, add/remove, reorder, ZIP download, deletion, and signed-out Save sign-in prompts.
+- Added `0004_signed_submissions.sql` for pending submissions, submission tags, suggested tags, upload intents, and future-compatible asset content hashes.
+- Updated README, architecture, server architecture, database, migration, audit, FAQ, privacy, and terms documentation for Phase 12 pending-only submissions. Phase 13 moderation remains deferred.
+- Recorded successful signed-out Cloudflare preview verification for Phase 12 submission route protection. Production runtime upload verification remains pending until merge and Cloudinary server-credential configuration.

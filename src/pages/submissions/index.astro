@@ -1,0 +1,160 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  AuthenticationRequiredError,
+  requireUser,
+} from "@/server/auth/session";
+import type { CurrentUser } from "@/server/auth/types";
+import { getD1DatabaseAsync } from "@/server/db/d1";
+import { SubmissionRepository } from "@/server/repositories/submissions";
+import { SUBMISSION_STATUS_LABEL, bytesLabel } from "@/lib/submissions";
+import { buildMediaPreviewUrl } from "@/lib/media";
+
+let currentUser: CurrentUser;
+try {
+  currentUser = await requireUser(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent("/submissions")}`,
+      302,
+    );
+  }
+  throw error;
+}
+
+const repository = new SubmissionRepository(
+  await getD1DatabaseAsync(Astro.locals),
+);
+const submissions = await repository.listOwnedPendingSubmissions(
+  currentUser.user.id,
+);
+const dateFormatter = new Intl.DateTimeFormat("en", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+---
+
+<BaseLayout
+  title="Submissions"
+  description="View private pending pfseeker submissions."
+  noindex
+>
+  <section
+    class="page-shell submission-page"
+    aria-labelledby="submissions-title"
+  >
+    <div class="page-hero">
+      <p class="eyebrow">Submissions</p>
+      <h1 id="submissions-title">Pending submissions</h1>
+      <p>Submitted images stay private while they wait for review.</p>
+      <p>
+        <a class="button button--secondary button--md" href="/submissions/new">
+          Submit image
+        </a>
+      </p>
+    </div>
+
+    <section class="collection-panel" aria-labelledby="pending-title">
+      <div class="collection-panel__header">
+        <div>
+          <h2 id="pending-title">Awaiting review</h2>
+          <p>
+            {
+              submissions.length === 1
+                ? "1 pending submission."
+                : `${submissions.length} pending submissions.`
+            }
+          </p>
+        </div>
+      </div>
+
+      {
+        submissions.length === 0 ? (
+          <section
+            class="route-empty"
+            aria-labelledby="submissions-empty-title"
+          >
+            <h3 id="submissions-empty-title">No pending submissions</h3>
+            <p>
+              Submit one image when you have a PFP, banner, or icon to share.
+            </p>
+            <p>
+              <a
+                class="button button--secondary button--md"
+                href="/submissions/new"
+              >
+                Submit image
+              </a>
+            </p>
+          </section>
+        ) : (
+          <ol class="collection-list submission-list">
+            {submissions.map((submission) => (
+              <li class="collection-item submission-item">
+                <a
+                  class="collection-item__preview"
+                  href={`/submissions/${submission.id}`}
+                  style={`aspect-ratio: ${submission.width} / ${submission.height}`}
+                  aria-label={`Open ${submission.title}`}
+                >
+                  <img
+                    src={buildMediaPreviewUrl(
+                      {
+                        kind: submission.assetType,
+                        publicId: submission.cloudinaryPublicId,
+                        width: submission.width,
+                        height: submission.height,
+                        alt: submission.title,
+                      },
+                      { width: 320, quality: "auto", format: "auto" },
+                    )}
+                    alt=""
+                    width={submission.width}
+                    height={submission.height}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </a>
+                <div class="collection-item__body">
+                  <h3>
+                    <a href={`/submissions/${submission.id}`}>
+                      {submission.title}
+                    </a>
+                  </h3>
+                  <p>
+                    {submission.assetType} / {submission.category.name} /{" "}
+                    {submission.tags.map((tag) => tag.displayName).join(", ")}
+                  </p>
+                  <p>
+                    <time datetime={submission.createdAt}>
+                      {dateFormatter.format(new Date(submission.createdAt))}
+                    </time>{" "}
+                    / {SUBMISSION_STATUS_LABEL} / {bytesLabel(submission.bytes)}
+                  </p>
+                </div>
+                <div class="collection-item__controls">
+                  <a
+                    class="button button--ghost button--sm"
+                    href={`/submissions/${submission.id}`}
+                  >
+                    Open
+                  </a>
+                  <button
+                    class="button button--danger button--sm"
+                    type="button"
+                    data-submission-cancel={submission.id}
+                  >
+                    Cancel submission
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </section>
+  </section>
+</BaseLayout>

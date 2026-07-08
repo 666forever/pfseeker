@@ -43,6 +43,7 @@ Begin with the audit and planning task in `INITIAL_TASK.md`. Do not immediately 
 - `SEED_DATA.md`
 - `SEARCH_AND_TAXONOMY.md`
 - `COLLECTIONS.md`
+- `SUBMISSIONS.md`
 - `ASSET_PAGES.md`
 
 ## D1 environments
@@ -53,7 +54,7 @@ The required runtime binding name is `DB`.
 - preview: `pfseeker-preview`
 - production: `pfseeker-production`
 
-Preview contains development seed media for validation. Production has the Phase 10 auth schema and Phase 11 collection schema after migration, but is intentionally not seeded with development SVG records or fake collections.
+Preview contains development seed media for validation. Production has the Phase 10 auth schema, Phase 11 collection schema, and Phase 12 signed-submission schema after migration `0004_signed_submissions.sql`. Production remains intentionally not seeded with development SVG records, fake collections, or fake submissions.
 
 ## Authentication
 
@@ -67,4 +68,12 @@ Cloudflare Pages runs the Astro SSR deployment through the Pages advanced-mode `
 
 Collections require Discord sign-in. Signed-in users can create multiple private D1-backed collections, save assets from gallery cards or asset detail pages, reorder and remove items, rename or delete collections, and download owner-only ZIP files. Anonymous users may browse, search, preview, and download individual assets, but cannot save assets or create collections. The former localStorage collection model is removed from production behavior and no anonymous import path is retained.
 
-Phase 11 production verification is complete on `https://pfseeker.com`: collection creation, rename, add/remove, duplicate prevention, reorder, ZIP download, persistence after refresh and sign-out/sign-in, deletion, signed-out access protection, and signed-out Save sign-in prompting were manually verified. Public collection publishing remains deferred, and Phase 12 has not started.
+Phase 11 production verification is complete on `https://pfseeker.com`: collection creation, rename, add/remove, duplicate prevention, reorder, ZIP download, persistence after refresh and sign-out/sign-in, deletion, signed-out access protection, and signed-out Save sign-in prompting were manually verified. Public collection publishing remains deferred.
+
+## Submissions
+
+Phase 12 adds authenticated signed submissions on the `phase-12-signed-submissions` branch. Signed-in users can submit one PFP, banner, or icon image through direct signed Cloudinary upload. Successful submissions enter a private pending state, are owner-only, and can only be cancelled. Cancellation deletes the pending Cloudinary file and D1 submission row.
+
+Migration `0004_signed_submissions.sql` has been applied locally, to preview, and to production. Signed-out Cloudflare preview verification passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification is still pending until this branch is reviewed, merged, and configured with Cloudinary server credentials.
+
+Moderation, approval, rejection, public publishing, notifications, drafts, edit routes, and image replacement remain deferred to later phases. See `SUBMISSIONS.md`.

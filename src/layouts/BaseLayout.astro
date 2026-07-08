@@ -60,5 +60,6 @@ const currentUser = publicShell ? await getOptionalUser(Astro) : null;
     </div>
     {publicShell && <script>import "@/scripts/primitives";</script>}
     {publicShell && <script>import "@/scripts/collection-client";</script>}
+    {publicShell && <script>import "@/scripts/submissions-client";</script>}
   </body>
 </html>

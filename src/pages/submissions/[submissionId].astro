@@ -1,0 +1,184 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  AuthenticationRequiredError,
+  requireUser,
+} from "@/server/auth/session";
+import type { CurrentUser } from "@/server/auth/types";
+import { getD1DatabaseAsync } from "@/server/db/d1";
+import { buildMediaPreviewUrl } from "@/lib/media";
+import { bytesLabel, SUBMISSION_STATUS_LABEL } from "@/lib/submissions";
+import { SubmissionRepository } from "@/server/repositories/submissions";
+import { NotFoundError } from "@/server/repositories/errors";
+
+const submissionId = Astro.params.submissionId ?? "";
+let currentUser: CurrentUser;
+try {
+  currentUser = await requireUser(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent(Astro.url.pathname)}`,
+      302,
+    );
+  }
+  throw error;
+}
+
+const repository = new SubmissionRepository(
+  await getD1DatabaseAsync(Astro.locals),
+);
+let submission;
+try {
+  submission = await repository.readOwnedSubmission(
+    currentUser.user.id,
+    submissionId,
+  );
+} catch (error) {
+  if (error instanceof NotFoundError) {
+    return new Response("Submission not found.", { status: 404 });
+  }
+  throw error;
+}
+
+const dateFormatter = new Intl.DateTimeFormat("en", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+---
+
+<BaseLayout
+  title={submission.title}
+  description="View a private pending pfseeker submission."
+  noindex
+>
+  <section
+    class="page-shell submission-page"
+    aria-labelledby="submission-title"
+    data-submission-detail={submission.id}
+  >
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/">Home</a></li>
+        <li><a href="/submissions">Submissions</a></li>
+        <li><span aria-current="page">{submission.title}</span></li>
+      </ol>
+    </nav>
+
+    <div class="page-hero">
+      <p class="eyebrow">Pending submission</p>
+      <h1 id="submission-title">{submission.title}</h1>
+      <p>{SUBMISSION_STATUS_LABEL}</p>
+    </div>
+
+    <section
+      class="collection-panel submission-detail-grid"
+      aria-label="Submission detail"
+    >
+      <figure class="submission-detail-media">
+        <img
+          src={buildMediaPreviewUrl(
+            {
+              kind: submission.assetType,
+              publicId: submission.cloudinaryPublicId,
+              width: submission.width,
+              height: submission.height,
+              alt: submission.title,
+            },
+            { width: 960, quality: "auto", format: "auto" },
+          )}
+          alt=""
+          width={submission.width}
+          height={submission.height}
+          loading="eager"
+          decoding="async"
+        />
+      </figure>
+
+      <div class="submission-detail-list">
+        <dl>
+          <div>
+            <dt>Status</dt>
+            <dd>{SUBMISSION_STATUS_LABEL}</dd>
+          </div>
+          <div>
+            <dt>Asset type</dt>
+            <dd>{submission.assetType}</dd>
+          </div>
+          <div>
+            <dt>Category</dt>
+            <dd>{submission.category.name}</dd>
+          </div>
+          <div>
+            <dt>Tags</dt>
+            <dd>{submission.tags.map((tag) => tag.displayName).join(", ")}</dd>
+          </div>
+          <div>
+            <dt>Submitted</dt>
+            <dd>
+              <time datetime={submission.createdAt}>
+                {dateFormatter.format(new Date(submission.createdAt))}
+              </time>
+            </dd>
+          </div>
+          <div>
+            <dt>File</dt>
+            <dd>
+              {submission.width} x {submission.height} /{" "}
+              {submission.cloudinaryFormat.toUpperCase()} / {
+                bytesLabel(submission.bytes)
+              }
+            </dd>
+          </div>
+          {
+            submission.description && (
+              <div>
+                <dt>Description</dt>
+                <dd>{submission.description}</dd>
+              </div>
+            )
+          }
+          {
+            submission.creatorCredit && (
+              <div>
+                <dt>Creator or credit</dt>
+                <dd>{submission.creatorCredit}</dd>
+              </div>
+            )
+          }
+          {
+            submission.sourceUrl && (
+              <div>
+                <dt>Source URL</dt>
+                <dd>
+                  <a href={submission.sourceUrl} rel="nofollow noreferrer">
+                    {submission.sourceUrl}
+                  </a>
+                </dd>
+              </div>
+            )
+          }
+          {
+            submission.suggestedTags.length > 0 && (
+              <div>
+                <dt>Suggested tags</dt>
+                <dd>{submission.suggestedTags.join(", ")}</dd>
+              </div>
+            )
+          }
+        </dl>
+
+        <button
+          class="button button--danger button--md"
+          type="button"
+          data-submission-cancel={submission.id}
+        >
+          Cancel submission
+        </button>
+        <p data-submission-status role="status" aria-live="polite"></p>
+      </div>
+    </section>
+  </section>
+</BaseLayout>

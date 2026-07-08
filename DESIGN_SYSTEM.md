@@ -25,7 +25,7 @@ This avoids external font licensing risk, unnecessary preloading, and slow font 
 
 ## Tokens
 
-Tokens are centralized in [src/styles/global.css](C:/Users/hk/Documents/pfseeker-codex-project/src/styles/global.css).
+Tokens are centralized in [src/styles/global.css](C:/Users/hk/Documents/GitHub/pfseeker/src/styles/global.css).
 
 Color tokens:
 
@@ -65,7 +65,7 @@ Tailwind is compiled, but the system must remain understandable through semantic
 
 ## Component Conventions
 
-Components live in [src/components](C:/Users/hk/Documents/pfseeker-codex-project/src/components).
+Components live in [src/components](C:/Users/hk/Documents/GitHub/pfseeker/src/components).
 
 Completed Phase 2 primitives:
 
@@ -115,7 +115,7 @@ Disabled controls are visually muted and non-interactive. Invalid fields expose 
 
 ## Overlay Rules
 
-Dialogs and drawers use native `dialog` elements with shared behavior from [src/scripts/primitives.ts](C:/Users/hk/Documents/pfseeker-codex-project/src/scripts/primitives.ts).
+Dialogs and drawers use native `dialog` elements with shared behavior from [src/scripts/primitives.ts](C:/Users/hk/Documents/GitHub/pfseeker/src/scripts/primitives.ts).
 
 Required behavior:
 

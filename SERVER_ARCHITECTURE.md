@@ -24,6 +24,13 @@ Authenticated collections flow through server-only modules:
 - `src/server/services/collection-api.ts` centralizes authenticated repository access, same-origin mutation checks, request body validation, and JSON error responses.
 - Pages and endpoints derive the owner from `requireUser`; clients never provide owner IDs.
 
+Authenticated submissions flow through server-only modules:
+
+- `src/server/repositories/submissions.ts` owns upload-intent, quota, duplicate, pending-submission, tag-relation, owner-read, and owner-delete SQL.
+- `src/server/services/submission-api.ts` centralizes authenticated repository access, same-origin mutation checks, JSON body validation, and safe error responses.
+- `src/server/services/cloudinary.ts` owns Cloudinary signing, Admin API verification, SHA-256 content hashing, pending namespace checks, and deletion.
+- Pages and endpoints derive the owner from `requireUser`; clients never provide owner IDs or arbitrary Cloudinary folders.
+
 ## Current repository behavior
 
 The D1 repository reads published assets, categories, and tags from D1 and maps rows into the same public asset shape used by seed data. Search and taxonomy filters still run through `src/lib/search.ts`, preserving Phase 8 URL behavior.
@@ -31,6 +38,8 @@ The D1 repository reads published assets, categories, and tags from D1 and maps 
 This is acceptable for the current seed-scale dataset. Later phases can push search into SQL or a dedicated search system if needed, but the URL contract and matching behavior must stay compatible.
 
 The collection repository lists owned collections, reads one owned collection, creates, renames, deletes, adds assets, removes assets, and reorders items. Collection names are validated centrally, duplicate names are allowed, and visibility is private-only in Phase 11.
+
+The submission repository lists owned pending submissions, reads one owned pending submission, creates short-lived upload intents, completes verified Cloudinary uploads as `pending`, enforces quotas, checks exact duplicates by content hash, marks pending duplicates from other users, and deletes owned pending submissions after Cloudinary cleanup. Phase 12 has no approval, rejection, edit, replacement, restore, or public-publishing path.
 
 ## Endpoint foundation
 
@@ -95,10 +104,26 @@ JSON/API mutations return `401` when signed out. HTML collection routes redirect
 
 Production collection verification was completed manually on `https://pfseeker.com`: signed-out users are blocked and prompted to sign in from Save, authenticated users can create multiple private collections, save an asset into more than one collection, avoid duplicate saves, rename, reorder, remove items, download ZIPs, persist collection data across refresh and sign-out/sign-in, and delete collections. No anonymous localStorage collection is created.
 
+## Submission routes
+
+Phase 12 adds authenticated pending submissions:
+
+- `/submissions` requires sign-in and lists the current user's pending submissions newest first.
+- `/submissions/new` requires sign-in and renders the single-page submission form.
+- `/submissions/[submissionId]` requires sign-in and returns 404 for missing or non-owned submissions.
+- `POST /api/submissions/upload-intent` creates a short-lived signed Cloudinary upload intent.
+- `POST /api/submissions/complete` verifies the Cloudinary upload, validates metadata and quotas, and creates the D1 `pending` row.
+- `DELETE /api/submissions/[submissionId]` cancels an owned pending submission after deleting its Cloudinary resource.
+
+HTML routes redirect signed-out users to Discord sign-in with a safe return path. Mutation endpoints require active sessions, JSON request bodies where applicable, same-origin Origin/Referer, server-side taxonomy validation, server-side ownership, and safe JSON errors. Pending submissions are marked `noindex` and are not exposed through public gallery routes.
+
+Signed-out Cloudflare preview verification was completed on the Phase 12 preview: `/submissions` and `/submissions/new` show the Discord sign-in flow, `/submissions/[submissionId]` is protected by the same authenticated flow, and the preview hostname no longer returns a Cloudflare 404. Arbitrary preview OAuth completion remains intentionally untested because Discord callback configuration is production-only.
+
 ## Security notes
 
 - No secrets are read by browser code.
 - No user identity, IP address, or user agent is stored in Phase 9 download events.
 - Phase 10 auth secrets remain server-only, OAuth state is single-use, session tokens are stored as hashes in D1, redirects are allowlisted, and logout revokes server-side state.
 - Phase 11 collection mutations require active sessions, validate same-origin Origin/Referer, and enforce server-side ownership.
+- Phase 12 submission mutations require active sessions, validate same-origin Origin/Referer, enforce owner-only reads/deletes, use short-lived signed Cloudinary upload intents, verify uploaded Cloudinary resources server-side, compute SHA-256 content hashes from verified bytes, and keep Cloudinary secrets out of browser code.
 - Future authenticated and abuse-prone endpoints need rate limiting and broader Phase 16 hardening.

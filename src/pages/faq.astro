@@ -56,15 +56,24 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
     <section aria-labelledby="faq-five">
       <h2 id="faq-five">Can users submit images?</h2>
       <p>
-        Submissions are planned but not enabled. They will require account
-        authentication, validation, and moderation before launch.
+        Signed-in users can submit PFP, banner, and icon images into a private
+        pending state. Accepted formats are JPG, JPEG, PNG, WebP, and GIF.
+        Source URL and creator credit fields are optional, and there is no
+        guarantee of publication.
+      </p>
+      <p>
+        Pending submissions are stored through Cloudinary, shown only to the
+        submitting account, and can be cancelled. Cancelling deletes the pending
+        submission and uploaded pending file. Moderation and public publishing
+        are not enabled yet.
       </p>
     </section>
     <section aria-labelledby="faq-six">
       <h2 id="faq-six">How will copyright or reports work?</h2>
       <p>
-        Reporting and moderation workflows are planned. Final policies must be
-        completed before user uploads or public reports launch.
+        Reporting and moderation workflows are planned. Current submissions
+        require users to confirm that images do not contain obvious nudity, gore
+        or graphic injury, or hateful imagery.
       </p>
     </section>
   </section>

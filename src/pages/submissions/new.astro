@@ -1,0 +1,193 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  AuthenticationRequiredError,
+  requireUser,
+} from "@/server/auth/session";
+import { getD1DatabaseAsync } from "@/server/db/d1";
+import { D1ContentRepository } from "@/server/repositories/d1";
+import { submissionFileLimits } from "@/lib/submissions";
+
+try {
+  await requireUser(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent("/submissions/new")}`,
+      302,
+    );
+  }
+  throw error;
+}
+
+const contentRepository = new D1ContentRepository(
+  await getD1DatabaseAsync(Astro.locals),
+);
+const [categories, tags] = await Promise.all([
+  contentRepository.listCategories(),
+  contentRepository.listTags(),
+]);
+---
+
+<BaseLayout
+  title="Submit image"
+  description="Submit a private pending PFP, banner, or icon to pfseeker."
+  noindex
+>
+  <section
+    class="page-shell submission-page"
+    aria-labelledby="submission-new-title"
+  >
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/">Home</a></li>
+        <li><a href="/submissions">Submissions</a></li>
+        <li><span aria-current="page">New</span></li>
+      </ol>
+    </nav>
+
+    <div class="page-hero">
+      <p class="eyebrow">Submit</p>
+      <h1 id="submission-new-title">Submit one image</h1>
+      <p>
+        Images enter a private pending state. Nothing is published
+        automatically.
+      </p>
+    </div>
+
+    <form class="submission-form" data-submission-form novalidate>
+      <section class="collection-panel" aria-labelledby="submission-file-title">
+        <div>
+          <h2 id="submission-file-title">Image</h2>
+          <p>JPG, JPEG, PNG, WebP, or GIF only.</p>
+        </div>
+        <label
+          class="submission-dropzone"
+          for="submission-file"
+          data-submission-dropzone
+        >
+          <span>Choose or drop one image</span>
+          <input
+            id="submission-file"
+            name="file"
+            type="file"
+            accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif"
+            required
+            data-submission-file
+          />
+        </label>
+        <div class="submission-preview" data-submission-preview hidden>
+          <img alt="" data-submission-preview-image />
+          <p data-submission-file-meta></p>
+        </div>
+      </section>
+
+      <section class="collection-panel" aria-labelledby="submission-meta-title">
+        <div>
+          <h2 id="submission-meta-title">Details</h2>
+          <p>Use existing taxonomy. Suggested tags are review notes only.</p>
+        </div>
+
+        <div class="submission-grid">
+          <label>
+            Asset type
+            <select name="assetType" required data-submission-asset-type>
+              <option value="pfp">PFP</option>
+              <option value="banner">Banner</option>
+              <option value="icon">Icon</option>
+            </select>
+          </label>
+
+          <label>
+            Title
+            <input name="title" minlength="2" maxlength="80" required />
+          </label>
+
+          <label>
+            Category
+            <select name="category" required data-submission-category>
+              {
+                categories.map((category) => (
+                  <option
+                    value={category.slug}
+                    data-kinds={category.kinds.join(",")}
+                  >
+                    {category.name}
+                  </option>
+                ))
+              }
+            </select>
+          </label>
+
+          <fieldset class="submission-fieldset">
+            <legend>Tags</legend>
+            <div class="submission-tag-grid">
+              {
+                tags.map((tag) => (
+                  <label>
+                    <input type="checkbox" name="tags" value={tag} />
+                    <span>{tag}</span>
+                  </label>
+                ))
+              }
+            </div>
+          </fieldset>
+
+          <label>
+            Short description
+            <textarea name="description" maxlength="100" rows="3"></textarea>
+          </label>
+
+          <label>
+            Creator or credit name
+            <input name="creatorCredit" maxlength="80" />
+          </label>
+
+          <label>
+            Source URL
+            <input name="sourceUrl" type="url" inputmode="url" />
+          </label>
+
+          <label>
+            Suggested tags
+            <input
+              name="suggestedTags"
+              maxlength="96"
+              placeholder="up to 3, comma-separated"
+            />
+          </label>
+        </div>
+
+        <label class="submission-rules">
+          <input type="checkbox" name="contentRulesConfirmed" required />
+          <span>
+            I confirm this image does not contain obvious nudity, gore or
+            graphic injury, or hateful imagery.
+          </span>
+        </label>
+      </section>
+
+      <section
+        class="collection-panel submission-submit-panel"
+        aria-labelledby="submission-submit-title"
+      >
+        <div>
+          <h2 id="submission-submit-title">Submit</h2>
+          <p data-submission-status role="status" aria-live="polite"></p>
+          <progress data-submission-progress value="0" max="1" hidden
+          ></progress>
+        </div>
+        <button class="button button--secondary button--md" type="submit">
+          Submit image
+        </button>
+      </section>
+    </form>
+
+    <script
+      is:inline
+      type="application/json"
+      id="submission-file-limits"
+      set:html={JSON.stringify(submissionFileLimits)}
+    />
+  </section>
+</BaseLayout>

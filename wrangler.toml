@@ -6,6 +6,7 @@ pages_build_output_dir = "./dist/client"
 PUBLIC_SITE_URL = "https://pfseeker.com"
 DISCORD_CLIENT_ID = "1523444161951437050"
 DISCORD_REDIRECT_URI = "http://localhost:4321/auth/discord/callback"
+CLOUDINARY_PENDING_SUBMISSIONS_FOLDER = "pfseeker/pending-submissions"
 
 # Local Wrangler D1 state uses preview database metadata but writes to the local
 # .wrangler persistence directory unless a command uses --remote.
@@ -19,6 +20,7 @@ migrations_dir = "migrations"
 
 [env.preview.vars]
 PUBLIC_SITE_URL = "https://pfseeker.com"
+CLOUDINARY_PENDING_SUBMISSIONS_FOLDER = "pfseeker/pending-submissions"
 
 [[env.preview.d1_databases]]
 binding = "DB"
@@ -32,6 +34,7 @@ migrations_dir = "migrations"
 PUBLIC_SITE_URL = "https://pfseeker.com"
 DISCORD_CLIENT_ID = "1523444161951437050"
 DISCORD_REDIRECT_URI = "https://pfseeker.com/auth/discord/callback"
+CLOUDINARY_PENDING_SUBMISSIONS_FOLDER = "pfseeker/pending-submissions"
 
 [[env.production.d1_databases]]
 binding = "DB"

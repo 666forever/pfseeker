@@ -19,6 +19,10 @@ export interface PfseekerBindings {
   ENVIRONMENT?: string;
   PUBLIC_SITE_URL?: string;
   PUBLIC_CLOUDINARY_CLOUD_NAME?: string;
+  CLOUDINARY_CLOUD_NAME?: string;
+  CLOUDINARY_API_KEY?: string;
+  CLOUDINARY_API_SECRET?: string;
+  CLOUDINARY_PENDING_SUBMISSIONS_FOLDER?: string;
   DISCORD_CLIENT_ID?: string;
   DISCORD_CLIENT_SECRET?: string;
   DISCORD_REDIRECT_URI?: string;
