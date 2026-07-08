@@ -1,0 +1,11 @@
+---
+interface Props {
+  tone?: "default" | "raised" | "recessed";
+}
+
+const { tone = "default" } = Astro.props;
+---
+
+<article class:list={["card", `card--${tone}`]}>
+  <slot />
+</article>

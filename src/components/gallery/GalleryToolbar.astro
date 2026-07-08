@@ -1,0 +1,31 @@
+---
+import { sortOptions, type SortKey } from "@/data/discovery";
+
+interface Props {
+  currentSort: SortKey;
+  basePath: string;
+}
+
+const { currentSort, basePath } = Astro.props;
+const separator = basePath.includes("?") ? "&" : "?";
+---
+
+<nav class="gallery-toolbar" aria-label="Sort gallery">
+  <span>Sort</span>
+  <div class="gallery-toolbar__links">
+    {
+      sortOptions.map((option) => (
+        <a
+          href={
+            option.value === "newest"
+              ? basePath
+              : `${basePath}${separator}sort=${option.value}`
+          }
+          aria-current={currentSort === option.value ? "true" : undefined}
+        >
+          {option.label}
+        </a>
+      ))
+    }
+  </div>
+</nav>

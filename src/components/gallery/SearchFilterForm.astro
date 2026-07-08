@@ -1,0 +1,275 @@
+---
+import { sortOptions } from "@/data/discovery";
+import {
+  activeFilters,
+  animationOptions,
+  colorOptions,
+  formatOptions,
+  getAvailableCategories,
+  getAvailableTags,
+  getResetUrl,
+  orientationOptions,
+  pluralizeResults,
+  type SearchContext,
+  type SearchFilters,
+} from "@/lib/search";
+
+interface Props {
+  filters: SearchFilters;
+  context: SearchContext;
+  resultCount: number;
+  showType?: boolean;
+  fixedCategoryLabel?: string;
+}
+
+const {
+  filters,
+  context,
+  resultCount,
+  showType = false,
+  fixedCategoryLabel,
+} = Astro.props;
+const availableCategories = getAvailableCategories(filters);
+const tags = getAvailableTags();
+const chips = activeFilters(filters, context);
+const resetUrl = getResetUrl(context);
+const filterCount = chips.length;
+
+const selectOptions = {
+  animation: [
+    { value: "all", label: "Any motion" },
+    ...animationOptions
+      .filter((value) => value !== "all")
+      .map((value) => ({
+        value,
+        label: value === "static" ? "Static" : "Animated",
+      })),
+  ],
+  format: [
+    { value: "all", label: "Any format" },
+    ...formatOptions
+      .filter((value) => value !== "all")
+      .map((value) => ({ value, label: value.toUpperCase() })),
+  ],
+  orientation: [
+    { value: "all", label: "Any orientation" },
+    ...orientationOptions
+      .filter((value) => value !== "all")
+      .map((value) => ({
+        value,
+        label: value.charAt(0).toUpperCase() + value.slice(1),
+      })),
+  ],
+  color: [
+    { value: "all", label: "Any color family" },
+    ...colorOptions
+      .filter((value) => value !== "all")
+      .map((value) => ({
+        value,
+        label: value.charAt(0).toUpperCase() + value.slice(1),
+      })),
+  ],
+};
+---
+
+<aside class="filter-panel" aria-labelledby="filters-title">
+  <div class="filter-panel__header">
+    <div>
+      <p class="eyebrow">Filters</p>
+      <h2 id="filters-title">Refine results</h2>
+    </div>
+    <span>{filterCount === 1 ? "1 active" : `${filterCount} active`}</span>
+  </div>
+
+  <form class="filter-form" action={context.basePath} method="get">
+    <div class="field">
+      <label class="field__label" for="filter-q">Search text</label>
+      <input
+        class="field__control"
+        id="filter-q"
+        name="q"
+        value={filters.q}
+        autocomplete="off"
+      />
+    </div>
+
+    {
+      showType && (
+        <div class="field">
+          <label class="field__label" for="filter-type">
+            Type
+          </label>
+          <select class="field__control" id="filter-type" name="type">
+            <option value="all" selected={filters.type === "all"}>
+              All types
+            </option>
+            <option value="pfp" selected={filters.type === "pfp"}>
+              Profile pictures
+            </option>
+            <option value="banner" selected={filters.type === "banner"}>
+              Banners
+            </option>
+            <option value="icon" selected={filters.type === "icon"}>
+              Icons
+            </option>
+          </select>
+        </div>
+      )
+    }
+
+    {
+      fixedCategoryLabel ? (
+        <p class="filter-note">Category fixed by route: {fixedCategoryLabel}</p>
+      ) : (
+        <div class="field">
+          <label class="field__label" for="filter-category">
+            Category
+          </label>
+          <select class="field__control" id="filter-category" name="category">
+            <option value="" selected={!filters.category}>
+              Any category
+            </option>
+            {availableCategories.map((category) => (
+              <option
+                value={category.slug}
+                selected={filters.category === category.slug}
+              >
+                {category.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )
+    }
+
+    <div class="field">
+      <label class="field__label" for="filter-tag">Tag</label>
+      <select class="field__control" id="filter-tag" name="tag">
+        <option value="" selected={!filters.tag}>Any tag</option>
+        {
+          tags.map((tag) => (
+            <option value={tag} selected={filters.tag === tag}>
+              {tag}
+            </option>
+          ))
+        }
+      </select>
+    </div>
+
+    <div class="filter-form__grid">
+      <div class="field">
+        <label class="field__label" for="filter-format">Format</label>
+        <select class="field__control" id="filter-format" name="format">
+          {
+            selectOptions.format.map((option) => (
+              <option
+                value={option.value}
+                selected={filters.format === option.value}
+              >
+                {option.label}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="filter-animation">Motion</label>
+        <select class="field__control" id="filter-animation" name="animation">
+          {
+            selectOptions.animation.map((option) => (
+              <option
+                value={option.value}
+                selected={filters.animation === option.value}
+              >
+                {option.label}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="filter-orientation">Orientation</label>
+        <select
+          class="field__control"
+          id="filter-orientation"
+          name="orientation"
+        >
+          {
+            selectOptions.orientation.map((option) => (
+              <option
+                value={option.value}
+                selected={filters.orientation === option.value}
+              >
+                {option.label}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label class="field__label" for="filter-color">Color family</label>
+        <select class="field__control" id="filter-color" name="color">
+          {
+            selectOptions.color.map((option) => (
+              <option
+                value={option.value}
+                selected={filters.color === option.value}
+              >
+                {option.label}
+              </option>
+            ))
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field__label" for="filter-sort">Sort</label>
+      <select class="field__control" id="filter-sort" name="sort">
+        {
+          sortOptions.map((option) => (
+            <option
+              value={option.value}
+              selected={filters.sort === option.value}
+            >
+              {option.label}
+            </option>
+          ))
+        }
+      </select>
+    </div>
+
+    <div class="filter-form__actions">
+      <button class="button button--primary button--md" type="submit">
+        Apply filters
+      </button>
+      <a class="button button--ghost button--md" href={resetUrl}>Reset all</a>
+    </div>
+  </form>
+
+  <section class="active-filters" aria-labelledby="active-filters-title">
+    <div class="active-filters__header">
+      <h3 id="active-filters-title">Active filters</h3>
+      <p>{pluralizeResults(resultCount)}</p>
+    </div>
+    {
+      chips.length ? (
+        <ul>
+          {chips.map((chip) => (
+            <li>
+              <a href={chip.href} aria-label={`Remove ${chip.label}`}>
+                {chip.label}
+                <span aria-hidden="true">Remove</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>No active filters.</p>
+      )
+    }
+  </section>
+</aside>

@@ -1,0 +1,35 @@
+---
+interface Props {
+  id: string;
+  title: string;
+  description?: string;
+}
+
+const { id, title, description } = Astro.props;
+---
+
+<dialog
+  id={id}
+  class="dialog"
+  data-overlay
+  aria-labelledby={`${id}-title`}
+  aria-describedby={description ? `${id}-description` : undefined}
+>
+  <div class="dialog__panel">
+    <header class="dialog__header">
+      <div>
+        <h2 id={`${id}-title`}>{title}</h2>
+        {description && <p id={`${id}-description`}>{description}</p>}
+      </div>
+      <button
+        class="icon-button"
+        type="button"
+        data-dialog-close
+        aria-label="Close dialog">×</button
+      >
+    </header>
+    <div class="dialog__body">
+      <slot />
+    </div>
+  </div>
+</dialog>

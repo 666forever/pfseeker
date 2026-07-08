@@ -1,0 +1,72 @@
+---
+import AssetGrid from "@/components/gallery/AssetGrid.astro";
+import CategoryNav from "@/components/gallery/CategoryNav.astro";
+import GalleryPageHeading from "@/components/gallery/GalleryPageHeading.astro";
+import ResultCount from "@/components/gallery/ResultCount.astro";
+import SearchFilterForm from "@/components/gallery/SearchFilterForm.astro";
+import type { SeedAsset } from "@/data/assets";
+import type { SeedCategory } from "@/data/categories";
+import type { GalleryKindConfig } from "@/data/discovery";
+import {
+  activeFilters,
+  pluralizeResults,
+  type SearchContext,
+  type SearchFilters,
+} from "@/lib/search";
+
+interface Props {
+  config: GalleryKindConfig;
+  assets: SeedAsset[];
+  filters: SearchFilters;
+  context: SearchContext;
+  activeCategory?: SeedCategory;
+}
+
+const { config, assets, filters, context, activeCategory } = Astro.props;
+const basePath = activeCategory
+  ? `${config.path}/${activeCategory.slug}`
+  : config.path;
+const title = activeCategory
+  ? `${activeCategory.name} ${config.pluralLabel}`
+  : config.title;
+const introduction = activeCategory?.description ?? config.introduction;
+const chips = activeFilters(filters, context);
+---
+
+<section class="page-shell gallery-page" aria-labelledby="gallery-title">
+  <GalleryPageHeading
+    eyebrow={config.pluralLabel}
+    title={title}
+    introduction={introduction}
+    crumbs={activeCategory
+      ? [
+          { label: config.pluralLabel, href: config.path },
+          { label: activeCategory.name, href: basePath },
+        ]
+      : []}
+  />
+  <CategoryNav kind={config.kind} activeCategory={activeCategory} />
+  <div class="gallery-controls">
+    <ResultCount count={assets.length} label="Result" />
+    <p class="result-count">
+      {
+        chips.length
+          ? `${pluralizeResults(assets.length)} after filtering.`
+          : `${pluralizeResults(assets.length)} in this seed gallery.`
+      }
+    </p>
+  </div>
+  <div class="discovery-layout">
+    <SearchFilterForm
+      filters={filters}
+      context={context}
+      resultCount={assets.length}
+      fixedCategoryLabel={activeCategory?.name}
+    />
+    <AssetGrid
+      assets={assets}
+      emptyTitle="No matching seed records"
+      emptyMessage="No current seed record matches these filters. Reset the filters or move to a broader gallery."
+    />
+  </div>
+</section>

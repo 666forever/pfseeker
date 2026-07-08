@@ -1,0 +1,27 @@
+---
+import AssetCard from "@/components/gallery/AssetCard.astro";
+import type { SeedAsset } from "@/data/assets";
+
+interface Props {
+  assets: SeedAsset[];
+  emptyTitle: string;
+  emptyMessage: string;
+}
+
+const { assets, emptyTitle, emptyMessage } = Astro.props;
+---
+
+{
+  assets.length > 0 ? (
+    <div class="asset-grid" data-count={assets.length}>
+      {assets.map((asset, index) => (
+        <AssetCard asset={asset} priority={index < 3} />
+      ))}
+    </div>
+  ) : (
+    <section class="route-empty" aria-labelledby="gallery-empty-title">
+      <h2 id="gallery-empty-title">{emptyTitle}</h2>
+      <p>{emptyMessage}</p>
+    </section>
+  )
+}

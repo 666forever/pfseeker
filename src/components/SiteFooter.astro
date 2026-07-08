@@ -1,0 +1,29 @@
+---
+import { footerGroups } from "@/lib/shell";
+
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="site-footer__brand">
+    <p class="brand-mark">pfseeker</p>
+    <p>
+      Curated discovery for profile pictures, banners, icons, and visual
+      collections. Public browsing remains the first priority while account
+      features are built carefully.
+    </p>
+    <p class="site-footer__meta">© {year} pfseeker.</p>
+  </div>
+  <div class="site-footer__groups">
+    {
+      footerGroups.map((group) => (
+        <nav aria-label={`${group.title} links`} class="site-footer__group">
+          <h2>{group.title}</h2>
+          {group.links.map((link) => (
+            <a href={link.href}>{link.label}</a>
+          ))}
+        </nav>
+      ))
+    }
+  </div>
+</footer>

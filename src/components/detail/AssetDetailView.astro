@@ -1,0 +1,176 @@
+---
+import AssetGrid from "@/components/gallery/AssetGrid.astro";
+import {
+  buildSeedImageDescriptor,
+  galleryKindConfigs,
+  getAssetRoute,
+  getCategoryRoute,
+} from "@/data/discovery";
+import { getCategory } from "@/data/categories";
+import type { SeedAsset } from "@/data/assets";
+import { canonicalUrl } from "@/lib/shell";
+import { normalizeToken } from "@/lib/search";
+
+interface Props {
+  asset: SeedAsset;
+  relatedAssets: SeedAsset[];
+}
+
+const { asset, relatedAssets } = Astro.props;
+const config = galleryKindConfigs[asset.kind];
+const image = buildSeedImageDescriptor(asset);
+const canonical = canonicalUrl(getAssetRoute(asset));
+const categories = asset.categories
+  .map((slug) => getCategory(slug))
+  .filter((category) => category !== undefined);
+const published = new Date(`${asset.publishedAt}T00:00:00.000Z`);
+const formattedDate = new Intl.DateTimeFormat("en", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+}).format(published);
+---
+
+<section class="page-shell detail-page" aria-labelledby="asset-title">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <ol>
+      <li><a href="/">Home</a></li>
+      <li><a href={config.path}>{config.pluralLabel}</a></li>
+      <li><span aria-current="page">{asset.title}</span></li>
+    </ol>
+  </nav>
+
+  <div class:list={["detail-hero", `detail-hero--${asset.kind}`]}>
+    <figure class="detail-preview">
+      <div
+        class="detail-preview__frame"
+        style={`aspect-ratio: ${image.aspectRatio}`}
+      >
+        <img
+          src={image.src}
+          srcset={image.srcset}
+          sizes={image.sizes}
+          alt={image.alt}
+          width={image.width}
+          height={image.height}
+          loading="eager"
+          decoding="async"
+        />
+      </div>
+      <figcaption>{asset.alt}</figcaption>
+    </figure>
+
+    <div class="detail-panel">
+      <p class="eyebrow">{config.singularLabel}</p>
+      <h1 id="asset-title">{asset.title}</h1>
+      <p>{asset.alt}</p>
+
+      <dl class="detail-list">
+        <div>
+          <dt>Type</dt>
+          <dd>{config.singularLabel}</dd>
+        </div>
+        <div>
+          <dt>Dimensions</dt>
+          <dd>{asset.width} x {asset.height}</dd>
+        </div>
+        <div>
+          <dt>Format</dt>
+          <dd>{asset.format.toUpperCase()}</dd>
+        </div>
+        <div>
+          <dt>Motion</dt>
+          <dd>{asset.animation === "animated" ? "Animated" : "Static"}</dd>
+        </div>
+        <div>
+          <dt>Published</dt>
+          <dd><time datetime={asset.publishedAt}>{formattedDate}</time></dd>
+        </div>
+      </dl>
+
+      <div class="metadata-group" aria-label="Categories">
+        <h2>Categories</h2>
+        <div class="metadata-pills">
+          {
+            categories.map((category) => (
+              <a href={getCategoryRoute(asset.kind, category)}>
+                {category.name}
+              </a>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="metadata-group" aria-label="Tags">
+        <h2>Tags</h2>
+        <div class="metadata-pills">
+          {
+            asset.tags.map((tag) => (
+              <a
+                href={`/search?tag=${encodeURIComponent(normalizeToken(tag))}`}
+              >
+                {tag}
+              </a>
+            ))
+          }
+        </div>
+      </div>
+
+      <div class="detail-actions" aria-label="Asset actions">
+        <button
+          class="button button--secondary button--md"
+          type="button"
+          data-collection-toggle
+          data-asset-id={asset.id}
+          aria-label={`Add ${asset.title} to collection`}
+          disabled
+        >
+          Add to collection
+        </button>
+        <button
+          class="button button--ghost button--md"
+          type="button"
+          data-copy-link
+          data-copy-value={canonical}
+        >
+          Copy link
+        </button>
+        <a
+          class="button button--ghost button--md"
+          href={asset.localSource}
+          download
+        >
+          Download preview
+        </a>
+        <a class="button button--ghost button--md" href={config.path}>
+          Back to {config.pluralLabel}
+        </a>
+        <p
+          class="copy-feedback"
+          data-copy-feedback
+          role="status"
+          aria-live="polite"
+        >
+          Page URL is available at <a href={canonical}>{canonical}</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <section class="detail-related" aria-labelledby="related-title">
+    <div class="section-heading">
+      <p class="eyebrow">Related</p>
+      <h2 id="related-title">More seed {config.pluralLabel.toLowerCase()}</h2>
+    </div>
+    <AssetGrid
+      assets={relatedAssets}
+      emptyTitle="No related seed assets"
+      emptyMessage="Related assets will expand as the seed library grows."
+    />
+  </section>
+</section>
+
+<script>
+  import "@/scripts/detail-actions";
+</script>

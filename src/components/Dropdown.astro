@@ -1,0 +1,23 @@
+---
+interface Props {
+  id: string;
+  label: string;
+}
+
+const { id, label } = Astro.props;
+---
+
+<div class="dropdown">
+  <button
+    class="button button--secondary button--md"
+    type="button"
+    aria-expanded="false"
+    aria-controls={id}
+    data-dropdown-trigger
+  >
+    {label}
+  </button>
+  <div id={id} class="dropdown__menu" role="menu" hidden>
+    <slot />
+  </div>
+</div>

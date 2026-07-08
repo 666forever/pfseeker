@@ -1,0 +1,64 @@
+---
+import "../styles/global.css";
+import SiteFooter from "@/components/SiteFooter.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import { siteConfig } from "@/lib/config";
+import { canonicalUrl, titleTemplate } from "@/lib/shell";
+import { getOptionalUser } from "@/server/auth/session";
+
+interface Props {
+  title: string;
+  description: string;
+  noindex?: boolean;
+  robots?: string;
+  canonicalPath?: string;
+  publicShell?: boolean;
+}
+
+const {
+  title,
+  description,
+  noindex = false,
+  robots,
+  canonicalPath,
+  publicShell = true,
+} = Astro.props;
+const pageTitle = titleTemplate(title);
+const canonical = canonicalUrl(canonicalPath ?? Astro.url.pathname);
+const robotsContent = robots ?? (noindex ? "noindex, nofollow" : undefined);
+const currentUser = publicShell ? await getOptionalUser(Astro) : null;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#070706" />
+    <meta name="description" content={description} />
+    {robotsContent && <meta name="robots" content={robotsContent} />}
+    <meta name="generator" content={Astro.generator} />
+    <meta property="og:site_name" content={siteConfig.name} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={pageTitle} />
+    <meta name="twitter:description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <title>{pageTitle}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#content">Skip to content</a>
+    <div class="site-shell">
+      {publicShell && <SiteHeader currentUser={currentUser} />}
+      <main id="content">
+        <slot />
+      </main>
+      {publicShell && <SiteFooter />}
+    </div>
+    {publicShell && <script>import "@/scripts/primitives";</script>}
+    {publicShell && <script>import "@/scripts/collection-client";</script>}
+  </body>
+</html>

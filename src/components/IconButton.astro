@@ -1,0 +1,41 @@
+---
+import VisuallyHidden from "@/components/VisuallyHidden.astro";
+
+interface Props {
+  label: string;
+  type?: "button" | "submit" | "reset";
+  variant?: "default" | "accent" | "danger";
+  disabled?: boolean;
+  pressed?: boolean;
+  dataDialogOpen?: string;
+  dataDrawerOpen?: string;
+  dataDialogClose?: boolean;
+  dataDrawerClose?: boolean;
+}
+
+const {
+  label,
+  type = "button",
+  variant = "default",
+  disabled = false,
+  pressed,
+  dataDialogOpen,
+  dataDrawerOpen,
+  dataDialogClose,
+  dataDrawerClose,
+} = Astro.props;
+---
+
+<button
+  class:list={["icon-button", `icon-button--${variant}`]}
+  type={type}
+  aria-pressed={pressed}
+  disabled={disabled}
+  data-dialog-open={dataDialogOpen}
+  data-drawer-open={dataDrawerOpen}
+  data-dialog-close={dataDialogClose ? "" : undefined}
+  data-drawer-close={dataDrawerClose ? "" : undefined}
+>
+  <slot />
+  <VisuallyHidden>{label}</VisuallyHidden>
+</button>

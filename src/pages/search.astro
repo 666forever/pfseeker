@@ -1,0 +1,68 @@
+---
+import AssetGrid from "@/components/gallery/AssetGrid.astro";
+import ResultCount from "@/components/gallery/ResultCount.astro";
+import SearchFilterForm from "@/components/gallery/SearchFilterForm.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  activeFilters,
+  canonicalSearchPath,
+  parseSearchFilters,
+  pluralizeResults,
+} from "@/lib/search";
+import { getContentRepository } from "@/server/repositories";
+
+const context = { basePath: "/search", includeType: true };
+const filters = parseSearchFilters(Astro.url.searchParams, context);
+const repository = await getContentRepository(Astro.locals);
+const assets = await repository.searchAssets(filters);
+const chips = activeFilters(filters, context);
+const title = filters.q ? `Search for ${filters.q}` : "Search";
+const canonicalPath = canonicalSearchPath(Astro.url.searchParams, context);
+const hasSearchState = chips.length > 0;
+---
+
+<BaseLayout
+  title={title}
+  description="Search pfseeker seed profile pictures, banners, and icons by text, type, category, tag, format, motion, orientation, color family, and sort order."
+  robots="noindex, follow"
+  canonicalPath={canonicalPath}
+>
+  <section class="page-shell gallery-page" aria-labelledby="search-title">
+    <header class="gallery-heading">
+      <p class="eyebrow">Search</p>
+      <h1 id="search-title">
+        {filters.q ? `Search results for ${filters.q}` : "Search pfseeker"}
+      </h1>
+      <p>
+        Search covers the local seed dataset by title, alt text, type,
+        compatible categories, exact tags, format, motion, derived orientation,
+        and deterministic color families.
+      </p>
+    </header>
+    <div class="gallery-controls">
+      <ResultCount count={assets.length} label="Result" />
+      <p class="result-count">
+        {
+          hasSearchState
+            ? `${pluralizeResults(assets.length)} for the current search state.`
+            : `${pluralizeResults(assets.length)} in the current seed dataset.`
+        }
+      </p>
+    </div>
+    <div class="discovery-layout">
+      <SearchFilterForm
+        filters={filters}
+        context={context}
+        resultCount={assets.length}
+        showType
+      />
+      <AssetGrid
+        assets={assets}
+        emptyTitle="No seed results found"
+        emptyMessage={hasSearchState
+          ? "No current seed record matches these filters. Remove a filter, reset the search, or move to a broader gallery."
+          : "Use the filters to look across profile pictures, banners, icons, categories, and tags."}
+      />
+    </div>
+  </section>
+</BaseLayout>

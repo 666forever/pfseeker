@@ -1,0 +1,87 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { discordAvatarUrl } from "@/server/auth/discord";
+import { getOptionalUser } from "@/server/auth/session";
+
+const currentUser = await getOptionalUser(Astro);
+
+if (!currentUser) {
+  return Astro.redirect(
+    `/auth/discord?returnTo=${encodeURIComponent("/account")}`,
+    302,
+  );
+}
+
+const { user } = currentUser;
+const displayName = user.globalName || user.username;
+const avatar = discordAvatarUrl(user);
+const dateFormatter = new Intl.DateTimeFormat("en", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+const createdAt = dateFormatter.format(new Date(user.createdAt));
+const lastLoginAt = dateFormatter.format(new Date(user.lastLoginAt));
+---
+
+<BaseLayout
+  title="Account"
+  description="View your pfseeker account identity and local session details."
+  noindex
+>
+  <section class="page-shell account-page" aria-labelledby="account-title">
+    <div class="page-hero">
+      <p class="eyebrow">Account</p>
+      <h1 id="account-title">{displayName}</h1>
+      <p>
+        Your pfseeker account uses open Discord sign-in with the identify scope.
+        No server membership, role, bot token, or email permission is used.
+      </p>
+    </div>
+
+    <div class="detail-panel">
+      <div class="account-summary">
+        <img
+          src={avatar}
+          width="96"
+          height="96"
+          alt={`Discord avatar for ${displayName}`}
+          loading="eager"
+          decoding="async"
+        />
+        <div>
+          <h2>{displayName}</h2>
+          <p>@{user.username}</p>
+        </div>
+      </div>
+
+      <dl class="detail-list">
+        <div>
+          <dt>Discord user ID</dt>
+          <dd>{user.discordUserId}</dd>
+        </div>
+        <div>
+          <dt>Account created</dt>
+          <dd><time datetime={user.createdAt}>{createdAt}</time></dd>
+        </div>
+        <div>
+          <dt>Last sign-in</dt>
+          <dd><time datetime={user.lastLoginAt}>{lastLoginAt}</time></dd>
+        </div>
+        <div>
+          <dt>Session</dt>
+          <dd>
+            Stored as an opaque HTTP-only cookie and a hashed D1 session record.
+          </dd>
+        </div>
+      </dl>
+
+      <form method="post" action="/auth/logout">
+        <button class="button button--secondary button--md" type="submit">
+          Sign out
+        </button>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

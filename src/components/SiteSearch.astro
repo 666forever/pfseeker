@@ -1,0 +1,32 @@
+---
+interface Props {
+  id: string;
+  value?: string;
+  variant?: "desktop" | "mobile";
+}
+
+const { id, value = "", variant = "desktop" } = Astro.props;
+const label =
+  variant === "desktop"
+    ? "Search pfseeker"
+    : "Search pfseeker from mobile navigation";
+---
+
+<search
+  class:list={["shell-search", `shell-search--${variant}`]}
+  aria-label={label}
+>
+  <form action="/search" method="get" class="shell-search__form">
+    <label class="visually-hidden" for={id}>{label}</label>
+    <input
+      id={id}
+      class="shell-search__input"
+      type="search"
+      name="q"
+      value={value}
+      placeholder="Search profile media"
+      autocomplete="off"
+    />
+    <button class="shell-search__submit" type="submit">Search</button>
+  </form>
+</search>

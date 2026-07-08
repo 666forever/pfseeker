@@ -1,0 +1,58 @@
+---
+interface Props {
+  id: string;
+  label: string;
+  type?: "text" | "email" | "url" | "password";
+  value?: string;
+  placeholder?: string;
+  help?: string;
+  error?: string;
+  disabled?: boolean;
+  required?: boolean;
+}
+
+const {
+  id,
+  label,
+  type = "text",
+  value,
+  placeholder,
+  help,
+  error,
+  disabled = false,
+  required = false,
+} = Astro.props;
+
+const describedBy = [help && `${id}-help`, error && `${id}-error`]
+  .filter(Boolean)
+  .join(" ");
+---
+
+<label class="field" for={id}>
+  <span class="field__label">{label}</span>
+  <input
+    id={id}
+    class="field__control"
+    type={type}
+    value={value}
+    placeholder={placeholder}
+    disabled={disabled}
+    required={required}
+    aria-invalid={error ? "true" : undefined}
+    aria-describedby={describedBy || undefined}
+  />
+  {
+    help && (
+      <span id={`${id}-help`} class="field__help">
+        {help}
+      </span>
+    )
+  }
+  {
+    error && (
+      <span id={`${id}-error`} class="field__error">
+        {error}
+      </span>
+    )
+  }
+</label>

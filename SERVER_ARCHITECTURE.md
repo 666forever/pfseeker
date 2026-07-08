@@ -1,0 +1,76 @@
+# pfseeker Server Architecture
+
+## Boundary
+
+Server-side data access now flows through `src/server/repositories`.
+
+- Local Astro development without a Cloudflare runtime uses the seed repository fallback.
+- Cloudflare runtime with `env.DB` uses `D1ContentRepository`.
+- Cloudflare runtime without `env.DB` fails instead of silently falling back.
+- Local Cloudflare dev/preview with the configured Wrangler binding uses the local D1 database through `env.DB`.
+
+Public pages should not issue raw SQL. They should use the repository boundary.
+
+Authentication also flows through server-only modules:
+
+- `src/server/config.ts` validates Discord and session configuration without exposing secret values.
+- `src/server/repositories/auth.ts` owns user, session, and OAuth-state SQL.
+- `src/server/auth/*` owns Discord OAuth, state hashing, session hashing, cookie handling, redirect validation, and current-user helpers.
+- Pages and endpoints call these helpers instead of issuing raw auth SQL.
+
+## Current repository behavior
+
+The D1 repository reads published assets, categories, and tags from D1 and maps rows into the same public asset shape used by seed data. Search and taxonomy filters still run through `src/lib/search.ts`, preserving Phase 8 URL behavior.
+
+This is acceptable for the current seed-scale dataset. Later phases can push search into SQL or a dedicated search system if needed, but the URL contract and matching behavior must stay compatible.
+
+## Endpoint foundation
+
+`POST /api/downloads` accepts JSON with:
+
+```json
+{
+  "assetId": "pfp-ember-orbit",
+  "source": "preview"
+}
+```
+
+It records a download event when D1 is available. The preview download link is not wired to this endpoint yet, so the UI does not imply production analytics are complete.
+
+Runtime verification on 2026-07-05 confirmed:
+
+- valid local `POST /api/downloads` inserts a `downloads` row.
+- invalid asset IDs return 404.
+- malformed JSON returns 400.
+- `GET /api/downloads` returns 405.
+- `downloads` stores only `id`, `asset_id`, `source`, and `created_at`.
+
+Cloudflare Pages project `pfseeker` exists. Pages dashboard bindings were manually confirmed after Phase 9 remote provisioning:
+
+- Preview `DB` -> `pfseeker-preview`
+- Production `DB` -> `pfseeker-production`
+
+## Authentication routes
+
+Phase 10 adds:
+
+- `GET /auth/discord`
+- `GET /auth/discord/callback`
+- `POST /auth/logout`
+- `/auth/error`
+- `/account`
+
+The account page is protected and marked `noindex`. Public shell rendering asks the server for an optional current user so the header is rendered in the correct signed-in or signed-out state without a client-side flash.
+
+Sessions are opaque D1 sessions. The browser receives only an HTTP-only `pfseeker_session` token; D1 stores only the HMAC hash. Discord access tokens are used only during the callback exchange and are not stored.
+
+The installed Cloudflare adapter can still mention a generated `SESSION` KV binding during builds. pfseeker does not use that KV binding in Phase 10; D1 is the session store.
+
+Arbitrary Pages preview URLs are not registered Discord callbacks. Local OAuth uses localhost, and production OAuth uses `https://pfseeker.com/auth/discord/callback`.
+
+## Security notes
+
+- No secrets are read by browser code.
+- No user identity, IP address, or user agent is stored in Phase 9 download events.
+- Phase 10 auth secrets remain server-only, OAuth state is single-use, session tokens are stored as hashes in D1, redirects are allowlisted, and logout revokes server-side state.
+- Future authenticated and abuse-prone endpoints need rate limiting, broader CSRF protection where applicable, and server-side authorization.

@@ -1,0 +1,59 @@
+---
+import Spinner from "@/components/Spinner.astro";
+
+interface Props {
+  href?: string;
+  type?: "button" | "submit" | "reset";
+  variant?: "primary" | "secondary" | "ghost" | "danger";
+  size?: "sm" | "md" | "lg";
+  disabled?: boolean;
+  loading?: boolean;
+  selected?: boolean;
+  target?: string;
+  rel?: string;
+  [key: string]: unknown;
+}
+
+const {
+  href,
+  type = "button",
+  variant = "secondary",
+  size = "md",
+  disabled = false,
+  loading = false,
+  selected = false,
+  target,
+  rel,
+  ...attrs
+} = Astro.props;
+
+const classes = ["button", `button--${variant}`, `button--${size}`];
+---
+
+{
+  href ? (
+    <a
+      class:list={classes}
+      href={disabled ? undefined : href}
+      aria-disabled={disabled ? "true" : undefined}
+      aria-current={selected ? "page" : undefined}
+      target={target}
+      rel={rel}
+      {...attrs}
+    >
+      {loading && <Spinner size="sm" />}
+      <slot />
+    </a>
+  ) : (
+    <button
+      class:list={classes}
+      type={type}
+      disabled={disabled || loading}
+      aria-pressed={selected ? "true" : undefined}
+      {...attrs}
+    >
+      {loading && <Spinner size="sm" />}
+      <slot />
+    </button>
+  )
+}

@@ -1,0 +1,32 @@
+---
+interface Props {
+  id: string;
+  label?: string;
+  value?: string;
+  placeholder?: string;
+  disabled?: boolean;
+}
+
+const {
+  id,
+  label = "Search pfseeker",
+  value,
+  placeholder = "Search profile media",
+  disabled = false,
+} = Astro.props;
+---
+
+<search class="search-input" aria-label={label}>
+  <label class="visually-hidden" for={id}>{label}</label>
+  <input
+    id={id}
+    class="search-input__control"
+    type="search"
+    value={value}
+    placeholder={placeholder}
+    disabled={disabled}
+  />
+  <button class="search-input__button" type="submit" disabled={disabled}
+    >Search</button
+  >
+</search>

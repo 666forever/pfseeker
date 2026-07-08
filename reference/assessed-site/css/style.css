@@ -1,0 +1,196 @@
+:root {
+  --tw-color-zinc-50: 249 250 251;
+  --tw-color-zinc-100: 244 244 245;
+  --tw-color-zinc-200: 228 228 231;
+  --tw-color-zinc-300: 212 212 216;
+  --tw-color-zinc-400: 161 161 170;
+  --tw-color-zinc-500: 113 113 122;
+  --tw-color-zinc-600: 82 82 91;
+  --tw-color-zinc-700: 63 63 70;
+  --tw-color-zinc-800: 39 39 42;
+  --tw-color-zinc-900: 24 24 27;
+  --tw-color-zinc-950: 9 9 11;
+
+  --tw-color-primary-50: 238 242 255;
+  --tw-color-primary-100: 224 231 255;
+  --tw-color-primary-200: 199 210 254;
+  --tw-color-primary-300: 165 180 252;
+  --tw-color-primary-400: 129 140 248;
+  --tw-color-primary-500: 99 102 241;
+  --tw-color-primary-600: 79 70 229;
+  --tw-color-primary-700: 67 56 202;
+  --tw-color-primary-800: 55 48 163;
+  --tw-color-primary-900: 49 46 129;
+  --tw-color-primary-950: 30 27 75;
+}
+
+@media (min-width: 1024px) {
+  .home-hero {
+      background-image: url(../images/hero.avif);
+      background-repeat: no-repeat;
+      background-position: right center;
+      background-size: contain;
+  }
+}
+
+.markdown-content {
+    color: rgb(161 161 170); /* zinc-400 */
+    line-height: 1.8;
+    font-size: 1rem;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+    color: rgb(244 244 245); /* zinc-100 */
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 2rem 0 1rem;
+}
+
+.markdown-content h1 {
+    font-size: 1.5rem;
+}
+
+.markdown-content h2 {
+    font-size: 1.35rem;
+}
+
+.markdown-content h3 {
+    font-size: 1.175rem;
+}
+
+.markdown-content h4 {
+    font-size: 1rem;
+}
+
+.markdown-content p {
+    margin-bottom: 1rem;
+}
+
+.markdown-content strong {
+    color: rgb(250 250 250); /* zinc-50 */
+    font-weight: 600;
+}
+
+.markdown-content em {
+    color: rgb(212 212 216); /* zinc-300 */
+}
+
+.markdown-content a {
+    color: rgb(96 165 250); /* blue-400 */
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.markdown-content a:hover {
+    color: rgb(147 197 253); /* blue-300 */
+}
+
+.markdown-content ul {
+    list-style: disc;
+    padding-left: 1.5rem;
+    margin: 1rem 0;
+}
+
+.markdown-content ol {
+    list-style: decimal;
+    padding-left: 1.5rem;
+    margin: 1rem 0;
+}
+
+.markdown-content li {
+    margin: .35rem 0;
+}
+
+.markdown-content blockquote {
+    margin: 1.5rem 0;
+    padding: 1rem 1.25rem;
+    border-left: 4px solid rgb(82 82 91); /* zinc-600 */
+    background: rgb(39 39 42 / 0.4); /* zinc-800 */
+    color: rgb(212 212 216); /* zinc-300 */
+    border-radius: 0 .75rem .75rem 0;
+}
+
+.markdown-content img {
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 1.5rem 0;
+    border-radius: 1rem;
+    border: 1px solid rgb(63 63 70); /* zinc-700 */
+}
+
+.markdown-content hr {
+    border: 0;
+    border-top: 1px solid rgb(63 63 70); /* zinc-700 */
+    margin: 2rem 0;
+}
+
+.markdown-content code {
+    background: rgb(39 39 42); /* zinc-800 */
+    color: rgb(228 228 231); /* zinc-200 */
+    padding: .15rem .35rem;
+    border-radius: .25rem;
+    font-size: .875rem;
+}
+
+.markdown-content pre {
+    background: rgb(24 24 27); /* zinc-900 */
+    border: 1px solid rgb(63 63 70); /* zinc-700 */
+    border-radius: .75rem;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 1.5rem 0;
+}
+
+.markdown-content pre code {
+    background: transparent;
+    padding: 0;
+}
+
+.markdown-content table {
+    width: 100%;
+    margin: 1.5rem 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 1rem;
+    border: 1px solid rgb(63 63 70 / 0.8);
+    background: rgb(24 24 27 / 0.65);
+    backdrop-filter: blur(8px);
+}
+
+.markdown-content th {
+    background: rgb(39 39 42 / 0.8);
+    color: rgb(244 244 245);
+    font-weight: 600;
+    text-align: left;
+    padding: .9rem 1rem;
+    border-bottom: 1px solid rgb(63 63 70);
+}
+
+.markdown-content td {
+    padding: .9rem 1rem;
+    color: rgb(212 212 216);
+    border-bottom: 1px solid rgb(39 39 42);
+}
+
+.markdown-content tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.markdown-content tbody tr {
+    transition: background-color .15s ease;
+}
+
+.markdown-content tbody tr:hover {
+    background: rgb(39 39 42 / 0.35);
+}
+
+.markdown-content tbody tr:nth-child(even) {
+    background: rgb(24 24 27 / 0.35);
+}
