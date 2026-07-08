@@ -50,10 +50,10 @@ const assetRoute = getAssetRoute(asset);
       type="button"
       data-collection-toggle
       data-asset-id={asset.id}
-      aria-label={`Add ${asset.title} to collection`}
-      disabled
+      data-asset-title={asset.title}
+      aria-label={`Save ${asset.title} to a collection`}
     >
-      Add to collection
+      Save
     </button>
     {
       primaryCategory && (

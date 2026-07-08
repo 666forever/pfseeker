@@ -1,91 +1,97 @@
-# Anonymous Local Collections
+# Authenticated Synced Collections
 
-Phase 7 adds browser-local collections for anonymous visitors. The feature is intentionally local-only and does not create accounts, synced ownership, server IDs, creator attribution, download counts, or privileged records.
+Phase 11 replaces anonymous browser-local collections with private, account-owned collections stored in D1.
 
-## Storage Model
+## Product policy
 
-Collection state is centralized in `src/lib/collection.ts`.
+- A user must sign in with Discord before using any collection feature.
+- Anonymous users may browse, search, preview, and download assets.
+- Anonymous users may not save assets or create collections.
+- Clicking Save while signed out opens a sign-in prompt that links to `/auth/discord` with a safe return path back to the current page.
+- No anonymous local collection import is retained by product decision.
+- Phase 12 has not started.
 
-- Storage key: `pfseeker.collection.v1`
-- Schema version: `1`
-- Stored fields: schema version, collection name, ordered asset IDs, created timestamp, and updated timestamp.
-- Asset IDs are resolved against the current seed asset catalogue at render time.
-- Unknown saved IDs are preserved so a visitor can remove them deliberately.
+## Storage model
 
-The client script is the only browser code that touches `localStorage`. It validates storage availability, handles corrupt JSON, unsupported versions, unavailable storage, and save failures without uncaught errors. If storage is unavailable, collection actions remain usable for the current page view only.
+Migration `migrations/0003_synced_collections.sql` adds:
 
-## Supported Operations
+- `collections`: private user-owned collection records with `id`, `user_id`, `name`, `visibility`, `created_at`, and `updated_at`.
+- `collection_items`: ordered asset membership with `collection_id`, `asset_id`, `position`, and `added_at`.
 
-- Add asset.
-- Remove asset.
-- Prevent duplicate asset IDs.
-- Clear the collection after dialog confirmation.
-- Rename with trimming, whitespace normalization, maximum length, and empty-name rejection.
-- Reorder saved assets with keyboard-operable move controls.
-- Restore from browser storage.
-- Resolve saved IDs to current assets.
-- Report and remove missing saved IDs.
-- Count saved IDs for header and page display.
+Ownership is enforced through `collections.user_id`. Deleting a user cascades to owned collections and items. Deleting a collection cascades to items. Asset foreign keys use `ON DELETE RESTRICT` so collection rows cannot silently point at deleted assets.
 
-## User Surfaces
+Collection rows do not store transformed media URLs. Current asset data is resolved from the assets table when rendering detail pages and ZIP metadata.
 
-Save controls appear on gallery cards, home/category/search/related-card surfaces that use the shared asset card, and asset detail pages. Controls render disabled before JavaScript initialization so they do not appear falsely functional.
+## Naming rules
 
-The `/collections` page includes:
+Collection names are validated in `src/lib/collection.ts`.
 
-- local-only explanation
-- rename form
-- saved item count
-- ordered saved asset list
-- move up/down controls
-- remove controls
-- clear confirmation using the existing dialog primitive
-- empty state
-- missing-ID warning and removal controls
-- ZIP download with progress, cancellation, and failure reporting
+- Trim surrounding whitespace.
+- Normalize repeated whitespace to a single space.
+- Require at least one visible character.
+- Limit names to 80 characters.
+- Reject control characters.
+- Preserve user-facing capitalization.
+- Allow duplicate names for the same user.
+- Sanitize names before using them in ZIP filenames.
 
-Cross-page state updates are handled by re-rendering every matching control on the current page and listening for browser `storage` events where supported.
+## Routes
 
-## ZIP Downloads
+- `/collections` requires authentication and lists the current user's private collections.
+- `/collections/[collectionId]` requires authentication and loads only an owned collection.
+- No public collection route is implemented in Phase 11.
 
-ZIP generation is implemented in `src/lib/collection-zip.ts` using the maintained `jszip` package. No copied vendor ZIP files are used.
+Signed-out HTML collection routes redirect to Discord sign-in with a validated return path. Arbitrary preview OAuth remains intentionally unsupported unless a stable callback is registered.
 
-The ZIP helper:
+## API behavior
 
-- fetches only currently resolved seed SVG assets
-- writes safe paths such as `pfps/ember-orbit.svg`
-- limits concurrent fetches
-- uses `AbortController` for cancellation
-- settles all fetch attempts
-- returns complete, partial, failed, or cancelled results
-- reports individual failed assets
-- prevents empty downloads in the UI
+Collection mutations use authenticated endpoints under `/api/collections`.
 
-Missing saved IDs stay in the collection but are excluded from ZIP creation until they resolve to a current asset.
+- `GET /api/collections?assetId=...` lists owned collections and identifies which contain the requested asset.
+- `POST /api/collections` creates a collection.
+- `PATCH` or form `POST /api/collections/[collectionId]` renames a collection.
+- `DELETE /api/collections/[collectionId]` deletes an owned collection.
+- `POST /api/collections/[collectionId]/items/[assetId]` adds an existing asset.
+- `DELETE /api/collections/[collectionId]/items/[assetId]` removes an asset.
+- `POST /api/collections/[collectionId]/reorder` persists a complete ordered asset ID list.
 
-## Security and Privacy
+All mutations require a valid active session, validate request content type and request size, validate Origin or Referer for same-origin CSRF protection, and derive ownership only from the authenticated session. Missing or non-owned collections return not found behavior rather than exposing another user's data. Rate limiting remains a later hardening task.
 
-The collection is anonymous browser data. It is not trusted for server-side authorization and must not be treated as proof of ownership in later authenticated phases. Future account sync must use explicit conflict handling and server-side validation.
+## Multiple collection save flow
 
-The feature stores stable local seed asset IDs only. It does not store personal data, Cloudinary secrets, Discord credentials, or account identifiers.
+Save controls on gallery cards and asset detail pages open a collection picker.
+
+Signed-in users can:
+
+- see owned collections;
+- see which collections already contain the asset;
+- add or remove the asset from each collection;
+- create a new collection without leaving the page.
+
+Signed-out users see a prompt explaining that synced collections require Discord sign-in. The prompt returns them to the originating page after OAuth. The asset is not saved automatically after sign-in; the user clicks Save again.
+
+## Ordering model
+
+Items are ordered by integer `position`, then `added_at`. Reorder requests must include every current asset ID exactly once. Duplicate, missing, extra, or invalid IDs are rejected. Reorder updates positions to a deterministic zero-based sequence. Phase 11 uses last-write-wins behavior for concurrent reorder requests; conflict-version checks are deferred until collection collaboration or heavier concurrent editing exists.
+
+## Privacy and public publishing
+
+Collections are private by default and only private visibility is implemented. Public publishing, stable public slugs, SEO behavior, and unpublishing are deferred. No nonfunctional sharing or publishing toggle is shown.
+
+## ZIP downloads
+
+The existing `src/lib/collection-zip.ts` helper remains the ZIP engine. Collection detail pages provide server-resolved asset metadata to the client for owner-only ZIP downloads.
+
+ZIP behavior includes safe deterministic paths, controlled concurrency, progress updates, cancellation, partial-failure reporting, and empty collection handling. Collection and asset names are sanitized before being used as filenames.
+
+## Removed local behavior
+
+Production code no longer uses `pfseeker.collection.v1`, anonymous collection counts, anonymous add/remove, anonymous rename/reorder/clear, local collection page rendering, or localStorage persistence. No hidden migration path from anonymous local collections is retained.
 
 ## Accessibility
 
-Collection controls are native buttons. Dynamic feedback uses live regions. Reordering and removal are keyboard operable. The clear action requires an accessible dialog confirmation, and ZIP progress is announced through status text.
+The collection picker uses a dialog with keyboard focus handling from the shared primitives. Collection detail controls use native buttons for remove and move actions, live-region feedback, visible focus styles, and non-hover-dependent controls. Reordering is available through Move up and Move down buttons, not drag-and-drop only.
 
-## Validation
+## Testing strategy
 
-Phase 7 adds unit coverage for:
-
-- default state
-- schema and version validation
-- corrupt stored data recovery
-- add/remove/duplicate prevention
-- rename validation
-- clear
-- reorder
-- missing saved IDs
-- storage key round-trip
-- ZIP filename sanitization
-- ZIP concurrency settling
-- complete, partial, failed, empty, and cancelled ZIP results
+Phase 11 coverage includes collection name validation, reorder validation, migration shape, repository ownership checks, duplicate prevention, add/remove/reorder behavior, invalid asset rejection, ZIP path safety, ZIP concurrency, partial failures, empty downloads, and cancellation. D1 migrations are applied locally, to preview, and to production before release verification.

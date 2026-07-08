@@ -128,4 +128,4 @@ Phase 10 tests cover migration shape, safe return-path validation, Discord autho
 
 ## Future work
 
-Phase 10 is complete. Phase 11 has not started. Phase 11 may add synced collections for authenticated users. Moderator/admin roles, submissions, reports, upload signing, rate limiting, and full CSRF coverage remain later phases and must be implemented with server-side authorization.
+Phase 10 is complete and Phase 11 uses the authenticated session for private synced collections. Moderator/admin roles, submissions, reports, upload signing, rate limiting, public collection publishing, and full Phase 16 hardening remain later phases and must be implemented with server-side authorization.

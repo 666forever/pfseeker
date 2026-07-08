@@ -137,7 +137,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
       <h2 id="feedback-title">Feedback</h2>
       <div class="showcase-grid">
         <Alert title="Collection saved" tone="success">
-          The local collection state is ready for sync in a later phase.
+          The synced collection update is ready for the signed-in account.
         </Alert>
         <Alert title="Upload unavailable" tone="warning">
           Signed submissions are intentionally deferred until server validation
@@ -150,7 +150,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
           Internal development routes are protected from search indexing.
         </Alert>
       </div>
-      <ToastRegion>Asset added to the temporary collection.</ToastRegion>
+      <ToastRegion>Asset added to the private collection.</ToastRegion>
     </section>
 
     <section class="component-section" aria-labelledby="display-title">
@@ -220,7 +220,7 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
 
   <Drawer
     id="collection-drawer"
-    title="Temporary collection"
+    title="Collection tools"
     description="Drawer focus returns to the opener when closed."
   >
     <p>

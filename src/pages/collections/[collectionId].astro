@@ -1,0 +1,293 @@
+---
+import Dialog from "@/components/Dialog.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { buildSeedImageDescriptor, getAssetRoute } from "@/data/discovery";
+import { safeCollectionDownloadName } from "@/lib/collection";
+import {
+  requireUser,
+  AuthenticationRequiredError,
+} from "@/server/auth/session";
+import type { CurrentUser } from "@/server/auth/types";
+import { getD1DatabaseAsync } from "@/server/db/d1";
+import type { CollectionDetail } from "@/server/repositories/collections";
+import { CollectionRepository } from "@/server/repositories/collections";
+import { NotFoundError } from "@/server/repositories/errors";
+
+const collectionId = Astro.params.collectionId ?? "";
+let currentUser: CurrentUser;
+try {
+  currentUser = await requireUser(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent(Astro.url.pathname)}`,
+      302,
+    );
+  }
+  throw error;
+}
+
+const repository = new CollectionRepository(
+  await getD1DatabaseAsync(Astro.locals),
+);
+let collection: CollectionDetail;
+try {
+  collection = await repository.readOwnedCollection(
+    currentUser.user.id,
+    collectionId,
+  );
+} catch (error) {
+  if (error instanceof NotFoundError) {
+    return new Response("Collection not found.", { status: 404 });
+  }
+  throw error;
+}
+
+const availableItems = collection.items.filter((item) => item.asset);
+const missingItems = collection.items.filter((item) => !item.asset);
+const zipAssets = availableItems
+  .map((item) => item.asset)
+  .filter((asset) => asset !== null);
+const zipFilename = `pfseeker-${safeCollectionDownloadName(collection.name)}.zip`;
+const dateFormatter = new Intl.DateTimeFormat("en", {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+---
+
+<BaseLayout
+  title={collection.name}
+  description="Manage a private synced pfseeker collection."
+  noindex
+>
+  <section
+    class="page-shell collection-page"
+    aria-labelledby="collection-title"
+    data-collection-detail
+    data-collection-id={collection.id}
+    data-zip-filename={zipFilename}
+  >
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/">Home</a></li>
+        <li><a href="/collections">Collections</a></li>
+        <li><span aria-current="page">{collection.name}</span></li>
+      </ol>
+    </nav>
+
+    <div class="page-hero">
+      <p class="eyebrow">Private collection</p>
+      <h1 id="collection-title">{collection.name}</h1>
+      <p>
+        {
+          collection.itemCount === 1
+            ? "1 saved asset"
+            : `${collection.itemCount} saved assets`
+        }
+        / updated{" "}
+        <time datetime={collection.updatedAt}>
+          {dateFormatter.format(new Date(collection.updatedAt))}
+        </time>
+      </p>
+    </div>
+
+    <section class="collection-panel" aria-labelledby="collection-name-title">
+      <div>
+        <h2 id="collection-name-title">Collection name</h2>
+        <p>Names are private and can be reused across your account.</p>
+      </div>
+      <form
+        class="collection-rename"
+        method="post"
+        action={`/api/collections/${collection.id}`}
+      >
+        <label for="collection-name">Name</label>
+        <input
+          id="collection-name"
+          name="name"
+          maxlength="80"
+          autocomplete="off"
+          required
+          value={collection.name}
+        />
+        <button class="button button--secondary button--md" type="submit">
+          Save name
+        </button>
+      </form>
+      <p
+        class="collection-feedback"
+        data-collection-feedback
+        role="status"
+        aria-live="polite"
+      >
+      </p>
+    </section>
+
+    <section class="collection-panel" aria-labelledby="collection-items-title">
+      <div class="collection-panel__header">
+        <div>
+          <h2 id="collection-items-title">Saved assets</h2>
+          <p>
+            Items are ordered manually. Use the move buttons for keyboard-safe
+            reordering.
+          </p>
+        </div>
+        <div class="collection-actions">
+          <button
+            class="button button--secondary button--md"
+            type="button"
+            data-collection-download
+            disabled={zipAssets.length === 0}
+          >
+            Download ZIP
+          </button>
+          <button
+            class="button button--ghost button--md"
+            type="button"
+            data-zip-cancel
+            hidden
+          >
+            Cancel download
+          </button>
+          <button
+            class="button button--danger button--md"
+            type="button"
+            data-dialog-open="delete-collection-dialog"
+          >
+            Delete collection
+          </button>
+        </div>
+      </div>
+
+      <div class="collection-progress" data-zip-panel hidden>
+        <p data-zip-status role="status" aria-live="polite"></p>
+        <progress data-zip-progress value="0" max="1"></progress>
+        <ul data-zip-failures></ul>
+      </div>
+
+      {
+        collection.items.length === 0 ? (
+          <section class="route-empty" aria-labelledby="collection-empty-title">
+            <h3 id="collection-empty-title">Nothing saved yet</h3>
+            <p>
+              Save assets from a gallery or detail page into this collection.
+            </p>
+            <p>
+              <a class="button button--secondary button--md" href="/pfps">
+                Browse profile pictures
+              </a>
+            </p>
+          </section>
+        ) : (
+          <ol class="collection-list" data-collection-list>
+            {availableItems.map(({ asset }, index) => {
+              if (!asset) return null;
+              const image = buildSeedImageDescriptor(asset);
+              return (
+                <li class="collection-item" data-asset-id={asset.id}>
+                  <a
+                    class="collection-item__preview"
+                    href={getAssetRoute(asset)}
+                    aria-label={`Open ${asset.title}`}
+                    style={`aspect-ratio: ${image.aspectRatio}`}
+                  >
+                    <img
+                      src={image.src}
+                      alt={image.alt}
+                      width={image.width}
+                      height={image.height}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  </a>
+                  <div class="collection-item__body">
+                    <h3>
+                      <a href={getAssetRoute(asset)}>{asset.title}</a>
+                    </h3>
+                    <p>
+                      {asset.kind} / {asset.width} x {asset.height} /{" "}
+                      {asset.format.toUpperCase()}
+                    </p>
+                  </div>
+                  <div class="collection-item__controls">
+                    <button
+                      class="button button--ghost button--sm"
+                      type="button"
+                      data-collection-move="up"
+                      disabled={index === 0}
+                      aria-label={`Move ${asset.title} up`}
+                    >
+                      Move up
+                    </button>
+                    <button
+                      class="button button--ghost button--sm"
+                      type="button"
+                      data-collection-move="down"
+                      disabled={index === availableItems.length - 1}
+                      aria-label={`Move ${asset.title} down`}
+                    >
+                      Move down
+                    </button>
+                    <button
+                      class="button button--ghost button--sm"
+                      type="button"
+                      data-collection-remove={asset.id}
+                      aria-label={`Remove ${asset.title}`}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )
+      }
+
+      {
+        missingItems.length > 0 && (
+          <div class="collection-missing">
+            <h3>Unavailable saved items</h3>
+            <p>
+              Some saved asset IDs no longer resolve to published assets and are
+              excluded from ZIP downloads.
+            </p>
+          </div>
+        )
+      }
+
+      <script
+        is:inline
+        type="application/json"
+        id="collection-zip-assets"
+        set:html={JSON.stringify(zipAssets)}
+      />
+    </section>
+  </section>
+
+  <Dialog
+    id="delete-collection-dialog"
+    title="Delete collection?"
+    description="This removes the collection and its saved items. It cannot be undone."
+  >
+    <div class="dialog-actions">
+      <button
+        class="button button--ghost button--md"
+        type="button"
+        data-dialog-close
+      >
+        Cancel
+      </button>
+      <button
+        class="button button--danger button--md"
+        type="button"
+        data-collection-delete
+        data-dialog-close
+      >
+        Delete collection
+      </button>
+    </div>
+  </Dialog>
+</BaseLayout>

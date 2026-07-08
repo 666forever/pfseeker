@@ -18,6 +18,9 @@ const displayName = currentUser
   ? currentUser.user.globalName || currentUser.user.username
   : "";
 const avatar = currentUser ? discordAvatarUrl(currentUser.user) : "";
+const collectionsHref = currentUser
+  ? "/collections"
+  : `/auth/discord?returnTo=${encodeURIComponent("/collections")}`;
 ---
 
 <header class="site-header" aria-label="Site header">
@@ -44,10 +47,8 @@ const avatar = currentUser ? discordAvatarUrl(currentUser.user) : "";
 
   <div class="site-header__actions">
     <SiteSearch id="site-search-desktop" value={searchValue} />
-    <a class="shell-action shell-action--collections" href="/collections">
+    <a class="shell-action shell-action--collections" href={collectionsHref}>
       Collections
-      <span class="collection-count" data-collection-count aria-live="polite"
-      ></span>
     </a>
     {
       currentUser ? (
@@ -102,10 +103,8 @@ const avatar = currentUser ? discordAvatarUrl(currentUser.user) : "";
       ))
     }
   </nav>
-  <a class="button button--secondary button--md" href="/collections">
+  <a class="button button--secondary button--md" href={collectionsHref}>
     Open collections
-    <span class="collection-count" data-collection-count aria-live="polite"
-    ></span>
   </a>
   {
     currentUser ? (

@@ -1,0 +1,139 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  requireUser,
+  AuthenticationRequiredError,
+} from "@/server/auth/session";
+import type { CurrentUser } from "@/server/auth/types";
+import { getD1DatabaseAsync } from "@/server/db/d1";
+import { CollectionRepository } from "@/server/repositories/collections";
+
+let currentUser: CurrentUser;
+try {
+  currentUser = await requireUser(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent("/collections")}`,
+      302,
+    );
+  }
+  throw error;
+}
+
+const repository = new CollectionRepository(
+  await getD1DatabaseAsync(Astro.locals),
+);
+const collections = await repository.listOwnedCollections(currentUser.user.id);
+const dateFormatter = new Intl.DateTimeFormat("en", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+  timeZone: "UTC",
+});
+---
+
+<BaseLayout
+  title="Collections"
+  description="Manage private synced pfseeker collections."
+  noindex
+>
+  <section
+    class="page-shell collection-page"
+    aria-labelledby="collections-title"
+  >
+    <div class="page-hero">
+      <p class="eyebrow">Collections</p>
+      <h1 id="collections-title">Your collections</h1>
+      <p>
+        Collections are private, stored with your account, and synced anywhere
+        you sign in with Discord.
+      </p>
+    </div>
+
+    <section class="collection-panel" aria-labelledby="new-collection-title">
+      <div class="collection-panel__header">
+        <div>
+          <h2 id="new-collection-title">Create collection</h2>
+          <p>Use a clear name. Duplicate names are allowed.</p>
+        </div>
+      </div>
+      <form class="collection-rename" method="post" action="/api/collections">
+        <label for="collection-name">Name</label>
+        <input
+          id="collection-name"
+          name="name"
+          maxlength="80"
+          autocomplete="off"
+          required
+        />
+        <button class="button button--secondary button--md" type="submit">
+          Create
+        </button>
+      </form>
+    </section>
+
+    <section class="collection-panel" aria-labelledby="owned-collections-title">
+      <div class="collection-panel__header">
+        <div>
+          <h2 id="owned-collections-title">Saved collections</h2>
+          <p>
+            {
+              collections.length === 1
+                ? "1 private collection."
+                : `${collections.length} private collections.`
+            }
+          </p>
+        </div>
+      </div>
+
+      {
+        collections.length === 0 ? (
+          <section
+            class="route-empty"
+            aria-labelledby="collections-empty-title"
+          >
+            <h3 id="collections-empty-title">No collections yet</h3>
+            <p>Create a collection here, or save an asset from a gallery.</p>
+            <p>
+              <a class="button button--secondary button--md" href="/pfps">
+                Browse profile pictures
+              </a>
+            </p>
+          </section>
+        ) : (
+          <ol class="collection-list collection-list--summaries">
+            {collections.map((collection) => (
+              <li class="collection-item">
+                <div class="collection-item__body">
+                  <h3>
+                    <a href={`/collections/${collection.id}`}>
+                      {collection.name}
+                    </a>
+                  </h3>
+                  <p>
+                    {collection.itemCount === 1
+                      ? "1 asset"
+                      : `${collection.itemCount} assets`}{" "}
+                    / private / updated{" "}
+                    <time datetime={collection.updatedAt}>
+                      {dateFormatter.format(new Date(collection.updatedAt))}
+                    </time>
+                  </p>
+                </div>
+                <div class="collection-item__controls">
+                  <a
+                    class="button button--ghost button--sm"
+                    href={`/collections/${collection.id}`}
+                  >
+                    Open
+                  </a>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </section>
+  </section>
+</BaseLayout>

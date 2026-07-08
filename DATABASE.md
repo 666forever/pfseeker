@@ -2,10 +2,11 @@
 
 ## Current status
 
-Phase 10 extends the Cloudflare D1 layer with authentication tables:
+Phase 11 extends the Cloudflare D1 layer with authenticated private collections:
 
 - migration: `migrations/0001_initial_schema.sql`
 - migration: `migrations/0002_auth_and_sessions.sql`
+- migration: `migrations/0003_synced_collections.sql`
 - seed SQL generator: `scripts/seed-d1.ts`
 - binding name: `DB`
 - approved remote database names: `pfseeker-preview`, `pfseeker-production`
@@ -33,7 +34,12 @@ The Phase 10 authentication schema contains:
 - `sessions`
 - `oauth_states`
 
-It intentionally does not create synced collections, submissions, reports, moderation events, creator tables, guild-role fields, Discord token storage, password fields, or fake administrator flags. Those belong to later phases.
+The Phase 11 collection schema contains:
+
+- `collections`
+- `collection_items`
+
+Collections are private by default, owned by `users`, and cascade on user deletion. Collection items reference existing assets, prevent duplicate collection/asset pairs, and store deterministic positions. The schema intentionally does not create submissions, reports, moderation events, creator tables, guild-role fields, Discord token storage, password fields, public collection publishing, or fake administrator flags. Those belong to later phases.
 
 ## Data rules
 
@@ -41,6 +47,7 @@ It intentionally does not create synced collections, submissions, reports, moder
 - Seed imports use `media_source_type = 'local_seed'` and local generated SVG paths.
 - Production imports should use `media_source_type = 'cloudinary'` with stable Cloudinary public IDs.
 - Download rows are event records. Do not seed fake download counts.
+- Collection rows store names, ownership, visibility, timestamps, and ordered asset IDs only. Do not store transformed media URLs in collection rows.
 
 ## Local commands
 
@@ -106,6 +113,18 @@ Production auth runtime verification on 2026-07-08:
 - Production Discord OAuth callback works at `https://pfseeker.com/auth/discord/callback`.
 - D1-backed session persistence and logout were manually verified through `/account`.
 - No Discord tokens or secrets are stored in D1 by Phase 10.
+
+Collection migration verification:
+
+- `migrations/0003_synced_collections.sql` adds private collections and collection items.
+- Applied locally, to preview, and to production on 2026-07-08.
+- Repeat migration execution reported `No migrations to apply` in all three environments.
+- Local collection tables started empty after migration verification.
+- Preview collection tables started empty; preview retained 24 development seed assets.
+- Production collection tables started empty; production retained existing auth data with 1 user and 1 session and remained intentionally unseeded with asset records.
+- Foreign keys and indexes were verified through `PRAGMA foreign_key_list` and `PRAGMA index_list` locally, in preview, and in production.
+- Local integrity checks confirmed deleting a collection deletes its items, deleting a user deletes owned collections and items, and invalid asset references are rejected.
+- No fake production collections were seeded.
 
 ## Cloudflare Pages binding status
 

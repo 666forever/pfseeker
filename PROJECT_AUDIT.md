@@ -6,7 +6,7 @@ Audit date: 2026-07-05
 
 This audit originally covered `C:\Users\hk\Documents\pfseeker-codex-project`. Active work now occurs in `C:\Users\hk\Documents\GitHub\pfseeker`, including project instructions, planning documents, production source, environment examples, reference material, and safe validation commands.
 
-Current checkpoint: Phase 10 Discord authentication and sessions are implemented and production-verified. D1-backed auth tables are migrated locally, to preview, and to production. Production Astro SSR, Discord OAuth callback, `/account`, session persistence, and logout were manually verified on `https://pfseeker.com` on 2026-07-08. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
+Current checkpoint: Phase 11 authenticated multiple collections are implemented on `phase-11-synced-collections` pending Cloudflare preview deployment verification. Phase 10 Discord authentication and sessions are implemented and production-verified. Phase 11 removes production anonymous localStorage collection behavior, adds private D1-backed collections and collection items, and keeps public publishing deferred. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
 
 ## Source-of-truth documents read
 
@@ -329,7 +329,7 @@ Documentation gaps that have been closed:
 - Phase plan tied to current repository state.
 - Migration notes separating reusable concepts from prohibited reference materials.
 
-Current documentation includes `CLOUDINARY.md` for the media helper boundary, `SEED_DATA.md` for the local seed-data strategy, `ASSET_PAGES.md` for detail routes, `COLLECTIONS.md` for anonymous local collections, and `SEARCH_AND_TAXONOMY.md` for server-rendered seed search behavior.
+Current documentation includes `CLOUDINARY.md` for the media helper boundary, `SEED_DATA.md` for the local seed-data strategy, `ASSET_PAGES.md` for detail routes, `COLLECTIONS.md` for authenticated private collections, and `SEARCH_AND_TAXONOMY.md` for server-rendered seed search behavior.
 
 ## Reference website findings
 
@@ -375,14 +375,14 @@ Reference broken/missing material:
 - `.env.example` identifies required future secrets without committing actual secret values.
 - `.gitignore` protects common local, build, and secret files.
 - The reference assessment captures useful lessons and clear prohibited reuse boundaries.
-- Astro foundation, design primitives, global shell, public support/legal routes, Cloudinary media helpers, local seed data, read-only gallery routes, asset detail routes, anonymous browser-local collections, ZIP generation, server-rendered expanded search, taxonomy filtering, canonical filter URLs, category filtering, sorting, D1 repository reads, download-event inserts, Discord sign-in, D1-backed sessions, tests, formatting, linting, type checking, build, dev, preview, and CI configuration work.
+- Astro foundation, design primitives, global shell, public support/legal routes, Cloudinary media helpers, local seed data, read-only gallery routes, asset detail routes, authenticated private collections, ZIP generation, server-rendered expanded search, taxonomy filtering, canonical filter URLs, category filtering, sorting, D1 repository reads, download-event inserts, Discord sign-in, D1-backed sessions, tests, formatting, linting, type checking, build, dev, preview, and CI configuration work.
 
 ## What is incomplete
 
 - Production D1 gallery content and dynamic product workflows beyond asset reads, download-event foundation, and authentication.
 - Cloudinary upload signing and persisted media data.
 - Production content import remains incomplete; production auth itself is verified.
-- Authenticated synced collections, submissions, moderation, reports, creators, and admin workflows. Phase 11 has not started.
+- Submissions, moderation, reports, creators, admin workflows, and public collection publishing. Phase 12 has not started.
 - Broader automated tests and CI coverage beyond the current foundation checks.
 
 ## What is broken
@@ -454,7 +454,7 @@ Current package:
 - Phase 10 privileged identity behavior exists only for session creation, session lookup, account identity display, and logout.
 - Environment validation exists for current public configuration.
 - Discord and session secret validation is server-only and does not include secret values in errors.
-- Anonymous collection state stores only a local collection name, ordered seed asset IDs, and timestamps in browser local storage.
+- Phase 11 collection state stores private collection names, ownership, visibility, timestamps, and ordered asset IDs in D1. The former anonymous browser local storage model is no longer active production behavior.
 - Collection ZIP downloads fetch current generated SVG assets and report partial failures without trusting local state for privileged behavior.
 - Security headers are still incomplete beyond generated immutable asset cache headers.
 - Future protected routes still need explicit server-side authorization, rate limiting, and broader CSRF coverage.
@@ -526,7 +526,7 @@ Reference-only risks:
 - Building too much UI before Cloudinary/data abstractions are defined.
 - Introducing account or moderation screens without server-side authorization.
 - Adding client-side-only search for content that should be crawlable.
-- Treating local collection state as trustworthy for privileged actions.
+- Trusting client-provided collection owner IDs or asset URLs for privileged actions.
 - Persisting transformed Cloudinary URLs instead of stable public IDs.
 - Over-hydrating Astro pages and losing the intended performance profile.
 - Advancing phases without tests and documentation updates.
@@ -778,8 +778,8 @@ Manual production verification on `https://pfseeker.com` completed on 2026-07-08
 - Signed-in state persists after page refresh.
 - Logout works and returns the user to the signed-out state.
 - Arbitrary Cloudflare preview OAuth remains intentionally unsupported because arbitrary preview hostnames are not registered Discord callbacks.
-- Phase 10 is complete. Phase 11 has not started.
+- Phase 11 authenticated multiple collections are implemented pending Cloudflare preview deployment verification. Phase 12 has not started.
 
 ## Audit conclusion
 
-Phase 10 is complete and production-verified. The local schema, server repository boundary, public route integration, seed SQL generation, D1 environment configuration, local migration and seed, preview migration and seed, production migration, download-event endpoint foundation, Discord OAuth routes, D1-backed opaque sessions, account identity page, logout, Pages SSR compatibility layer, documentation, tests, and production OAuth verification are complete. Production remains intentionally unseeded with development SVG data. Phase 11 has not started.
+Phase 11 authenticated multiple collections are implemented pending Cloudflare preview deployment verification. The local schema, server repository boundary, public route integration, seed SQL generation, D1 environment configuration, local migration and seed, preview migration and seed, production migration, download-event endpoint foundation, Discord OAuth routes, D1-backed opaque sessions, account identity page, logout, Pages SSR compatibility layer, documentation, tests, and production OAuth verification are complete through Phase 10. Phase 11 adds private D1 collections and removes anonymous collection persistence. Production remains intentionally unseeded with development SVG data. Phase 12 has not started.

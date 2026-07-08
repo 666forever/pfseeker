@@ -53,7 +53,7 @@ The required runtime binding name is `DB`.
 - preview: `pfseeker-preview`
 - production: `pfseeker-production`
 
-Preview contains development seed media for validation. Production has the Phase 10 schema but is intentionally not seeded with development SVG records.
+Preview contains development seed media for validation. Production has the Phase 10 auth schema and Phase 11 collection schema after migration, but is intentionally not seeded with development SVG records or fake collections.
 
 ## Authentication
 
@@ -62,3 +62,7 @@ Discord sign-in is implemented with the approved client ID, `identify` scope onl
 Production OAuth was manually verified on `https://pfseeker.com` on 2026-07-08. The production callback is `https://pfseeker.com/auth/discord/callback`. Arbitrary preview OAuth remains intentionally unsupported until a stable preview callback is registered.
 
 Cloudflare Pages runs the Astro SSR deployment through the Pages advanced-mode `_worker.js` compatibility layer, with `pages_build_output_dir = "./dist/client"` and Node `24.16.0` for builds.
+
+## Collections
+
+Collections require Discord sign-in. Signed-in users can create multiple private D1-backed collections, save assets from gallery cards or asset detail pages, reorder and remove items, rename or delete collections, and download owner-only ZIP files. Anonymous users may browse, search, preview, and download individual assets, but cannot save assets or create collections. The former localStorage collection model is removed from production behavior and no anonymous import path is retained.

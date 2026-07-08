@@ -123,10 +123,10 @@ const formattedDate = new Intl.DateTimeFormat("en", {
           type="button"
           data-collection-toggle
           data-asset-id={asset.id}
-          aria-label={`Add ${asset.title} to collection`}
-          disabled
+          data-asset-title={asset.title}
+          aria-label={`Save ${asset.title} to a collection`}
         >
-          Add to collection
+          Save to collection
         </button>
         <button
           class="button button--ghost button--md"
