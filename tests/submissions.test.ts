@@ -11,6 +11,7 @@ import {
   validateSubmissionMetadata,
   validateSubmissionStatus,
   validateVerifiedImage,
+  type ValidSubmissionCategory,
 } from "@/lib/submissions";
 import type { D1DatabaseLike, D1PreparedStatementLike } from "@/server/db/d1";
 import { InvalidRepositoryInputError } from "@/server/repositories/errors";
@@ -42,7 +43,7 @@ interface SubmissionRecord {
   description: string | null;
   creator_credit: string | null;
   source_url: string | null;
-  category_id: string;
+  category_id: string | null;
   cloudinary_public_id: string;
   cloudinary_resource_type: "image";
   cloudinary_format: "jpg" | "jpeg" | "png" | "webp" | "gif";
@@ -241,11 +242,11 @@ class FakeSubmissionD1 implements D1DatabaseLike {
       return rows.map((submission) => {
         const category = Array.from(this.categories.values()).find(
           (entry) => entry.id === submission.category_id,
-        )!;
+        );
         return {
           ...submission,
-          category_slug: category.slug,
-          category_name: category.name,
+          category_slug: category?.slug ?? null,
+          category_name: category?.name ?? null,
         };
       }) as T[];
     }
@@ -304,7 +305,7 @@ class FakeSubmissionD1 implements D1DatabaseLike {
         description: description ? String(description) : null,
         creator_credit: creatorCredit ? String(creatorCredit) : null,
         source_url: sourceUrl ? String(sourceUrl) : null,
-        category_id: String(categoryId),
+        category_id: categoryId ? String(categoryId) : null,
         cloudinary_public_id: String(publicId),
         cloudinary_resource_type: resourceType as "image",
         cloudinary_format: format as SubmissionRecord["cloudinary_format"],
@@ -359,13 +360,19 @@ function validMetadata() {
   };
 }
 
+const validCategories: ValidSubmissionCategory[] = [
+  { slug: "minimal", kinds: ["pfp", "icon"] },
+  { slug: "wide", kinds: ["banner"] },
+];
+
 function createInput(
   overrides: Partial<CreateSubmissionInput> = {},
 ): CreateSubmissionInput {
-  const metadata = validateSubmissionMetadata(validMetadata(), [
-    "quiet",
-    "soft",
-  ]);
+  const metadata = validateSubmissionMetadata(
+    validMetadata(),
+    ["quiet", "soft"],
+    validCategories,
+  );
   if (!metadata.ok) throw new Error(metadata.message);
   return {
     userId: "user-1",
@@ -388,39 +395,136 @@ function createInput(
 describe("submission validation", () => {
   it("normalizes metadata and enforces required fields", () => {
     expect(
-      validateSubmissionMetadata(validMetadata(), ["quiet", "soft"]),
+      validateSubmissionMetadata(
+        validMetadata(),
+        ["quiet", "soft"],
+        validCategories,
+      ),
     ).toMatchObject({
       ok: true,
       metadata: {
         title: "Quiet Image",
+        category: "minimal",
+        tags: ["quiet", "soft"],
         creatorCredit: "Found online",
         sourceUrl: "https://example.com/source",
       },
     });
     expect(
-      validateSubmissionMetadata({ ...validMetadata(), title: "x" }, ["quiet"]),
-    ).toMatchObject({ ok: false });
-    expect(
-      validateSubmissionMetadata({ ...validMetadata(), tags: [] }, ["quiet"]),
+      validateSubmissionMetadata(
+        { ...validMetadata(), title: "x" },
+        ["quiet"],
+        validCategories,
+      ),
     ).toMatchObject({ ok: false });
     expect(
       validateSubmissionMetadata(
         { ...validMetadata(), tags: ["quiet", "unknown"] },
         ["quiet"],
+        validCategories,
       ),
     ).toMatchObject({ ok: false });
     expect(
-      validateSubmissionMetadata({ ...validMetadata(), suggestedTags: ["a"] }, [
-        "quiet",
-        "soft",
-      ]),
+      validateSubmissionMetadata(
+        { ...validMetadata(), suggestedTags: ["a"] },
+        ["quiet", "soft"],
+        validCategories,
+      ),
     ).toMatchObject({ ok: false });
     expect(
       validateSubmissionMetadata(
         { ...validMetadata(), contentRulesConfirmed: false },
         ["quiet", "soft"],
+        validCategories,
       ),
     ).toMatchObject({ ok: false });
+  });
+
+  it("accepts optional category and existing tags from zero to five", () => {
+    expect(
+      validateSubmissionMetadata(
+        { ...validMetadata(), category: undefined, tags: undefined },
+        [],
+        [],
+      ),
+    ).toMatchObject({
+      ok: true,
+      metadata: { category: null, tags: [] },
+    });
+    expect(
+      validateSubmissionMetadata(
+        { ...validMetadata(), category: "", tags: [] },
+        [],
+        [],
+      ),
+    ).toMatchObject({
+      ok: true,
+      metadata: { category: null, tags: [] },
+    });
+    expect(
+      validateSubmissionMetadata(
+        { ...validMetadata(), category: "minimal", tags: ["quiet"] },
+        ["quiet"],
+        validCategories,
+      ),
+    ).toMatchObject({
+      ok: true,
+      metadata: { category: "minimal", tags: ["quiet"] },
+    });
+    expect(
+      validateSubmissionMetadata(
+        {
+          ...validMetadata(),
+          tags: ["one", "two", "three", "four", "five"],
+        },
+        ["one", "two", "three", "four", "five"],
+        validCategories,
+      ),
+    ).toMatchObject({ ok: true });
+  });
+
+  it("rejects invalid optional taxonomy and normalizes duplicate tags", () => {
+    expect(
+      validateSubmissionMetadata(
+        { ...validMetadata(), category: "unknown" },
+        ["quiet"],
+        validCategories,
+      ),
+    ).toMatchObject({ ok: false, field: "category" });
+    expect(
+      validateSubmissionMetadata(
+        { ...validMetadata(), assetType: "pfp", category: "wide" },
+        ["quiet"],
+        validCategories,
+      ),
+    ).toMatchObject({ ok: false, field: "category" });
+    expect(
+      validateSubmissionMetadata(
+        { ...validMetadata(), tags: ["quiet", "quiet", "soft"] },
+        ["quiet", "soft"],
+        validCategories,
+      ),
+    ).toMatchObject({
+      ok: true,
+      metadata: { tags: ["quiet", "soft"] },
+    });
+    expect(
+      validateSubmissionMetadata(
+        {
+          ...validMetadata(),
+          tags: ["one", "two", "three", "four", "five", "six"],
+        },
+        ["one", "two", "three", "four", "five", "six"],
+        validCategories,
+      ),
+    ).toMatchObject({ ok: false, field: "tags" });
+    expect(
+      validateSubmissionMetadata(
+        { ...validMetadata(), tags: [1] },
+        ["quiet"],
+        validCategories,
+      ),
+    ).toMatchObject({ ok: false, field: "tags" });
   });
 
   it("allows only safe source URLs and pending status", () => {
@@ -485,6 +589,18 @@ describe("submission validation", () => {
       }),
     ).toMatchObject({ ok: true });
   });
+
+  it("keeps the submission form submittable without taxonomy choices", () => {
+    const page = readFileSync("src/pages/submissions/new.astro", "utf8");
+    const client = readFileSync("src/scripts/submissions-client.ts", "utf8");
+
+    expect(page).toContain("Categories are not available yet.");
+    expect(page).toContain("Tags are not available yet.");
+    expect(page).toContain('<select name="category" data-submission-category>');
+    expect(page).not.toContain('<select name="category" required');
+    expect(client).not.toContain("selectedTags().length < 1");
+    expect(client).toContain("selectedTags().length > 5");
+  });
 });
 
 describe("submission migration", () => {
@@ -506,6 +622,22 @@ describe("submission migration", () => {
     expect(migration).toContain("idx_submissions_user_created");
     expect(migration).toContain("idx_submissions_content_hash_user");
     expect(migration).not.toMatch(/\bmoderator|approval|rejection|audit\b/i);
+  });
+
+  it("adds the optional taxonomy migration without recreating unrelated tables", () => {
+    const migration = readFileSync(
+      "migrations/0005_optional_submission_taxonomy.sql",
+      "utf8",
+    );
+
+    expect(migration).toContain("CREATE TABLE submissions_new");
+    expect(migration).toContain("category_id TEXT,");
+    expect(migration).toContain(
+      "ALTER TABLE submissions_new RENAME TO submissions",
+    );
+    expect(migration).not.toContain("CREATE TABLE assets");
+    expect(migration).not.toContain("CREATE TABLE tags");
+    expect(migration).not.toContain("CREATE TABLE categories");
   });
 });
 
@@ -549,6 +681,64 @@ describe("submission repository", () => {
     expect(submission.tags.map((tag) => tag.slug)).toEqual(["quiet", "soft"]);
     expect(listed).toHaveLength(1);
     expect(db.intents.get(input.intentId)?.consumed_at).toBeTruthy();
+  });
+
+  it("creates, lists, reads, and cancels submissions without taxonomy", async () => {
+    const db = new FakeSubmissionD1();
+    const repository = new SubmissionRepository(db);
+    const metadata = validateSubmissionMetadata(
+      {
+        ...validMetadata(),
+        category: "",
+        tags: undefined,
+        suggestedTags: [],
+      },
+      [],
+      [],
+    );
+    if (!metadata.ok) throw new Error(metadata.message);
+    const input = createInput({
+      intentId: "55555555-5555-4555-8555-555555555555",
+      publicId:
+        "pfseeker/pending-submissions/user-1/55555555-5555-4555-8555-555555555555/file",
+      metadata: metadata.metadata,
+      cloudinary: {
+        resourceType: "image",
+        format: "png",
+        bytes: 1000,
+        width: 512,
+        height: 512,
+        contentHash: "hash-without-taxonomy",
+      },
+    });
+    await repository.createUploadIntent({
+      id: input.intentId,
+      userId: input.userId,
+      assetType: "pfp",
+      publicId: input.publicId,
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+
+    const submission = await repository.createPendingSubmission(input);
+    const listed = await repository.listOwnedPendingSubmissions(input.userId);
+    const read = await repository.readOwnedSubmission(
+      input.userId,
+      submission.id,
+    );
+
+    expect(submission.category).toBeNull();
+    expect(submission.tags).toEqual([]);
+    expect(db.submissionTags.get(submission.id)).toBeUndefined();
+    expect(listed[0]?.category).toBeNull();
+    expect(read.category).toBeNull();
+
+    await repository.deleteOwnedSubmission({
+      userId: input.userId,
+      submissionId: submission.id,
+    });
+    await expect(
+      repository.readOwnedSubmission(input.userId, submission.id),
+    ).rejects.toThrow("Submission was not found");
   });
 
   it("enforces ownership and cancellation removal", async () => {

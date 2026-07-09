@@ -35,6 +35,15 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
   year: "numeric",
   timeZone: "UTC",
 });
+
+const taxonomySummary = (submission: (typeof submissions)[number]): string => {
+  const parts = [
+    submission.assetType,
+    submission.category?.name,
+    submission.tags.map((tag) => tag.displayName).join(", "),
+  ].filter(Boolean);
+  return parts.join(" / ");
+};
 ---
 
 <BaseLayout
@@ -124,10 +133,7 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
                       {submission.title}
                     </a>
                   </h3>
-                  <p>
-                    {submission.assetType} / {submission.category.name} /{" "}
-                    {submission.tags.map((tag) => tag.displayName).join(", ")}
-                  </p>
+                  <p>{taxonomySummary(submission)}</p>
                   <p>
                     <time datetime={submission.createdAt}>
                       {dateFormatter.format(new Date(submission.createdAt))}

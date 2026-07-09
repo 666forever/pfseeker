@@ -66,4 +66,6 @@
 - Recorded Phase 11 production verification for authenticated-only access, multiple private collections, D1-backed persistence, duplicate prevention, rename, add/remove, reorder, ZIP download, deletion, and signed-out Save sign-in prompts.
 - Added `0004_signed_submissions.sql` for pending submissions, submission tags, suggested tags, upload intents, and future-compatible asset content hashes.
 - Updated README, architecture, server architecture, database, migration, audit, FAQ, privacy, and terms documentation for Phase 12 pending-only submissions. Phase 13 moderation remains deferred.
-- Recorded successful signed-out Cloudflare preview verification for Phase 12 submission route protection. Production runtime upload verification remains pending until merge and Cloudinary server-credential configuration.
+- Recorded successful signed-out Cloudflare preview verification for Phase 12 submission route protection. Production runtime upload verification remains pending until the optional-taxonomy fix is deployed and manually tested.
+- Added `0005_optional_submission_taxonomy.sql` so Phase 12 submissions can be created when production category and tag tables are empty.
+- Made submission taxonomy optional: category is 0 or 1, existing tags are 0 to 5, and suggested tags are 0 to 3.

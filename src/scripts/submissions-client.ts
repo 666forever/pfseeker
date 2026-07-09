@@ -51,6 +51,9 @@ const assetTypeSelect = document.querySelector<HTMLSelectElement>(
 const categorySelect = document.querySelector<HTMLSelectElement>(
   "[data-submission-category]",
 );
+const categoryEmptyMessage = document.querySelector<HTMLElement>(
+  "[data-submission-category-empty]",
+);
 const progress = document.querySelector<HTMLProgressElement>(
   "[data-submission-progress]",
 );
@@ -156,14 +159,22 @@ function updateCategories(): void {
   const kind = assetType();
   let firstVisible: HTMLOptionElement | undefined;
   Array.from(categorySelect.options).forEach((option) => {
+    if (!option.value) {
+      option.hidden = false;
+      option.disabled = false;
+      return;
+    }
     const visible = option.dataset.kinds?.split(",").includes(kind) ?? false;
     option.hidden = !visible;
     option.disabled = !visible;
     if (visible && !firstVisible) firstVisible = option;
   });
-  if (categorySelect.selectedOptions[0]?.disabled && firstVisible) {
-    categorySelect.value = firstVisible.value;
+  const hasCategories = !!firstVisible;
+  categorySelect.disabled = !hasCategories;
+  if (!hasCategories || categorySelect.selectedOptions[0]?.disabled) {
+    categorySelect.value = "";
   }
+  if (categoryEmptyMessage) categoryEmptyMessage.hidden = hasCategories;
   if (selectedFile) void inspectFile(selectedFile);
 }
 
@@ -267,8 +278,8 @@ async function submitForm(event: SubmitEvent): Promise<void> {
     fileInput?.focus();
     return;
   }
-  if (selectedTags().length < 1 || selectedTags().length > 5) {
-    announce("Choose 1 to 5 tags.");
+  if (selectedTags().length > 5) {
+    announce("Choose no more than 5 tags.");
     return;
   }
 

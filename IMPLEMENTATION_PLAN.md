@@ -263,7 +263,7 @@ Goal: Let authenticated users create and manage multiple private collections syn
 
 Dependencies: Phases 7 and 10.
 
-Status: Complete, including production verification on `https://pfseeker.com`. Phase 12 is now implemented on the feature branch.
+Status: Complete, including production verification on `https://pfseeker.com`. Phase 12 signed pending submissions are implemented, with optional-taxonomy production verification still pending on the current fix branch.
 
 Work:
 
@@ -292,14 +292,15 @@ Goal: Implement controlled content submissions.
 
 Dependencies: Phases 4, 9, and 10.
 
-Status: Implemented on `phase-12-signed-submissions`. Migration `0004_signed_submissions.sql` has been applied locally, to preview, and to production. Signed-out Cloudflare preview verification passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification has not started and must wait for review, approved merge, and Cloudinary server-credential configuration.
+Status: Implemented and merged, with an optional-taxonomy production blocker fix in progress on `phase-12-tag-optional-fix`. Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support pending submissions and nullable submission categories. Signed-out Cloudflare route protection passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification remains pending until the optional-taxonomy fix is deployed and manually tested.
 
 Completion criteria:
 
 - Upload parameters are signed server-side for direct Cloudinary uploads.
 - Upload intents are short-lived, D1-backed, owner-bound, and replay-protected.
 - Cloudinary uploads are verified server-side before D1 insertion.
-- Actual decoded format, dimensions, file size, metadata, taxonomy, quotas, duplicates, and account permissions are validated.
+- Actual decoded format, dimensions, file size, required metadata, any provided optional taxonomy, quotas, duplicates, and account permissions are validated.
+- Category is optional, existing tags are optional from 0 to 5, and suggested tags are optional from 0 to 3.
 - Submitted items enter only the private `pending` state.
 - Pending submissions are owner-only, read-only, noindex, newest-first on `/submissions`, and cancellable.
 - Cancellation deletes the pending Cloudinary file before deleting the D1 row and related metadata.

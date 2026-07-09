@@ -109,11 +109,17 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
           </div>
           <div>
             <dt>Category</dt>
-            <dd>{submission.category.name}</dd>
+            <dd>{submission.category?.name ?? "None selected"}</dd>
           </div>
           <div>
             <dt>Tags</dt>
-            <dd>{submission.tags.map((tag) => tag.displayName).join(", ")}</dd>
+            <dd>
+              {
+                submission.tags.length > 0
+                  ? submission.tags.map((tag) => tag.displayName).join(", ")
+                  : "None selected"
+              }
+            </dd>
           </div>
           <div>
             <dt>Submitted</dt>
