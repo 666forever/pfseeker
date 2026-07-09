@@ -2,11 +2,12 @@
 
 ## Current status
 
-Phase 11 extends the Cloudflare D1 layer with authenticated private collections:
+Phase 12 extends the Cloudflare D1 layer with authenticated private collections and signed pending submissions:
 
 - migration: `migrations/0001_initial_schema.sql`
 - migration: `migrations/0002_auth_and_sessions.sql`
 - migration: `migrations/0003_synced_collections.sql`
+- migration: `migrations/0004_signed_submissions.sql`
 - seed SQL generator: `scripts/seed-d1.ts`
 - binding name: `DB`
 - approved remote database names: `pfseeker-preview`, `pfseeker-production`
@@ -39,7 +40,17 @@ The Phase 11 collection schema contains:
 - `collections`
 - `collection_items`
 
-Collections are private by default, owned by `users`, and cascade on user deletion. Collection items reference existing assets, prevent duplicate collection/asset pairs, and store deterministic positions. The schema intentionally does not create submissions, reports, moderation events, creator tables, guild-role fields, Discord token storage, password fields, public collection publishing, or fake administrator flags. Those belong to later phases.
+The Phase 12 submission schema contains:
+
+- `submission_upload_intents`
+- `submissions`
+- `submission_tags`
+- `submission_suggested_tags`
+- nullable `assets.content_hash`
+
+Collections are private by default, owned by `users`, and cascade on user deletion. Collection items reference existing assets, prevent duplicate collection/asset pairs, and store deterministic positions.
+
+Submissions are private by default, owned by `users`, and use `pending` as the only Phase 12-created state. Submission tags and suggested tags cascade on submission deletion. Upload intents bind a short-lived generated Cloudinary public ID to an authenticated user and asset type. The schema intentionally does not create reports, moderation events, creator tables, guild-role fields, Discord token storage, password fields, public collection publishing, approval/rejection notes, or fake administrator flags. Those belong to later phases.
 
 ## Data rules
 
@@ -48,6 +59,7 @@ Collections are private by default, owned by `users`, and cascade on user deleti
 - Production imports should use `media_source_type = 'cloudinary'` with stable Cloudinary public IDs.
 - Download rows are event records. Do not seed fake download counts.
 - Collection rows store names, ownership, visibility, timestamps, and ordered asset IDs only. Do not store transformed media URLs in collection rows.
+- Submission rows store stable Cloudinary public IDs, verified file metadata, SHA-256 content hashes, selected taxonomy IDs, optional short metadata, and ownership. Do not store transformed Cloudinary URLs, Discord identity copies, moderation notes, or public slugs in submission rows.
 
 ## Local commands
 
@@ -134,6 +146,18 @@ Production collection runtime verification:
 - Signed-out users cannot access collection management.
 - No anonymous localStorage collection is created.
 - Public collection publishing remains deferred.
+
+Signed-submission migration status:
+
+- `migrations/0004_signed_submissions.sql` adds pending submissions and upload intents without resetting existing users, sessions, collections, collection items, or assets.
+- Applied locally, to preview, and to production on 2026-07-09.
+- Repeat migration execution reported `No migrations to apply` in all three environments.
+- Local submission tables started empty: 0 submissions and 0 upload intents.
+- Preview submission tables started empty: 0 submissions and 0 upload intents. Preview retained 24 development seed assets.
+- Production submission tables started empty: 0 submissions and 0 upload intents. Production retained existing auth data with 1 user and remained intentionally unseeded with asset records.
+- The migration does not seed fake submissions, fake moderator users, or fake production assets.
+- Exact duplicate detection uses the Phase 12 submission `content_hash` and future `assets.content_hash` values. Existing production assets without stored hashes cannot be matched as exact published duplicates until their hash metadata is backfilled or they are created through the submission pipeline.
+- Production runtime upload verification remains pending until the Phase 12 feature branch is reviewed, merged, and Cloudinary server credentials are configured for the production Pages environment.
 
 ## Cloudflare Pages binding status
 

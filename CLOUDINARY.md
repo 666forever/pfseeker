@@ -94,3 +94,18 @@ Local media is development-only and is isolated behind `buildLocalResponsiveImag
 Original-download URLs use Cloudinary's attachment flag and do not include responsive transforms, automatic format conversion, or automatic quality compression.
 
 Future server behavior must validate download permissions and record download events before exposing protected original-download flows.
+
+## Pending Submission Uploads
+
+Phase 12 adds server-side Cloudinary upload support for authenticated pending submissions:
+
+- `CLOUDINARY_CLOUD_NAME` or `PUBLIC_CLOUDINARY_CLOUD_NAME`
+- `CLOUDINARY_API_KEY`
+- `CLOUDINARY_API_SECRET`
+- `CLOUDINARY_PENDING_SUBMISSIONS_FOLDER`, default `pfseeker/pending-submissions`
+
+The browser receives only short-lived signed upload parameters for a generated public ID under the pending namespace. The client cannot choose arbitrary folders, public IDs, transformations, moderation state, or ownership.
+
+After direct upload, the server verifies the Cloudinary resource through the Admin API, checks the pending namespace, confirms resource type and format, validates byte and dimension limits, confirms the upload-intent context, fetches the verified resource bytes, and stores a SHA-256 content hash in D1 before creating a `pending` submission row.
+
+Pending media is not linked from public pfseeker pages. Phase 12 uses unpredictable public IDs under a dedicated namespace and owner-only application routes. This should not be described as cryptographically private unless Cloudinary authenticated delivery is configured in a later hardening phase.

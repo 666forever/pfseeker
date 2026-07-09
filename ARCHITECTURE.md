@@ -2,9 +2,9 @@
 
 ## Current status
 
-The project has completed the audit, engineering foundation, design primitives, global public shell, Cloudinary media abstraction, seed galleries, asset detail pages, expanded search, D1 server layer, Phase 10 Discord authentication, and Phase 11 authenticated private collections.
+The project has completed the audit, engineering foundation, design primitives, global public shell, Cloudinary media abstraction, seed galleries, asset detail pages, expanded search, D1 server layer, Phase 10 Discord authentication, Phase 11 authenticated private collections, and Phase 12 signed pending submissions on the feature branch.
 
-Phase 10 adds open Discord sign-in with `identify` scope only, D1-backed users, one-time OAuth state records, opaque sessions, POST logout, protected `/account`, server-rendered header auth state, and safe auth errors. Production OAuth and logout were manually verified on `https://pfseeker.com` on 2026-07-08. Phase 11 requires sign-in for collection features, stores multiple private collections in D1, and removes anonymous local collection persistence. Production collection creation, rename, add/remove, reorder, ZIP download, persistence, deletion, and access protection were manually verified on `https://pfseeker.com`. All authenticated users are ordinary users. Submissions, moderation, creators, admin workflows, guild checks, bot behavior, role systems, and public collection publishing remain future work; Phase 12 has not started.
+Phase 10 adds open Discord sign-in with `identify` scope only, D1-backed users, one-time OAuth state records, opaque sessions, POST logout, protected `/account`, server-rendered header auth state, and safe auth errors. Production OAuth and logout were manually verified on `https://pfseeker.com` on 2026-07-08. Phase 11 requires sign-in for collection features, stores multiple private collections in D1, and removes anonymous local collection persistence. Production collection creation, rename, add/remove, reorder, ZIP download, persistence, deletion, and access protection were manually verified on `https://pfseeker.com`. Phase 12 adds authenticated signed submissions into a private pending state. Migration `0004_signed_submissions.sql` is applied locally, to preview, and to production; signed-out preview route protection has been manually verified. Production runtime upload verification remains pending until merge and Cloudinary server-credential configuration. All authenticated users are ordinary users. Moderation, creators, admin workflows, guild checks, bot behavior, role systems, public collection publishing, and public submission publishing remain future work.
 
 ## Product identity
 
@@ -100,7 +100,7 @@ Search and taxonomy filtering is centralized in `src/lib/search.ts`. It parses U
 
 The D1 repository currently loads published rows and applies the same search/filter functions in application code. This preserves Phase 8 URL and matching behavior while the dataset is small. Later production-scale search can push filtering into indexed SQL or a dedicated search service if profiling shows that is needed.
 
-Authenticated users, sessions, OAuth state, private collections, and collection items now exist. Submissions, moderation events, reports, public collection publishing, and creator attribution remain future schema additions. Do not add placeholder creator rows, fake roles, or fake download counts.
+Authenticated users, sessions, OAuth state, private collections, collection items, pending submissions, submission tags, suggested submission tags, and upload intents now exist. Moderation events, reports, public collection publishing, and creator attribution remain future schema additions. Do not add placeholder creator rows, fake roles, fake moderation events, or fake download counts.
 
 ## Cloudinary boundary
 
@@ -224,7 +224,7 @@ Foundation scripts should include:
 
 Later phases add Playwright E2E coverage for public routes, overlays, galleries, collections, downloads, auth, submissions, moderation, mobile navigation, and keyboard behavior.
 
-Current unit coverage includes collection naming validation, reorder payload validation, migration shape checks, repository ownership checks, duplicate prevention, add/remove/reorder behavior, invalid asset rejection, ZIP filename generation, controlled concurrency, partial failure, all-failure, empty, cancellation behavior, search query normalization, canonical filter serialization, type/category compatibility, tag matching, color mapping, orientation derivation, combined filters, sort behavior, active-filter URLs, result-count wording, and taxonomy validation.
+Current unit coverage includes collection naming validation, reorder payload validation, migration shape checks, repository ownership checks, duplicate prevention, add/remove/reorder behavior, invalid asset rejection, ZIP filename generation, controlled concurrency, partial failure, all-failure, empty, cancellation behavior, search query normalization, canonical filter serialization, type/category compatibility, tag matching, color mapping, orientation derivation, combined filters, sort behavior, active-filter URLs, result-count wording, taxonomy validation, submission metadata validation, upload-intent namespace checks, submission quotas, duplicate submission handling, owner-only pending submission access, upload-intent expiry/replay prevention, and SVG rejection.
 
 Phase 9 unit coverage adds D1 migration-shape checks, seed SQL generation checks, seed repository search parity, D1 row mapping, and download-event insert behavior through a fake D1 boundary.
 

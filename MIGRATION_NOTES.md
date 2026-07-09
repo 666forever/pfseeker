@@ -42,7 +42,7 @@ The following concepts are worth implementing independently for pfseeker:
 - ZIP download for multiple assets.
 - Creator profiles and leaderboards.
 - Discord OAuth for identity. Completed in Phase 10 for open `identify` sign-in only.
-- Submissions with moderation.
+- Signed pending submissions without moderation.
 - SEO category and editorial surfaces.
 - Incremental loading.
 
@@ -91,7 +91,7 @@ The following will be needed before production content migration can happen:
 9. Expand search and taxonomy filtering. Completed for server-rendered seed-data search.
 10. Introduce D1 and server behavior. Completed for Phase 9: local, preview, and production D1 bindings are configured as `DB`; preview is seeded with development seed media; production schema is migrated and intentionally unseeded.
 11. Add Discord auth and D1-backed sessions. Completed for Phase 10 with open ordinary-user sign-in.
-12. Add submissions, moderation, and creator surfaces in later approved phases.
+12. Add signed pending submissions with direct Cloudinary uploads, owner-only reads, and cancellation. Moderation and creator surfaces remain later approved phases.
 13. Replace seed data with D1-backed production content through documented import scripts.
 
 ## Data migration risks
@@ -106,7 +106,7 @@ The following will be needed before production content migration can happen:
 - Phase 8 seed-data search defines the URL contract and filtering semantics; later D1-backed search should preserve canonicalization, category compatibility, tag normalization, and truthful sort behavior.
 - Phase 9 preserves that URL contract by applying the same search/filter functions to D1 repository results while the dataset is small. If filtering moves into SQL later, it must preserve the same canonical URL and matching semantics.
 - The `downloads` table stores event rows, not fake aggregate counts. Public counts and leaderboards should be derived only from real events.
-- Phase 10 `users`, `sessions`, and `oauth_states` support identity and session state only. Phase 11 adds private synced collections and collection items. They do not include guild membership, Discord roles, bot behavior, email, passwords, submissions, reports, public publishing, or admin flags.
+- Phase 10 `users`, `sessions`, and `oauth_states` support identity and session state only. Phase 11 adds private synced collections and collection items. Phase 12 adds pending submissions, submission tag metadata, and upload intents. They do not include guild membership, Discord roles, bot behavior, email, passwords, reports, moderation transitions, public publishing, or admin flags.
 - Discord access tokens and refresh tokens are not stored. Only the local opaque session token hash is persisted.
 - Arbitrary Cloudflare preview URLs are not registered Discord callbacks; stable preview OAuth needs its own registered redirect before it can be enabled.
 - Submission metadata must be validated before publishing.
@@ -180,5 +180,5 @@ The assessed website should remain a checklist of product capabilities and imple
 - The Cloudflare adapter's generated `SESSION` KV binding remains unused by pfseeker in Phase 10.
 - Production OAuth was manually verified on `https://pfseeker.com` on 2026-07-08, including sign-in, callback, `/account`, refresh persistence, and logout.
 - Production SSR is deployed on Cloudflare Pages through the advanced-mode `_worker.js` compatibility layer from commit `f41c81a9`; arbitrary preview OAuth remains intentionally unsupported because no arbitrary preview callback is registered.
-- Phase 11 authenticated multiple collections are complete and production-verified. Phase 12 has not started.
+- Phase 11 authenticated multiple collections are complete and production-verified. Phase 12 signed pending submissions are implemented on the feature branch, and migration `0004_signed_submissions.sql` has been applied locally, to preview, and to production. Signed-out preview route protection has been manually verified. Production runtime upload verification remains pending until merge and Cloudinary server-credential configuration. Phase 13 moderation has not started.
 - Production collection creation, rename, add/remove, reorder, ZIP download, persistence after refresh and sign-out/sign-in, deletion, signed-out access protection, and signed-out Save sign-in prompt were manually verified on `https://pfseeker.com`.

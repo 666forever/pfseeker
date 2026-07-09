@@ -21,6 +21,9 @@ const avatar = currentUser ? discordAvatarUrl(currentUser.user) : "";
 const collectionsHref = currentUser
   ? "/collections"
   : `/auth/discord?returnTo=${encodeURIComponent("/collections")}`;
+const submissionsHref = currentUser
+  ? "/submissions"
+  : `/auth/discord?returnTo=${encodeURIComponent("/submissions")}`;
 ---
 
 <header class="site-header" aria-label="Site header">
@@ -50,6 +53,16 @@ const collectionsHref = currentUser
     <a class="shell-action shell-action--collections" href={collectionsHref}>
       Collections
     </a>
+    {
+      currentUser && (
+        <a
+          class="shell-action shell-action--collections"
+          href={submissionsHref}
+        >
+          Submissions
+        </a>
+      )
+    }
     {
       currentUser ? (
         <a class="shell-action shell-action--account" href="/account">
@@ -109,6 +122,9 @@ const collectionsHref = currentUser
   {
     currentUser ? (
       <>
+        <a class="button button--ghost button--md" href={submissionsHref}>
+          Submissions
+        </a>
         <a class="button button--ghost button--md" href="/account">
           Account
         </a>

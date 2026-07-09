@@ -6,7 +6,7 @@ Audit date: 2026-07-05
 
 This audit originally covered `C:\Users\hk\Documents\pfseeker-codex-project`. Active work now occurs in `C:\Users\hk\Documents\GitHub\pfseeker`, including project instructions, planning documents, production source, environment examples, reference material, and safe validation commands.
 
-Current checkpoint: Phase 11 authenticated multiple collections are complete and production-verified. Phase 10 Discord authentication and sessions are implemented and production-verified. Phase 11 removes production anonymous localStorage collection behavior, adds private D1-backed collections and collection items, and keeps public publishing deferred. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
+Current checkpoint: Phase 12 signed pending submissions are implemented on the `phase-12-signed-submissions` feature branch. Phase 10 Discord authentication and sessions are production-verified. Phase 11 authenticated multiple collections are production-verified. Migration `0004_signed_submissions.sql` has been applied locally, to preview, and to production. Signed-out Cloudflare preview verification passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification remains pending until the Phase 12 branch is reviewed, merged, and configured with Cloudinary server credentials. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
 
 ## Source-of-truth documents read
 
@@ -145,7 +145,7 @@ Still missing:
 - production public assets
 - image manifest
 - public collection publishing
-- submissions, moderation, reports, creators, and admin flows
+- moderation, reports, creators, admin flows, and public submission publishing
 - full E2E tests
 
 ## Existing pages
@@ -306,11 +306,15 @@ Existing:
 - `src/lib/media.ts` implements typed media metadata, public cloud-name config, safe public ID encoding, deterministic transformations, kind presets, responsive descriptors, placeholders, and original-download URLs.
 - `tests/media.test.ts` covers representative URL generation and verifies the module does not reference server-side Cloudinary secrets.
 
-Missing:
+Phase 12 completed:
 
 - upload signing endpoint
-- D1-backed media metadata persistence
 - signed upload validation
+
+Still deferred:
+
+- production public asset import and D1-backed published media metadata
+- published-asset Cloudinary migration
 
 Security note: Cloudinary API key and secret are correctly named as non-public env variables in `.env.example`; they must remain server-side.
 
@@ -376,14 +380,14 @@ Reference broken/missing material:
 - `.env.example` identifies required future secrets without committing actual secret values.
 - `.gitignore` protects common local, build, and secret files.
 - The reference assessment captures useful lessons and clear prohibited reuse boundaries.
-- Astro foundation, design primitives, global shell, public support/legal routes, Cloudinary media helpers, local seed data, read-only gallery routes, asset detail routes, authenticated private collections, ZIP generation, server-rendered expanded search, taxonomy filtering, canonical filter URLs, category filtering, sorting, D1 repository reads, download-event inserts, Discord sign-in, D1-backed sessions, tests, formatting, linting, type checking, build, dev, preview, and CI configuration work.
+- Astro foundation, design primitives, global shell, public support/legal routes, Cloudinary media helpers, local seed data, read-only gallery routes, asset detail routes, authenticated private collections, ZIP generation, server-rendered expanded search, taxonomy filtering, canonical filter URLs, category filtering, sorting, D1 repository reads, download-event inserts, Discord sign-in, D1-backed sessions, signed pending submissions, Cloudinary upload signing and verification, tests, formatting, linting, type checking, build, dev, preview, and CI configuration work.
 
 ## What is incomplete
 
-- Production D1 gallery content and dynamic product workflows beyond asset reads, download-event foundation, and authentication.
-- Cloudinary upload signing and persisted media data.
-- Production content import remains incomplete; production auth itself is verified.
-- Submissions, moderation, reports, creators, admin workflows, and public collection publishing. Phase 12 has not started.
+- Production D1 gallery content and dynamic product workflows beyond asset reads, download-event foundation, authentication, private collections, and pending submissions.
+- Production published-media content import remains incomplete; production auth itself is verified.
+- Phase 12 pending signed submissions are implemented on the feature branch. Migration `0004_signed_submissions.sql` is already applied locally, to preview, and to production. Production runtime upload verification remains pending until merge and Cloudinary server-credential configuration.
+- Moderation, reports, creators, admin workflows, public submission publishing, and public collection publishing remain deferred.
 - Broader automated tests and CI coverage beyond the current foundation checks.
 
 ## What is broken
@@ -443,7 +447,7 @@ Immediate foundation files still missing:
 
 Later product files:
 
-- submission/moderation flows
+- moderation, reporting, and public submission publishing flows
 - public collection publishing
 - full E2E tests
 
@@ -779,8 +783,8 @@ Manual production verification on `https://pfseeker.com` completed on 2026-07-08
 - Signed-in state persists after page refresh.
 - Logout works and returns the user to the signed-out state.
 - Arbitrary Cloudflare preview OAuth remains intentionally unsupported because arbitrary preview hostnames are not registered Discord callbacks.
-- Phase 11 authenticated multiple collections are complete and production-verified. Phase 12 has not started.
+- Phase 11 authenticated multiple collections are complete and production-verified. Phase 12 signed pending submissions are implemented on the feature branch; signed-out Cloudflare preview verification passed, and production runtime upload verification remains pending until merge and Cloudinary server-credential configuration.
 
 ## Audit conclusion
 
-Phase 11 authenticated multiple collections are complete and production-verified. The local schema, server repository boundary, public route integration, seed SQL generation, D1 environment configuration, local migration and seed, preview migration and seed, production migration, download-event endpoint foundation, Discord OAuth routes, D1-backed opaque sessions, account identity page, logout, Pages SSR compatibility layer, documentation, tests, and production OAuth verification are complete through Phase 10. Phase 11 adds private D1 collections and removes anonymous collection persistence. Production collection creation, rename, add/remove, reorder, ZIP download, persistence, deletion, duplicate prevention, and access protection were manually verified on `https://pfseeker.com`. Production remains intentionally unseeded with development SVG data. Phase 12 has not started.
+Phase 11 authenticated multiple collections are complete and production-verified. The local schema, server repository boundary, public route integration, seed SQL generation, D1 environment configuration, local migration and seed, preview migration and seed, production migration, download-event endpoint foundation, Discord OAuth routes, D1-backed opaque sessions, account identity page, logout, Pages SSR compatibility layer, documentation, tests, and production OAuth verification are complete through Phase 10. Phase 11 adds private D1 collections and removes anonymous collection persistence. Production collection creation, rename, add/remove, reorder, ZIP download, persistence, deletion, duplicate prevention, and access protection were manually verified on `https://pfseeker.com`. Phase 12 adds authenticated signed submissions into a private pending state on the feature branch. Production remains intentionally unseeded with development SVG data or fake submissions. Phase 13 moderation has not started.

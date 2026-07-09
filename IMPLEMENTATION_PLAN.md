@@ -263,7 +263,7 @@ Goal: Let authenticated users create and manage multiple private collections syn
 
 Dependencies: Phases 7 and 10.
 
-Status: Complete, including production verification on `https://pfseeker.com`. Phase 12 has not started.
+Status: Complete, including production verification on `https://pfseeker.com`. Phase 12 is now implemented on the feature branch.
 
 Work:
 
@@ -292,11 +292,19 @@ Goal: Implement controlled content submissions.
 
 Dependencies: Phases 4, 9, and 10.
 
+Status: Implemented on `phase-12-signed-submissions`. Migration `0004_signed_submissions.sql` has been applied locally, to preview, and to production. Signed-out Cloudflare preview verification passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification has not started and must wait for review, approved merge, and Cloudinary server-credential configuration.
+
 Completion criteria:
 
-- Upload parameters are signed server-side.
-- MIME, dimensions, file size, metadata, and account permissions are validated.
-- Submitted items enter a pending state.
+- Upload parameters are signed server-side for direct Cloudinary uploads.
+- Upload intents are short-lived, D1-backed, owner-bound, and replay-protected.
+- Cloudinary uploads are verified server-side before D1 insertion.
+- Actual decoded format, dimensions, file size, metadata, taxonomy, quotas, duplicates, and account permissions are validated.
+- Submitted items enter only the private `pending` state.
+- Pending submissions are owner-only, read-only, noindex, newest-first on `/submissions`, and cancellable.
+- Cancellation deletes the pending Cloudinary file before deleting the D1 row and related metadata.
+- Moderation, approval, rejection, public publishing, notifications, drafts, edit routes, replacement, and restore behavior are not implemented.
+- Unit and repository tests cover validation, migration shape, upload namespace checks, quotas, duplicates, ownership, upload-intent expiry/replay prevention, cancellation removal, and SVG rejection.
 
 ## Phase 13: Moderation and Reports
 
