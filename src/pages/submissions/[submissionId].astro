@@ -10,6 +10,7 @@ import { buildMediaPreviewUrl } from "@/lib/media";
 import { bytesLabel, SUBMISSION_STATUS_LABEL } from "@/lib/submissions";
 import { SubmissionRepository } from "@/server/repositories/submissions";
 import { NotFoundError } from "@/server/repositories/errors";
+import { getCloudinaryConfig } from "@/server/services/cloudinary";
 
 const submissionId = Astro.params.submissionId ?? "";
 let currentUser: CurrentUser;
@@ -28,6 +29,7 @@ try {
 const repository = new SubmissionRepository(
   await getD1DatabaseAsync(Astro.locals),
 );
+const cloudinaryConfig = await getCloudinaryConfig(Astro.locals);
 let submission;
 try {
   submission = await repository.readOwnedSubmission(
@@ -87,7 +89,12 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
               height: submission.height,
               alt: submission.title,
             },
-            { width: 960, quality: "auto", format: "auto" },
+            {
+              cloudName: cloudinaryConfig.cloudName,
+              width: 960,
+              quality: "auto",
+              format: "auto",
+            },
           )}
           alt=""
           width={submission.width}
