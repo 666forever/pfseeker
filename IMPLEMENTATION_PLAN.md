@@ -313,6 +313,8 @@ Goal: Add protected moderation operations.
 
 Dependencies: Phase 12.
 
+Status: Planning in progress — implementation not started.
+
 Completion criteria:
 
 - Moderators can review, edit metadata, approve, reject, archive, and handle reports.
