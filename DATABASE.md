@@ -156,10 +156,10 @@ Signed-submission migration status:
 - Repeat migration execution reported `No migrations to apply` in all three environments.
 - Local submission tables started empty: 0 submissions and 0 upload intents.
 - Preview submission tables started empty: 0 submissions and 0 upload intents. Preview retained 24 development seed assets.
-- Production submission tables started empty: 0 submissions and 0 upload intents. Production retained existing auth data with 1 user and remained intentionally unseeded with asset, category, and tag records.
+- Production submission tables started empty before Phase 12 runtime testing: 0 submissions and 0 upload intents. Production retained existing auth data with 1 user and remained intentionally unseeded with asset, category, and tag records.
 - The migration does not seed fake submissions, fake moderator users, fake production assets, fake categories, or fake tags.
 - Exact duplicate detection uses the Phase 12 submission `content_hash` and future `assets.content_hash` values. Existing production assets without stored hashes cannot be matched as exact published duplicates until their hash metadata is backfilled or they are created through the submission pipeline.
-- Production runtime upload verification remains pending until the optional-taxonomy fix is deployed and manually tested.
+- Phase 12 production runtime verification is complete. Manual testing confirmed signed upload completion, pending submission persistence, private list and detail rendering, runtime Cloudinary previews, optional taxonomy behavior, suggested tags, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections.
 
 ## Cloudflare Pages binding status
 

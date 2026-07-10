@@ -263,7 +263,7 @@ Goal: Let authenticated users create and manage multiple private collections syn
 
 Dependencies: Phases 7 and 10.
 
-Status: Complete, including production verification on `https://pfseeker.com`. Phase 12 signed pending submissions are implemented, with optional-taxonomy production verification still pending on the current fix branch.
+Status: Complete, including production verification on `https://pfseeker.com`.
 
 Work:
 
@@ -292,7 +292,7 @@ Goal: Implement controlled content submissions.
 
 Dependencies: Phases 4, 9, and 10.
 
-Status: Implemented and merged, with an optional-taxonomy production blocker fix in progress on `phase-12-tag-optional-fix`. Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support pending submissions and nullable submission categories. Signed-out Cloudflare route protection passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification remains pending until the optional-taxonomy fix is deployed and manually tested.
+Status: Complete, including production runtime verification on `https://pfseeker.com`. Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support pending submissions and nullable submission categories. Signed-out Cloudflare route protection passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production verification confirmed signed upload completion, pending persistence, private list and detail rendering, runtime Cloudinary previews, optional taxonomy behavior, suggested-tag rendering, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections.
 
 Completion criteria:
 

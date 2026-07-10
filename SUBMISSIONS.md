@@ -4,7 +4,7 @@
 
 Phase 12 adds authenticated signed submissions. Any signed-in Discord user can submit one PFP, banner, or icon image into a private `pending` state. Signed-out users may browse the site normally, but `/submissions`, `/submissions/new`, `/submissions/[submissionId]`, and submission mutation APIs require authentication.
 
-Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support the Phase 12 schema. Signed-out Cloudflare preview verification passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification remains pending until the optional-taxonomy fix is deployed and manually tested.
+Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support the Phase 12 schema. Signed-out Cloudflare preview verification passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Phase 12 production runtime verification is complete on `https://pfseeker.com`: signed upload completion, pending submission persistence, private list rendering, private detail rendering, runtime Cloudinary preview rendering, optional taxonomy behavior, suggested-tag rendering, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections were manually verified.
 
 Moderation is not implemented in Phase 12. Pending submissions are not public, are not added to galleries, and cannot be approved, rejected, edited, replaced, restored, or published by any hidden endpoint.
 

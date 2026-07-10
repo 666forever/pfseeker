@@ -119,6 +119,8 @@ HTML routes redirect signed-out users to Discord sign-in with a safe return path
 
 Signed-out Cloudflare preview verification was completed on the Phase 12 preview: `/submissions` and `/submissions/new` show the Discord sign-in flow, `/submissions/[submissionId]` is protected by the same authenticated flow, and the preview hostname no longer returns a Cloudflare 404. Arbitrary preview OAuth completion remains intentionally untested because Discord callback configuration is production-only.
 
+Production runtime verification is complete on `https://pfseeker.com`. Manual testing confirmed signed upload completion, pending submission persistence, private list rendering, private detail rendering, runtime Cloudinary preview rendering through server runtime configuration, optional taxonomy behavior, suggested-tag rendering, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections.
+
 ## Security notes
 
 - No secrets are read by browser code.

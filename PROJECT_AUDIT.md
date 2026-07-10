@@ -6,7 +6,7 @@ Audit date: 2026-07-05
 
 This audit originally covered `C:\Users\hk\Documents\pfseeker-codex-project`. Active work now occurs in `C:\Users\hk\Documents\GitHub\pfseeker`, including project instructions, planning documents, production source, environment examples, reference material, and safe validation commands.
 
-Current checkpoint: Phase 12 signed pending submissions are implemented and merged, with an optional-taxonomy production blocker fix in progress on `phase-12-tag-optional-fix`. Phase 10 Discord authentication and sessions are production-verified. Phase 11 authenticated multiple collections are production-verified. Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support pending submissions with nullable category IDs and optional tags. Signed-out Cloudflare route protection passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification remains pending until the optional-taxonomy fix is deployed and manually tested. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
+Current checkpoint: Phase 12 signed pending submissions are implemented, merged, and production-verified. Phase 10 Discord authentication and sessions are production-verified. Phase 11 authenticated multiple collections are production-verified. Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support pending submissions with nullable category IDs and optional tags. Signed-out Cloudflare route protection passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime verification confirmed signed upload completion, pending persistence, private list and detail rendering, runtime Cloudinary previews, optional taxonomy behavior, suggested tags, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
 
 ## Source-of-truth documents read
 
@@ -386,7 +386,7 @@ Reference broken/missing material:
 
 - Production D1 gallery content and dynamic product workflows beyond asset reads, download-event foundation, authentication, private collections, and pending submissions.
 - Production published-media content import remains incomplete; production auth itself is verified.
-- Phase 12 pending signed submissions are implemented and merged. Optional taxonomy support is in progress on `phase-12-tag-optional-fix`; production runtime upload verification remains pending until this fix is deployed and manually tested.
+- Phase 12 pending signed submissions are implemented, merged, and production-verified, including optional taxonomy support, runtime Cloudinary preview rendering, owner-only cancellation, and D1/Cloudinary cleanup.
 - Moderation, reports, creators, admin workflows, public submission publishing, and public collection publishing remain deferred.
 - Broader automated tests and CI coverage beyond the current foundation checks.
 
@@ -783,7 +783,7 @@ Manual production verification on `https://pfseeker.com` completed on 2026-07-08
 - Signed-in state persists after page refresh.
 - Logout works and returns the user to the signed-out state.
 - Arbitrary Cloudflare preview OAuth remains intentionally unsupported because arbitrary preview hostnames are not registered Discord callbacks.
-- Phase 11 authenticated multiple collections are complete and production-verified. Phase 12 signed pending submissions are implemented and merged; signed-out route protection passed, and production runtime upload verification remains pending until the optional-taxonomy fix is deployed and manually tested.
+- Phase 11 authenticated multiple collections are complete and production-verified. Phase 12 signed pending submissions are complete and production-verified; signed-out route protection, signed upload completion, private pending rendering, optional taxonomy display, owner-only cancellation, and collection non-regression passed manual production verification.
 
 ## Audit conclusion
 
