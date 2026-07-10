@@ -601,6 +601,19 @@ describe("submission validation", () => {
     expect(client).not.toContain("selectedTags().length < 1");
     expect(client).toContain("selectedTags().length > 5");
   });
+
+  it("renders pending submission media with runtime Cloudinary config", () => {
+    const listPage = readFileSync("src/pages/submissions/index.astro", "utf8");
+    const detailPage = readFileSync(
+      "src/pages/submissions/[submissionId].astro",
+      "utf8",
+    );
+
+    expect(listPage).toContain("getCloudinaryConfig(Astro.locals)");
+    expect(detailPage).toContain("getCloudinaryConfig(Astro.locals)");
+    expect(listPage).toContain("cloudName: cloudinaryConfig.cloudName");
+    expect(detailPage).toContain("cloudName: cloudinaryConfig.cloudName");
+  });
 });
 
 describe("submission migration", () => {

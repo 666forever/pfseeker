@@ -9,6 +9,7 @@ import { getD1DatabaseAsync } from "@/server/db/d1";
 import { SubmissionRepository } from "@/server/repositories/submissions";
 import { SUBMISSION_STATUS_LABEL, bytesLabel } from "@/lib/submissions";
 import { buildMediaPreviewUrl } from "@/lib/media";
+import { getCloudinaryConfig } from "@/server/services/cloudinary";
 
 let currentUser: CurrentUser;
 try {
@@ -26,9 +27,10 @@ try {
 const repository = new SubmissionRepository(
   await getD1DatabaseAsync(Astro.locals),
 );
-const submissions = await repository.listOwnedPendingSubmissions(
-  currentUser.user.id,
-);
+const [submissions, cloudinaryConfig] = await Promise.all([
+  repository.listOwnedPendingSubmissions(currentUser.user.id),
+  getCloudinaryConfig(Astro.locals),
+]);
 const dateFormatter = new Intl.DateTimeFormat("en", {
   month: "short",
   day: "numeric",
@@ -118,7 +120,12 @@ const taxonomySummary = (submission: (typeof submissions)[number]): string => {
                         height: submission.height,
                         alt: submission.title,
                       },
-                      { width: 320, quality: "auto", format: "auto" },
+                      {
+                        cloudName: cloudinaryConfig.cloudName,
+                        width: 320,
+                        quality: "auto",
+                        format: "auto",
+                      },
                     )}
                     alt=""
                     width={submission.width}
