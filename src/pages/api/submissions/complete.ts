@@ -33,8 +33,15 @@ export const POST: APIRoute = async (context) => {
 
     const db = await getD1DatabaseAsync(context.locals);
     const contentRepository = new D1ContentRepository(db);
-    const validTags = await contentRepository.listTags();
-    const metadata = validateSubmissionMetadata(metadataSource, validTags);
+    const [validCategories, validTags] = await Promise.all([
+      contentRepository.listCategories(),
+      contentRepository.listTags(),
+    ]);
+    const metadata = validateSubmissionMetadata(
+      metadataSource,
+      validTags,
+      validCategories,
+    );
     if (!metadata.ok) {
       return jsonResponse(
         { error: metadata.message, field: metadata.field },

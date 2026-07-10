@@ -38,7 +38,7 @@ export interface PendingSubmission {
     id: string;
     slug: string;
     name: string;
-  };
+  } | null;
   tags: {
     id: string;
     slug: string;
@@ -90,9 +90,9 @@ interface SubmissionRow {
   description: string | null;
   creator_credit: string | null;
   source_url: string | null;
-  category_id: string;
-  category_slug: string;
-  category_name: string;
+  category_id: string | null;
+  category_slug: string | null;
+  category_name: string | null;
   cloudinary_public_id: string;
   cloudinary_resource_type: string;
   cloudinary_format: string;
@@ -168,11 +168,14 @@ function mapSubmission(
     description: row.description,
     creatorCredit: row.creator_credit,
     sourceUrl: row.source_url,
-    category: {
-      id: row.category_id,
-      slug: row.category_slug,
-      name: row.category_name,
-    },
+    category:
+      row.category_id && row.category_slug && row.category_name
+        ? {
+            id: row.category_id,
+            slug: row.category_slug,
+            name: row.category_name,
+          }
+        : null,
     tags: tags.map((tag) => ({
       id: tag.id,
       slug: tag.slug,
@@ -594,13 +597,14 @@ export class SubmissionRepository {
       submissions.duplicate_pending_flag,
       submissions.created_at
      FROM submissions
-     JOIN categories ON categories.id = submissions.category_id`;
+     LEFT JOIN categories ON categories.id = submissions.category_id`;
   }
 
   private async categoryIdFor(
     assetType: AssetKind,
-    categorySlug: string,
-  ): Promise<string> {
+    categorySlug: string | null,
+  ): Promise<string | null> {
+    if (!categorySlug) return null;
     const row = await this.db
       .prepare(
         `SELECT id, supported_kinds

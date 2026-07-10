@@ -85,7 +85,7 @@ const [categories, tags] = await Promise.all([
       <section class="collection-panel" aria-labelledby="submission-meta-title">
         <div>
           <h2 id="submission-meta-title">Details</h2>
-          <p>Use existing taxonomy. Suggested tags are review notes only.</p>
+          <p>Taxonomy is optional. Suggested tags are review notes only.</p>
         </div>
 
         <div class="submission-grid">
@@ -105,7 +105,8 @@ const [categories, tags] = await Promise.all([
 
           <label>
             Category
-            <select name="category" required data-submission-category>
+            <select name="category" data-submission-category>
+              <option value="">No category</option>
               {
                 categories.map((category) => (
                   <option
@@ -117,20 +118,27 @@ const [categories, tags] = await Promise.all([
                 ))
               }
             </select>
+            <span class="field__help" data-submission-category-empty hidden>
+              Categories are not available yet.
+            </span>
           </label>
 
           <fieldset class="submission-fieldset">
             <legend>Tags</legend>
-            <div class="submission-tag-grid">
-              {
-                tags.map((tag) => (
-                  <label>
-                    <input type="checkbox" name="tags" value={tag} />
-                    <span>{tag}</span>
-                  </label>
-                ))
-              }
-            </div>
+            {
+              tags.length > 0 ? (
+                <div class="submission-tag-grid">
+                  {tags.map((tag) => (
+                    <label>
+                      <input type="checkbox" name="tags" value={tag} />
+                      <span>{tag}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p class="field__help">Tags are not available yet.</p>
+              )
+            }
           </fieldset>
 
           <label>

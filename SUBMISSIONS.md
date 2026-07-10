@@ -2,9 +2,9 @@
 
 ## Current status
 
-Phase 12 adds authenticated signed submissions on the `phase-12-signed-submissions` feature branch. Any signed-in Discord user can submit one PFP, banner, or icon image into a private `pending` state. Signed-out users may browse the site normally, but `/submissions`, `/submissions/new`, `/submissions/[submissionId]`, and submission mutation APIs require authentication.
+Phase 12 adds authenticated signed submissions. Any signed-in Discord user can submit one PFP, banner, or icon image into a private `pending` state. Signed-out users may browse the site normally, but `/submissions`, `/submissions/new`, `/submissions/[submissionId]`, and submission mutation APIs require authentication.
 
-Migration `0004_signed_submissions.sql` has been applied locally, to preview, and to production. Signed-out Cloudflare preview verification passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification remains pending until the branch is reviewed, merged, and configured with Cloudinary server credentials.
+Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support the Phase 12 schema. Signed-out Cloudflare preview verification passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification remains pending until the optional-taxonomy fix is deployed and manually tested.
 
 Moderation is not implemented in Phase 12. Pending submissions are not public, are not added to galleries, and cannot be approved, rejected, edited, replaced, restored, or published by any hidden endpoint.
 
@@ -35,18 +35,20 @@ Required:
 - image
 - asset type
 - title, 2 to 80 characters
-- existing category valid for the selected asset type
-- 1 to 5 existing tags
 - content-rules confirmation
 
 Optional:
 
+- existing category valid for the selected asset type, 0 or 1
+- existing tags, 0 to 5
 - description, maximum 100 characters
 - creator or credit name, maximum 80 characters
 - source URL, HTTP or HTTPS only
-- up to 3 suggested tags, 2 to 30 characters each
+- suggested tags, 0 to 3, 2 to 30 characters each
 
 Text is trimmed, repeated whitespace is normalized, and control characters are rejected. User text is rendered through Astro escaping. Markdown and HTML input are not interpreted.
+
+Production taxonomy can be empty. Empty category values normalize to `null`, omitted tags normalize to an empty array, and submissions may have zero `submission_tags` rows. Provided categories and tags must still exist, and provided categories must support the selected asset type.
 
 Source and creator fields are optional. Users do not need to provide proof of ownership, proof of permission, license details, source URL, creator name, attribution, or copyright documentation for Phase 12 submission intake.
 
@@ -85,7 +87,7 @@ Phase 12 adds:
 - `submission_suggested_tags`
 - nullable `assets.content_hash` for future exact duplicate checks against published Cloudinary assets
 
-Submissions reference `users` and `categories`. Submission tags reference existing `tags`. Submission tag and suggested-tag rows cascade when a submission is deleted. No moderator IDs, approval notes, rejection notes, public slug, audit rows, Discord token copies, or fake moderation records are created.
+Submissions reference `users`; `category_id` is nullable because taxonomy is optional in Phase 12. Submission tags reference existing `tags` only when selected. Submission tag and suggested-tag rows cascade when a submission is deleted. No moderator IDs, approval notes, rejection notes, public slug, audit rows, Discord token copies, or fake moderation records are created.
 
 ## Quotas and duplicates
 
@@ -136,6 +138,6 @@ Phase 12 deliberately defers:
 
 ## Tests
 
-Automated coverage includes metadata normalization, title and optional-field limits, source URL safety, category/type compatibility, tag and suggested-tag limits, allowed formats, file size and dimensions, pending status validation, upload-intent namespace checks, duplicate handling, quota calculations, owner-only reads, cancellation removal, upload-intent expiry and replay prevention, migration shape, and SVG rejection.
+Automated coverage includes metadata normalization, title and optional-field limits, source URL safety, optional category/type compatibility, 0 to 5 existing tags, suggested-tag limits, zero-taxonomy submission creation, cancellation without taxonomy, allowed formats, file size and dimensions, pending status validation, upload-intent namespace checks, duplicate handling, quota calculations, owner-only reads, cancellation removal, upload-intent expiry and replay prevention, migration shape, and SVG rejection.
 
 Cloudinary network calls are isolated behind server modules and are not exercised against production Cloudinary in ordinary unit tests.

@@ -26,7 +26,7 @@ Authenticated collections flow through server-only modules:
 
 Authenticated submissions flow through server-only modules:
 
-- `src/server/repositories/submissions.ts` owns upload-intent, quota, duplicate, pending-submission, tag-relation, owner-read, and owner-delete SQL.
+- `src/server/repositories/submissions.ts` owns upload-intent, quota, duplicate, pending-submission, optional taxonomy-relation, owner-read, and owner-delete SQL.
 - `src/server/services/submission-api.ts` centralizes authenticated repository access, same-origin mutation checks, JSON body validation, and safe error responses.
 - `src/server/services/cloudinary.ts` owns Cloudinary signing, Admin API verification, SHA-256 content hashing, pending namespace checks, and deletion.
 - Pages and endpoints derive the owner from `requireUser`; clients never provide owner IDs or arbitrary Cloudinary folders.
@@ -39,7 +39,7 @@ This is acceptable for the current seed-scale dataset. Later phases can push sea
 
 The collection repository lists owned collections, reads one owned collection, creates, renames, deletes, adds assets, removes assets, and reorders items. Collection names are validated centrally, duplicate names are allowed, and visibility is private-only in Phase 11.
 
-The submission repository lists owned pending submissions, reads one owned pending submission, creates short-lived upload intents, completes verified Cloudinary uploads as `pending`, enforces quotas, checks exact duplicates by content hash, marks pending duplicates from other users, and deletes owned pending submissions after Cloudinary cleanup. Phase 12 has no approval, rejection, edit, replacement, restore, or public-publishing path.
+The submission repository lists owned pending submissions, reads one owned pending submission, creates short-lived upload intents, completes verified Cloudinary uploads as `pending`, enforces quotas, checks exact duplicates by content hash, marks pending duplicates from other users, accepts optional category and 0 to 5 existing tags, and deletes owned pending submissions after Cloudinary cleanup. Phase 12 has no approval, rejection, edit, replacement, restore, or public-publishing path.
 
 ## Endpoint foundation
 
@@ -115,7 +115,7 @@ Phase 12 adds authenticated pending submissions:
 - `POST /api/submissions/complete` verifies the Cloudinary upload, validates metadata and quotas, and creates the D1 `pending` row.
 - `DELETE /api/submissions/[submissionId]` cancels an owned pending submission after deleting its Cloudinary resource.
 
-HTML routes redirect signed-out users to Discord sign-in with a safe return path. Mutation endpoints require active sessions, JSON request bodies where applicable, same-origin Origin/Referer, server-side taxonomy validation, server-side ownership, and safe JSON errors. Pending submissions are marked `noindex` and are not exposed through public gallery routes.
+HTML routes redirect signed-out users to Discord sign-in with a safe return path. Mutation endpoints require active sessions, JSON request bodies where applicable, same-origin Origin/Referer, server-side validation for any provided taxonomy, server-side ownership, and safe JSON errors. Pending submissions are marked `noindex` and are not exposed through public gallery routes. Category is optional, existing tags are optional from 0 to 5, and suggested tags are optional from 0 to 3.
 
 Signed-out Cloudflare preview verification was completed on the Phase 12 preview: `/submissions` and `/submissions/new` show the Discord sign-in flow, `/submissions/[submissionId]` is protected by the same authenticated flow, and the preview hostname no longer returns a Cloudflare 404. Arbitrary preview OAuth completion remains intentionally untested because Discord callback configuration is production-only.
 

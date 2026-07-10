@@ -1,4 +1,3 @@
-import { getCategoryForKind } from "@/data/categories";
 import type { AssetKind } from "@/lib/media";
 
 export const SUBMISSION_STATUS = "pending";
@@ -9,7 +8,6 @@ export const MAX_COMPLETED_SUBMISSIONS_PER_24_HOURS = 10;
 export const MAX_ACTIVE_UPLOAD_INTENTS = 3;
 export const MAX_PENDING_SUBMISSIONS = 50;
 export const MAX_SELECTED_TAGS = 5;
-export const MIN_SELECTED_TAGS = 1;
 export const MAX_SUGGESTED_TAGS = 3;
 
 export const allowedSubmissionFormats = [
@@ -58,7 +56,7 @@ export const submissionFileLimits = {
 export interface SubmissionMetadata {
   assetType: AssetKind;
   title: string;
-  category: string;
+  category: string | null;
   tags: string[];
   description: string | null;
   creatorCredit: string | null;
@@ -80,6 +78,11 @@ export interface SubmissionValidationError {
 
 export type SubmissionMetadataResult =
   SubmissionMetadataValidation | SubmissionValidationError;
+
+export interface ValidSubmissionCategory {
+  slug: string;
+  kinds: AssetKind[];
+}
 
 export interface VerifiedImageInput {
   format: string;
@@ -184,6 +187,7 @@ export function validateSourceUrl(
 export function validateSubmissionMetadata(
   data: Record<string, unknown>,
   validTags: string[],
+  validCategories: ValidSubmissionCategory[] = [],
 ): SubmissionMetadataResult {
   const assetType = parseAssetType(data.assetType);
   if (!assetType) {
@@ -212,11 +216,22 @@ export function validateSubmissionMetadata(
     typeof data.category === "string"
       ? normalizeSubmissionText(data.category)
       : "";
-  if (!category || !getCategoryForKind(assetType, category)) {
+  const selectedCategory = category || null;
+  const validCategory = selectedCategory
+    ? validCategories.find((entry) => entry.slug === selectedCategory)
+    : undefined;
+  if (selectedCategory && !validCategory) {
     return {
       ok: false,
       field: "category",
-      message: "Choose a category that matches the asset type.",
+      message: "Choose an existing category.",
+    };
+  }
+  if (validCategory && !validCategory.kinds.includes(assetType)) {
+    return {
+      ok: false,
+      field: "category",
+      message: "Category does not match the asset type.",
     };
   }
 
@@ -226,14 +241,11 @@ export function validateSubmissionMetadata(
   }
   const uniqueTags = Array.from(new Set(tags));
   const allowedTags = new Set(validTags);
-  if (
-    uniqueTags.length < MIN_SELECTED_TAGS ||
-    uniqueTags.length > MAX_SELECTED_TAGS
-  ) {
+  if (uniqueTags.length > MAX_SELECTED_TAGS) {
     return {
       ok: false,
       field: "tags",
-      message: "Choose 1 to 5 existing tags.",
+      message: "Choose no more than 5 existing tags.",
     };
   }
   if (!uniqueTags.every((tag) => allowedTags.has(tag))) {
@@ -294,7 +306,7 @@ export function validateSubmissionMetadata(
     metadata: {
       assetType,
       title: title.value,
-      category,
+      category: selectedCategory,
       tags: uniqueTags,
       description: description.value,
       creatorCredit: creatorCredit.value,

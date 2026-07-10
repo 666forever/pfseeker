@@ -54,7 +54,7 @@ The required runtime binding name is `DB`.
 - preview: `pfseeker-preview`
 - production: `pfseeker-production`
 
-Preview contains development seed media for validation. Production has the Phase 10 auth schema, Phase 11 collection schema, and Phase 12 signed-submission schema after migration `0004_signed_submissions.sql`. Production remains intentionally not seeded with development SVG records, fake collections, or fake submissions.
+Preview contains development seed media for validation. Production has the Phase 10 auth schema, Phase 11 collection schema, and Phase 12 signed-submission schema after migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql`. Production remains intentionally not seeded with development SVG records, fake collections, fake categories, fake tags, or fake submissions.
 
 ## Authentication
 
@@ -72,8 +72,8 @@ Phase 11 production verification is complete on `https://pfseeker.com`: collecti
 
 ## Submissions
 
-Phase 12 adds authenticated signed submissions on the `phase-12-signed-submissions` branch. Signed-in users can submit one PFP, banner, or icon image through direct signed Cloudinary upload. Successful submissions enter a private pending state, are owner-only, and can only be cancelled. Cancellation deletes the pending Cloudinary file and D1 submission row.
+Phase 12 adds authenticated signed submissions. Signed-in users can submit one PFP, banner, or icon image through direct signed Cloudinary upload. Successful submissions enter a private pending state, are owner-only, and can only be cancelled. Cancellation deletes the pending Cloudinary file and D1 submission row.
 
-Migration `0004_signed_submissions.sql` has been applied locally, to preview, and to production. Signed-out Cloudflare preview verification passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime upload verification is still pending until this branch is reviewed, merged, and configured with Cloudinary server credentials.
+Submission taxonomy is optional for Phase 12: category is optional, existing tags are 0 to 5, and suggested tags are 0 to 3. Production currently has no real category or tag taxonomy, and the application must not seed fake taxonomy or block uploads because taxonomy tables are empty. Production runtime upload verification remains pending until the optional-taxonomy fix is deployed and manually tested.
 
 Moderation, approval, rejection, public publishing, notifications, drafts, edit routes, and image replacement remain deferred to later phases. See `SUBMISSIONS.md`.
