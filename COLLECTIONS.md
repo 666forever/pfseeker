@@ -10,7 +10,8 @@ Phase 11 replaces anonymous browser-local collections with private, account-owne
 - Clicking Save while signed out opens a sign-in prompt that links to `/auth/discord` with a safe return path back to the current page.
 - No anonymous local collection import is retained by product decision.
 - Phase 11 production verification is complete.
-- Phase 12 has not started.
+- Phase 12 is complete and production-verified.
+- Phase 13 moderation and publishing is awaiting merge and production rollout.
 
 ## Production verification
 
@@ -102,6 +103,8 @@ Collections are private by default and only private visibility is implemented. P
 The existing `src/lib/collection-zip.ts` helper remains the ZIP engine. Collection detail pages provide server-resolved asset metadata to the client for owner-only ZIP downloads.
 
 ZIP behavior includes safe deterministic paths, controlled concurrency, progress updates, cancellation, partial-failure reporting, and empty collection handling. Collection and asset names are sanitized before being used as filenames.
+
+Archived assets are excluded from public repository reads. If an existing private collection item points to an asset that is later archived, the item resolves as unavailable rather than exposing archived media. Archived assets are not included in collection ZIP downloads, and the UI reports unavailable items instead of rendering empty labels or broken media.
 
 ## Removed local behavior
 

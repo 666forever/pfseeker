@@ -2,7 +2,7 @@
 
 ## Current Status
 
-Phase 13 moderation is implemented on the `phase-13-moderation-implementation` feature branch. It is not merged to `main` and is not production-verified.
+Phase 13 moderation is implemented and audited on the `phase-13-moderation-audit` branch. It is awaiting merge to `main`, production migration `0006_moderation_and_publishing.sql`, production bootstrap configuration, and production verification.
 
 The implementation adds protected moderator and owner workflows for pending submissions, durable D1 role memberships, taxonomy management, publication, rejection, archive, and moderation event history. Reports remain deferred and no report UI, API, or tables are implemented.
 
