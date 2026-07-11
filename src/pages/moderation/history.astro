@@ -1,0 +1,123 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  ModerationAuthorizationError,
+  requireModerator,
+} from "@/server/auth/moderation";
+import { AuthenticationRequiredError } from "@/server/auth/session";
+import type { ModerationTargetType } from "@/server/repositories/moderation";
+
+let access;
+try {
+  access = await requireModerator(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent("/moderation/history")}`,
+      302,
+    );
+  }
+  if (error instanceof ModerationAuthorizationError) {
+    return new Response("Not found.", { status: 404 });
+  }
+  throw error;
+}
+
+const targetType = Astro.url.searchParams.get("targetType") || undefined;
+const targetId = Astro.url.searchParams.get("targetId") || undefined;
+const action = Astro.url.searchParams.get("action") || undefined;
+const events = await access.repository.listEvents({
+  targetType:
+    targetType === "submission" ||
+    targetType === "asset" ||
+    targetType === "category" ||
+    targetType === "tag" ||
+    targetType === "moderator_membership"
+      ? (targetType as ModerationTargetType)
+      : undefined,
+  targetId,
+  action,
+});
+---
+
+<BaseLayout
+  title="Moderation history"
+  description="Protected append-only pfseeker moderation history."
+  noindex
+>
+  <section class="page-shell" aria-labelledby="history-title">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/moderation">Moderation</a></li>
+        <li><span aria-current="page">History</span></li>
+      </ol>
+    </nav>
+
+    <div class="page-hero">
+      <p class="eyebrow">Moderation</p>
+      <h1 id="history-title">Event history</h1>
+      <p>Append-only events without secrets or raw operational credentials.</p>
+    </div>
+
+    <form class="gallery-toolbar" method="get">
+      <label>
+        Target type
+        <select name="targetType">
+          <option value="">All</option>
+          {
+            [
+              "submission",
+              "asset",
+              "category",
+              "tag",
+              "moderator_membership",
+            ].map((type) => (
+              <option value={type} selected={targetType === type}>
+                {type}
+              </option>
+            ))
+          }
+        </select>
+      </label>
+      <label>
+        Target ID
+        <input name="targetId" value={targetId ?? ""} />
+      </label>
+      <label>
+        Action
+        <input name="action" value={action ?? ""} />
+      </label>
+      <button class="button button--secondary button--sm" type="submit">
+        Filter
+      </button>
+    </form>
+
+    <section class="collection-panel" aria-labelledby="events-title">
+      <h2 id="events-title">Events</h2>
+      {
+        events.length === 0 ? (
+          <p>No moderation events match these filters.</p>
+        ) : (
+          <ol class="collection-list">
+            {events.map((event) => (
+              <li class="collection-item">
+                <div class="collection-item__body">
+                  <h3>{event.action}</h3>
+                  <p>
+                    {event.targetType} / {event.targetId}
+                  </p>
+                  <p>
+                    {event.previousState ?? "none"} / {event.newState ?? "none"}
+                  </p>
+                  <p>
+                    <time datetime={event.createdAt}>{event.createdAt}</time>
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </section>
+  </section>
+</BaseLayout>

@@ -7,7 +7,7 @@ import {
 import type { CurrentUser } from "@/server/auth/types";
 import { getD1DatabaseAsync } from "@/server/db/d1";
 import { buildMediaPreviewUrl } from "@/lib/media";
-import { bytesLabel, SUBMISSION_STATUS_LABEL } from "@/lib/submissions";
+import { bytesLabel, submissionStatusLabels } from "@/lib/submissions";
 import { SubmissionRepository } from "@/server/repositories/submissions";
 import { NotFoundError } from "@/server/repositories/errors";
 import { getCloudinaryConfig } from "@/server/services/cloudinary";
@@ -49,11 +49,15 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
   year: "numeric",
   timeZone: "UTC",
 });
+const publishedPath =
+  submission.status === "published" && submission.publishedAssetSlug
+    ? `/${submission.assetType}/${submission.publishedAssetSlug}`
+    : null;
 ---
 
 <BaseLayout
   title={submission.title}
-  description="View a private pending pfseeker submission."
+  description="View a private pfseeker submission."
   noindex
 >
   <section
@@ -70,9 +74,9 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
     </nav>
 
     <div class="page-hero">
-      <p class="eyebrow">Pending submission</p>
+      <p class="eyebrow">Submission</p>
       <h1 id="submission-title">{submission.title}</h1>
-      <p>{SUBMISSION_STATUS_LABEL}</p>
+      <p>{submissionStatusLabels[submission.status]}</p>
     </div>
 
     <section
@@ -80,35 +84,43 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
       aria-label="Submission detail"
     >
       <figure class="submission-detail-media">
-        <img
-          src={buildMediaPreviewUrl(
-            {
-              kind: submission.assetType,
-              publicId: submission.cloudinaryPublicId,
-              width: submission.width,
-              height: submission.height,
-              alt: submission.title,
-            },
-            {
-              cloudName: cloudinaryConfig.cloudName,
-              width: 960,
-              quality: "auto",
-              format: "auto",
-            },
-          )}
-          alt=""
-          width={submission.width}
-          height={submission.height}
-          loading="eager"
-          decoding="async"
-        />
+        {
+          submission.cloudinaryPublicId ? (
+            <img
+              src={buildMediaPreviewUrl(
+                {
+                  kind: submission.assetType,
+                  publicId: submission.cloudinaryPublicId,
+                  width: submission.width,
+                  height: submission.height,
+                  alt: submission.title,
+                },
+                {
+                  cloudName: cloudinaryConfig.cloudName,
+                  width: 960,
+                  quality: "auto",
+                  format: "auto",
+                },
+              )}
+              alt=""
+              width={submission.width}
+              height={submission.height}
+              loading="eager"
+              decoding="async"
+            />
+          ) : (
+            <div class="route-empty">
+              <p>Pending media has been removed.</p>
+            </div>
+          )
+        }
       </figure>
 
       <div class="submission-detail-list">
         <dl>
           <div>
             <dt>Status</dt>
-            <dd>{SUBMISSION_STATUS_LABEL}</dd>
+            <dd>{submissionStatusLabels[submission.status]}</dd>
           </div>
           <div>
             <dt>Asset type</dt>
@@ -181,15 +193,44 @@ const dateFormatter = new Intl.DateTimeFormat("en", {
               </div>
             )
           }
+          {
+            submission.status === "published" && publishedPath && (
+              <div>
+                <dt>Published asset</dt>
+                <dd>
+                  <a href={publishedPath}>Open public asset</a>
+                </dd>
+              </div>
+            )
+          }
+          {
+            submission.status === "rejected" && submission.reviewedAt && (
+              <div>
+                <dt>Rejected</dt>
+                <dd>
+                  <time datetime={submission.reviewedAt}>
+                    {dateFormatter.format(new Date(submission.reviewedAt))}
+                  </time>
+                  {submission.rejectionReasonPublic
+                    ? ` / ${submission.rejectionReasonPublic}`
+                    : ""}
+                </dd>
+              </div>
+            )
+          }
         </dl>
 
-        <button
-          class="button button--danger button--md"
-          type="button"
-          data-submission-cancel={submission.id}
-        >
-          Cancel submission
-        </button>
+        {
+          submission.status === "pending" && (
+            <button
+              class="button button--danger button--md"
+              type="button"
+              data-submission-cancel={submission.id}
+            >
+              Cancel submission
+            </button>
+          )
+        }
         <p data-submission-status role="status" aria-live="polite"></p>
       </div>
     </section>

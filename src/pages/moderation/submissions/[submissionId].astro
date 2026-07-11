@@ -1,0 +1,320 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  ModerationAuthorizationError,
+  requireModerator,
+} from "@/server/auth/moderation";
+import { AuthenticationRequiredError } from "@/server/auth/session";
+import { buildMediaPreviewUrl } from "@/lib/media";
+import { bytesLabel, submissionStatusLabels } from "@/lib/submissions";
+import { getCloudinaryConfig } from "@/server/services/cloudinary";
+import { NotFoundError } from "@/server/repositories/errors";
+
+const submissionId = Astro.params.submissionId ?? "";
+let access;
+try {
+  access = await requireModerator(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent(Astro.url.pathname)}`,
+      302,
+    );
+  }
+  if (error instanceof ModerationAuthorizationError) {
+    return new Response("Not found.", { status: 404 });
+  }
+  throw error;
+}
+
+let submission;
+try {
+  submission = await access.repository.readSubmission(submissionId);
+} catch (error) {
+  if (error instanceof NotFoundError) {
+    return new Response("Not found.", { status: 404 });
+  }
+  throw error;
+}
+const [categories, tags, events, cloudinaryConfig] = await Promise.all([
+  access.repository.listCategories(),
+  access.repository.listTags(),
+  access.repository.listEvents({
+    targetType: "submission",
+    targetId: submission.id,
+  }),
+  getCloudinaryConfig(Astro.locals),
+]);
+const selectedTags = new Set(submission.tags.map((tag) => tag.slug));
+const mediaUrl = submission.cloudinaryPublicId
+  ? buildMediaPreviewUrl(
+      {
+        kind: submission.assetType,
+        publicId: submission.cloudinaryPublicId,
+        width: submission.width,
+        height: submission.height,
+        alt: submission.title,
+      },
+      {
+        cloudName: cloudinaryConfig.cloudName,
+        width: 960,
+        quality: "auto",
+        format: "auto",
+      },
+    )
+  : "";
+---
+
+<BaseLayout
+  title={`Review ${submission.title}`}
+  description="Protected pfseeker moderation submission detail."
+  noindex
+>
+  <section class="page-shell submission-page" aria-labelledby="review-title">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/moderation">Moderation</a></li>
+        <li><a href="/moderation/submissions">Submissions</a></li>
+        <li><span aria-current="page">{submission.title}</span></li>
+      </ol>
+    </nav>
+
+    <div class="page-hero">
+      <p class="eyebrow">Moderation review</p>
+      <h1 id="review-title">{submission.title}</h1>
+      <p>
+        {submissionStatusLabels[submission.status]} / {submission.assetType}
+      </p>
+    </div>
+
+    <section class="collection-panel submission-detail-grid">
+      <figure class="submission-detail-media">
+        {
+          mediaUrl ? (
+            <img
+              src={mediaUrl}
+              alt=""
+              width={submission.width}
+              height={submission.height}
+              loading="eager"
+              decoding="async"
+            />
+          ) : (
+            <p>Pending media has been cleaned up.</p>
+          )
+        }
+      </figure>
+
+      <div class="submission-detail-list">
+        <dl>
+          <div>
+            <dt>Status</dt>
+            <dd>{submissionStatusLabels[submission.status]}</dd>
+          </div>
+          <div>
+            <dt>Submitter</dt>
+            <dd>
+              {submission.submitter.globalName ?? submission.submitter.username}
+            </dd>
+          </div>
+          <div>
+            <dt>File</dt>
+            <dd>
+              {submission.width} x {submission.height} /{" "}
+              {submission.cloudinaryFormat.toUpperCase()} / {
+                bytesLabel(submission.bytes)
+              }
+            </dd>
+          </div>
+          <div>
+            <dt>Suggested tags</dt>
+            <dd>
+              {
+                submission.suggestedTags.length
+                  ? submission.suggestedTags.join(", ")
+                  : "None suggested"
+              }
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="collection-panel" aria-labelledby="metadata-title">
+      <h2 id="metadata-title">Moderated metadata</h2>
+      <form
+        class="submission-form"
+        method="post"
+        action={`/api/moderation/submissions/${submission.id}/metadata`}
+      >
+        <div class="submission-grid">
+          <label>
+            Title
+            <input
+              name="title"
+              value={submission.title}
+              required
+              minlength="2"
+              maxlength="80"
+            />
+          </label>
+          <label>
+            Category
+            <select name="category" required>
+              <option value="">Choose category</option>
+              {
+                categories
+                  .filter((category) =>
+                    category.kinds.includes(submission.assetType),
+                  )
+                  .map((category) => (
+                    <option
+                      value={category.slug}
+                      selected={submission.category?.slug === category.slug}
+                    >
+                      {category.name}
+                    </option>
+                  ))
+              }
+            </select>
+          </label>
+          <fieldset class="submission-fieldset">
+            <legend>Tags</legend>
+            {
+              tags.length === 0 ? (
+                <p class="field__help">Create real tags before approval.</p>
+              ) : (
+                <div class="submission-tag-grid">
+                  {tags.map((tag) => (
+                    <label>
+                      <input
+                        type="checkbox"
+                        name="tags"
+                        value={tag.slug}
+                        checked={selectedTags.has(tag.slug)}
+                      />
+                      <span>{tag.displayName}</span>
+                    </label>
+                  ))}
+                </div>
+              )
+            }
+          </fieldset>
+          <label>
+            Description
+            <textarea name="description" maxlength="100" rows="3">
+              {submission.description ?? ""}
+            </textarea>
+          </label>
+          <label>
+            Creator or credit
+            <input
+              name="creatorCredit"
+              value={submission.creatorCredit ?? ""}
+              maxlength="80"
+            />
+          </label>
+          <label>
+            Source URL
+            <input
+              name="sourceUrl"
+              type="url"
+              value={submission.sourceUrl ?? ""}
+            />
+          </label>
+        </div>
+        <button class="button button--secondary button--md" type="submit">
+          Save metadata
+        </button>
+      </form>
+    </section>
+
+    {
+      submission.status === "pending" && (
+        <section class="collection-panel" aria-labelledby="actions-title">
+          <h2 id="actions-title">Decision</h2>
+          <form
+            method="post"
+            action={`/api/moderation/submissions/${submission.id}/approve`}
+          >
+            <input type="hidden" name="title" value={submission.title} />
+            <input
+              type="hidden"
+              name="category"
+              value={submission.category?.slug ?? ""}
+            />
+            {submission.tags.map((tag) => (
+              <input type="hidden" name="tags" value={tag.slug} />
+            ))}
+            <input
+              type="hidden"
+              name="description"
+              value={submission.description ?? ""}
+            />
+            <input
+              type="hidden"
+              name="creatorCredit"
+              value={submission.creatorCredit ?? ""}
+            />
+            <input
+              type="hidden"
+              name="sourceUrl"
+              value={submission.sourceUrl ?? ""}
+            />
+            <button class="button button--secondary button--md" type="submit">
+              Approve and publish
+            </button>
+          </form>
+          <form
+            class="submission-form"
+            method="post"
+            action={`/api/moderation/submissions/${submission.id}/reject`}
+          >
+            <label>
+              Internal note
+              <textarea
+                name="internalNote"
+                required
+                minlength="2"
+                maxlength="1000"
+                rows="3"
+              />
+            </label>
+            <label>
+              Public reason
+              <textarea name="publicReason" maxlength="500" rows="2" />
+            </label>
+            <button class="button button--danger button--md" type="submit">
+              Reject
+            </button>
+          </form>
+        </section>
+      )
+    }
+
+    <section class="collection-panel" aria-labelledby="event-title">
+      <h2 id="event-title">Event history</h2>
+      {
+        events.length === 0 ? (
+          <p>No events for this submission yet.</p>
+        ) : (
+          <ol class="collection-list">
+            {events.map((event) => (
+              <li class="collection-item">
+                <div class="collection-item__body">
+                  <h3>{event.action}</h3>
+                  <p>
+                    {event.previousState ?? "none"} / {event.newState ?? "none"}
+                  </p>
+                  <p>
+                    <time datetime={event.createdAt}>{event.createdAt}</time>
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </section>
+  </section>
+</BaseLayout>

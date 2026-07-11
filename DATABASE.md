@@ -2,13 +2,14 @@
 
 ## Current status
 
-Phase 12 extends the Cloudflare D1 layer with authenticated private collections and signed pending submissions:
+Phase 13 extends the Cloudflare D1 layer with authenticated private collections, signed submissions, moderation memberships, moderation events, and publishing metadata:
 
 - migration: `migrations/0001_initial_schema.sql`
 - migration: `migrations/0002_auth_and_sessions.sql`
 - migration: `migrations/0003_synced_collections.sql`
 - migration: `migrations/0004_signed_submissions.sql`
 - migration: `migrations/0005_optional_submission_taxonomy.sql`
+- migration: `migrations/0006_moderation_and_publishing.sql`
 - seed SQL generator: `scripts/seed-d1.ts`
 - binding name: `DB`
 - approved remote database names: `pfseeker-preview`, `pfseeker-production`
@@ -49,9 +50,17 @@ The Phase 12 submission schema contains:
 - `submission_suggested_tags`
 - nullable `assets.content_hash`
 
+The Phase 13 moderation and publishing schema contains:
+
+- `moderator_memberships`
+- `moderation_events`
+- submission lifecycle columns for review, publication, rejection, cleanup state, and versioning
+- submitted-asset metadata and archive columns on `assets`
+- taxonomy actor columns on `categories` and `tags`
+
 Collections are private by default, owned by `users`, and cascade on user deletion. Collection items reference existing assets, prevent duplicate collection/asset pairs, and store deterministic positions.
 
-Submissions are private by default, owned by `users`, and use `pending` as the only Phase 12-created state. `submissions.category_id` is nullable, existing submission tags are optional, and suggested tags cascade on submission deletion. Upload intents bind a short-lived generated Cloudinary public ID to an authenticated user and asset type. The schema intentionally does not create reports, moderation events, creator tables, guild-role fields, Discord token storage, password fields, public collection publishing, approval/rejection notes, fake taxonomy rows, or fake administrator flags. Those belong to later phases.
+Submissions are private by default, owned by `users`, and support `pending`, `approved`, `published`, and `rejected` lifecycle states. `submissions.category_id` is nullable at intake, existing submission tags are optional at intake, and suggested tags cascade on submission deletion. Moderator publication requires real taxonomy before public asset creation. Upload intents bind a short-lived generated Cloudinary public ID to an authenticated user and asset type. The schema intentionally does not create reports, creator tables, guild-role fields, Discord token storage, password fields, public collection publishing, fake taxonomy rows, or fake administrator flags. Those belong to later phases.
 
 ## Data rules
 
@@ -160,6 +169,15 @@ Signed-submission migration status:
 - The migration does not seed fake submissions, fake moderator users, fake production assets, fake categories, or fake tags.
 - Exact duplicate detection uses the Phase 12 submission `content_hash` and future `assets.content_hash` values. Existing production assets without stored hashes cannot be matched as exact published duplicates until their hash metadata is backfilled or they are created through the submission pipeline.
 - Phase 12 production runtime verification is complete. Manual testing confirmed signed upload completion, pending submission persistence, private list and detail rendering, runtime Cloudinary previews, optional taxonomy behavior, suggested tags, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections.
+
+Moderation migration status:
+
+- `migrations/0006_moderation_and_publishing.sql` is implemented on the Phase 13 feature branch.
+- It has not been applied to production and Phase 13 is not production-verified.
+- The migration adds durable moderator memberships and append-only moderation events.
+- It expands submission states to `pending`, `approved`, `published`, and `rejected`.
+- It adds published asset linkage, rejection note fields, cleanup tracking, archive fields, and taxonomy actor columns.
+- It does not add report tables, fake taxonomy, fake submissions, fake moderator users, or fake published assets.
 
 ## Cloudflare Pages binding status
 

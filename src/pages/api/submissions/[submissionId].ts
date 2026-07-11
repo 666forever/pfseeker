@@ -21,8 +21,15 @@ export const DELETE: APIRoute = async (context) => {
       userId,
       submissionId,
     );
-    const config = await getCloudinaryConfig(context.locals);
-    await deleteCloudinaryResource(config, submission.cloudinaryPublicId);
+    if (submission.status !== "pending") {
+      throw new InvalidRepositoryInputError(
+        "Only pending submissions can be cancelled.",
+      );
+    }
+    if (submission.cloudinaryPublicId) {
+      const config = await getCloudinaryConfig(context.locals);
+      await deleteCloudinaryResource(config, submission.cloudinaryPublicId);
+    }
     await repository.deleteOwnedSubmission({ userId, submissionId });
     return jsonResponse({ ok: true });
   } catch (error) {

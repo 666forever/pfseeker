@@ -1,0 +1,104 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  ModerationAuthorizationError,
+  requireModerator,
+} from "@/server/auth/moderation";
+import { AuthenticationRequiredError } from "@/server/auth/session";
+
+let access;
+try {
+  access = await requireModerator(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent("/moderation")}`,
+      302,
+    );
+  }
+  if (error instanceof ModerationAuthorizationError) {
+    return new Response("Not found.", { status: 404 });
+  }
+  throw error;
+}
+
+const events = await access.repository.listEvents({ limit: 5 });
+---
+
+<BaseLayout
+  title="Moderation"
+  description="Protected pfseeker moderation operations."
+  noindex
+>
+  <section class="page-shell" aria-labelledby="moderation-title">
+    <div class="page-hero">
+      <p class="eyebrow">Moderation</p>
+      <h1 id="moderation-title">Review operations</h1>
+      <p>Protected queue, taxonomy, membership, and event history.</p>
+    </div>
+
+    {
+      access.bootstrapEligible && (
+        <section class="collection-panel" aria-labelledby="bootstrap-title">
+          <h2 id="bootstrap-title">Owner bootstrap</h2>
+          <p>Create the durable owner membership for this signed-in account.</p>
+          <form method="post" action="/api/moderation/bootstrap">
+            <button class="button button--secondary button--md" type="submit">
+              Create owner membership
+            </button>
+          </form>
+        </section>
+      )
+    }
+
+    <div class="collection-grid">
+      <a class="collection-card" href="/moderation/submissions">
+        <h2>Submissions</h2>
+        <p>Review pending, rejected, and published submission records.</p>
+      </a>
+      <a class="collection-card" href="/moderation/history">
+        <h2>History</h2>
+        <p>Inspect append-only moderation events.</p>
+      </a>
+      {
+        access.role === "owner" && (
+          <>
+            <a class="collection-card" href="/moderation/taxonomy">
+              <h2>Taxonomy</h2>
+              <p>Create and edit production categories and tags.</p>
+            </a>
+            <a class="collection-card" href="/moderation/members">
+              <h2>Members</h2>
+              <p>Manage owner and moderator memberships.</p>
+            </a>
+          </>
+        )
+      }
+    </div>
+
+    <section class="collection-panel" aria-labelledby="recent-events-title">
+      <h2 id="recent-events-title">Recent events</h2>
+      {
+        events.length === 0 ? (
+          <p>No moderation events yet.</p>
+        ) : (
+          <ol class="collection-list">
+            {events.map((event) => (
+              <li class="collection-item">
+                <div class="collection-item__body">
+                  <h3>{event.action}</h3>
+                  <p>
+                    {event.targetType} / {event.targetId}
+                  </p>
+                  <p>
+                    <time datetime={event.createdAt}>{event.createdAt}</time>
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </section>
+  </section>
+</BaseLayout>

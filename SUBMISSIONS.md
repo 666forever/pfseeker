@@ -6,7 +6,7 @@ Phase 12 adds authenticated signed submissions. Any signed-in Discord user can s
 
 Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support the Phase 12 schema. Signed-out Cloudflare preview verification passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Phase 12 production runtime verification is complete on `https://pfseeker.com`: signed upload completion, pending submission persistence, private list rendering, private detail rendering, runtime Cloudinary preview rendering, optional taxonomy behavior, suggested-tag rendering, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections were manually verified.
 
-Moderation is not implemented in Phase 12. Pending submissions are not public, are not added to galleries, and cannot be approved, rejected, edited, replaced, restored, or published by any hidden endpoint.
+Phase 13 moderation is implemented on the active feature branch but is not merged or production-verified. Pending submissions are still private until a moderator approves and publishes them. Reports, reopen, restore, and image replacement remain deferred.
 
 ## Supported media
 
@@ -87,7 +87,7 @@ Phase 12 adds:
 - `submission_suggested_tags`
 - nullable `assets.content_hash` for future exact duplicate checks against published Cloudinary assets
 
-Submissions reference `users`; `category_id` is nullable because taxonomy is optional in Phase 12. Submission tags reference existing `tags` only when selected. Submission tag and suggested-tag rows cascade when a submission is deleted. No moderator IDs, approval notes, rejection notes, public slug, audit rows, Discord token copies, or fake moderation records are created.
+Submissions reference `users`; `category_id` is nullable because taxonomy is optional at intake. Submission tags reference existing `tags` only when selected. Submission tag and suggested-tag rows cascade when a pending submission is deleted. Phase 13 adds durable moderator memberships, moderation events, review metadata, rejection notes, cleanup state, and published asset linkage through `migrations/0006_moderation_and_publishing.sql`. It does not add report tables, Discord token copies, fake moderator users, or fake moderation records.
 
 ## Quotas and duplicates
 
@@ -109,7 +109,7 @@ Duplicate behavior:
 
 ## Cancellation
 
-Pending submissions are read-only. The only owner action is `Cancel submission`.
+Pending submissions are read-only for submitters. The only submitter action is `Cancel submission`.
 
 Cancellation requires confirmation, verifies ownership, deletes the Cloudinary resource, then deletes the D1 submission row. Related tag and suggested-tag rows cascade. No audit record is retained, and cancellation is unrecoverable. If Cloudinary deletion fails, the D1 row is retained so there is not a silent orphan without a retry path.
 
@@ -121,12 +121,18 @@ The current Cloudinary pending-media model uses unpredictable public IDs under a
 
 Discord identity is stored only through the existing `users` ownership relationship. Future public publication must not show Discord username, user ID, avatar, or imply that "submitted by" means "created by".
 
+## Phase 13 moderation
+
+Moderators can review pending submissions, correct metadata, assign required real taxonomy, approve/publish, reject, and view history. Owners can also manage taxonomy, manage moderator memberships, bootstrap the first owner through server-side Discord ID allowlist configuration, and archive published assets.
+
+Submitters can see private `pending`, `approved`, `published`, and `rejected` states. Published submissions show a public asset link. Rejected submissions show the optional public reason and rejection timestamp. Internal notes, moderator identity, event history, and cleanup internals are not exposed to submitters.
+
+Reports remain deferred.
+
 ## Deferred
 
 Phase 12 deliberately defers:
 
-- approval and rejection
-- moderator tools
 - reports and appeal handling
 - public collection publishing
 - public submission visibility

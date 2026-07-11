@@ -12,8 +12,8 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
       <h1 id="privacy-title">Early-stage privacy notice</h1>
       <p>
         This notice describes the current development site. It must be expanded
-        before analytics, reports, moderation, public submission publishing, or
-        public collection publishing launch.
+        before analytics, reports, production moderation verification, public
+        submission publishing, or public collection publishing launch.
       </p>
     </div>
     <section aria-labelledby="privacy-current">
@@ -48,14 +48,15 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
       </p>
       <p>
         Cancelling a pending submission deletes the pending Cloudinary file and
-        D1 submission record. Moderation and public publishing are not enabled
-        yet.
+        D1 submission record. On the Phase 13 feature branch, moderation can
+        retain reviewed submission records, public rejection reasons, internal
+        rejection notes, cleanup status, and append-only moderation events.
       </p>
     </section>
     <section aria-labelledby="privacy-future">
       <h2 id="privacy-future">Future functionality</h2>
       <p>
-        Public collection publishing, moderation, reports, production analytics,
+        Public collection publishing, reports, production analytics,
         advertising, and public media publication will require a fuller privacy
         policy before they are enabled.
       </p>

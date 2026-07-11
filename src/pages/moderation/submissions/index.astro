@@ -1,0 +1,150 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  ModerationAuthorizationError,
+  requireModerator,
+} from "@/server/auth/moderation";
+import { AuthenticationRequiredError } from "@/server/auth/session";
+import { bytesLabel, submissionStatusLabels } from "@/lib/submissions";
+import type { AssetKind } from "@/lib/media";
+
+let access;
+try {
+  access = await requireModerator(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent("/moderation/submissions")}`,
+      302,
+    );
+  }
+  if (error instanceof ModerationAuthorizationError) {
+    return new Response("Not found.", { status: 404 });
+  }
+  throw error;
+}
+
+const status = Astro.url.searchParams.get("status") ?? "pending";
+const kind = Astro.url.searchParams.get("kind") ?? "all";
+const duplicate = Astro.url.searchParams.get("duplicate") ?? "all";
+const submissions = await access.repository.listSubmissions({
+  status:
+    status === "approved" ||
+    status === "published" ||
+    status === "rejected" ||
+    status === "pending"
+      ? status
+      : "all",
+  kind:
+    kind === "pfp" || kind === "banner" || kind === "icon"
+      ? (kind as AssetKind)
+      : "all",
+  duplicate:
+    duplicate === "yes" || duplicate === "no" || duplicate === "all"
+      ? duplicate
+      : "all",
+});
+---
+
+<BaseLayout
+  title="Moderation submissions"
+  description="Protected pfseeker submission review queue."
+  noindex
+>
+  <section class="page-shell" aria-labelledby="moderation-submissions-title">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/moderation">Moderation</a></li>
+        <li><span aria-current="page">Submissions</span></li>
+      </ol>
+    </nav>
+
+    <div class="page-hero">
+      <p class="eyebrow">Moderation</p>
+      <h1 id="moderation-submissions-title">Submission queue</h1>
+      <p>Newest submissions first. Actions are confirmed by the server.</p>
+    </div>
+
+    <form class="gallery-toolbar" method="get">
+      <label>
+        Status
+        <select name="status">
+          <option value="pending" selected={status === "pending"}
+            >Pending</option
+          >
+          <option value="approved" selected={status === "approved"}
+            >Approved</option
+          >
+          <option value="published" selected={status === "published"}
+            >Published</option
+          >
+          <option value="rejected" selected={status === "rejected"}
+            >Rejected</option
+          >
+          <option value="all" selected={status === "all"}>All</option>
+        </select>
+      </label>
+      <label>
+        Type
+        <select name="kind">
+          <option value="all" selected={kind === "all"}>All</option>
+          <option value="pfp" selected={kind === "pfp"}>PFP</option>
+          <option value="banner" selected={kind === "banner"}>Banner</option>
+          <option value="icon" selected={kind === "icon"}>Icon</option>
+        </select>
+      </label>
+      <label>
+        Duplicate
+        <select name="duplicate">
+          <option value="all" selected={duplicate === "all"}>All</option>
+          <option value="yes" selected={duplicate === "yes"}>Flagged</option>
+          <option value="no" selected={duplicate === "no"}>Not flagged</option>
+        </select>
+      </label>
+      <button class="button button--secondary button--sm" type="submit">
+        Filter
+      </button>
+    </form>
+
+    <section class="collection-panel" aria-labelledby="queue-title">
+      <h2 id="queue-title">Queue</h2>
+      {
+        submissions.length === 0 ? (
+          <p>No submissions match these filters.</p>
+        ) : (
+          <ol class="collection-list">
+            {submissions.map((submission) => (
+              <li class="collection-item">
+                <div class="collection-item__body">
+                  <h3>
+                    <a href={`/moderation/submissions/${submission.id}`}>
+                      {submission.title}
+                    </a>
+                  </h3>
+                  <p>
+                    {submission.assetType} /{" "}
+                    {submissionStatusLabels[submission.status]} /{" "}
+                    {bytesLabel(submission.bytes)}
+                  </p>
+                  <p>
+                    {submission.duplicatePendingFlag
+                      ? "Duplicate pending flag"
+                      : "No duplicate flag"}
+                  </p>
+                </div>
+                <div class="collection-item__controls">
+                  <a
+                    class="button button--ghost button--sm"
+                    href={`/moderation/submissions/${submission.id}`}
+                  >
+                    Review
+                  </a>
+                </div>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </section>
+  </section>
+</BaseLayout>

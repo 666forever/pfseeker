@@ -1,0 +1,130 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  ModerationAuthorizationError,
+  requireOwner,
+} from "@/server/auth/moderation";
+import { AuthenticationRequiredError } from "@/server/auth/session";
+
+let access;
+try {
+  access = await requireOwner(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent("/moderation/members")}`,
+      302,
+    );
+  }
+  if (error instanceof ModerationAuthorizationError) {
+    return new Response("Not found.", { status: 404 });
+  }
+  throw error;
+}
+
+const memberships = await access.repository.listMemberships();
+---
+
+<BaseLayout
+  title="Moderation members"
+  description="Owner-only pfseeker moderator membership management."
+  noindex
+>
+  <section class="page-shell" aria-labelledby="members-title">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/moderation">Moderation</a></li>
+        <li><span aria-current="page">Members</span></li>
+      </ol>
+    </nav>
+
+    <div class="page-hero">
+      <p class="eyebrow">Owner</p>
+      <h1 id="members-title">Moderator memberships</h1>
+      <p>
+        Memberships are durable D1 records. Revocation invalidates active
+        sessions.
+      </p>
+    </div>
+
+    <section class="collection-panel" aria-labelledby="member-create-title">
+      <h2 id="member-create-title">Add member</h2>
+      <form
+        class="submission-form"
+        method="post"
+        action="/api/moderation/members"
+      >
+        <div class="submission-grid">
+          <label>
+            Local user ID
+            <input name="userId" required />
+          </label>
+          <label>
+            Role
+            <select name="role">
+              <option value="moderator">Moderator</option>
+              <option value="owner">Owner</option>
+            </select>
+          </label>
+          <label>
+            Reason
+            <input name="reason" maxlength="500" />
+          </label>
+        </div>
+        <button class="button button--secondary button--md" type="submit">
+          Add membership
+        </button>
+      </form>
+    </section>
+
+    <section class="collection-panel" aria-labelledby="members-list-title">
+      <h2 id="members-list-title">Memberships</h2>
+      {
+        memberships.length === 0 ? (
+          <p>No durable memberships yet. Use owner bootstrap first.</p>
+        ) : (
+          <ol class="collection-list">
+            {memberships.map((membership) => (
+              <li class="collection-item">
+                <div class="collection-item__body">
+                  <h3>{membership.role}</h3>
+                  <p>
+                    {membership.status} / {membership.userId}
+                  </p>
+                  <p>
+                    <time datetime={membership.createdAt}>
+                      {membership.createdAt}
+                    </time>
+                  </p>
+                </div>
+                {membership.status === "active" && (
+                  <form
+                    class="collection-item__controls"
+                    method="post"
+                    action={`/api/moderation/members/${membership.id}/revoke`}
+                  >
+                    <label>
+                      Revocation reason
+                      <input
+                        name="reason"
+                        required
+                        minlength="2"
+                        maxlength="500"
+                      />
+                    </label>
+                    <button
+                      class="button button--danger button--sm"
+                      type="submit"
+                    >
+                      Revoke
+                    </button>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </section>
+  </section>
+</BaseLayout>

@@ -31,6 +31,14 @@ Authenticated submissions flow through server-only modules:
 - `src/server/services/cloudinary.ts` owns Cloudinary signing, Admin API verification, SHA-256 content hashing, pending namespace checks, and deletion.
 - Pages and endpoints derive the owner from `requireUser`; clients never provide owner IDs or arbitrary Cloudinary folders.
 
+Moderation flows through server-only modules:
+
+- `src/server/auth/moderation.ts` owns moderator and owner authorization, including server-only owner bootstrap checks.
+- `src/server/repositories/moderation.ts` owns moderator memberships, moderation events, moderation submission reads, metadata edits, taxonomy management, rejection, publication linkage, and archive SQL.
+- `src/server/services/moderation-api.ts` centralizes same-origin checks, request parsing, redirects, and safe moderation errors.
+- `src/server/services/publication.ts` owns Cloudinary pending-to-published copy, D1 publication, pending-media cleanup, rejection cleanup, and cleanup-failure recovery recording.
+- Pages and endpoints recheck membership or bootstrap eligibility on every privileged request.
+
 ## Current repository behavior
 
 The D1 repository reads published assets, categories, and tags from D1 and maps rows into the same public asset shape used by seed data. Search and taxonomy filters still run through `src/lib/search.ts`, preserving Phase 8 URL behavior.
@@ -39,7 +47,7 @@ This is acceptable for the current seed-scale dataset. Later phases can push sea
 
 The collection repository lists owned collections, reads one owned collection, creates, renames, deletes, adds assets, removes assets, and reorders items. Collection names are validated centrally, duplicate names are allowed, and visibility is private-only in Phase 11.
 
-The submission repository lists owned pending submissions, reads one owned pending submission, creates short-lived upload intents, completes verified Cloudinary uploads as `pending`, enforces quotas, checks exact duplicates by content hash, marks pending duplicates from other users, accepts optional category and 0 to 5 existing tags, and deletes owned pending submissions after Cloudinary cleanup. Phase 12 has no approval, rejection, edit, replacement, restore, or public-publishing path.
+The submission repository lists owned submissions across Phase 13 lifecycle states, reads one owned submission, creates short-lived upload intents, completes verified Cloudinary uploads as `pending`, enforces quotas, checks exact duplicates by content hash, marks pending duplicates from other users, accepts optional category and 0 to 5 existing tags, and deletes owned pending submissions after Cloudinary cleanup. Submitters cannot cancel approved, published, or rejected submissions.
 
 ## Endpoint foundation
 
@@ -120,6 +128,19 @@ HTML routes redirect signed-out users to Discord sign-in with a safe return path
 Signed-out Cloudflare preview verification was completed on the Phase 12 preview: `/submissions` and `/submissions/new` show the Discord sign-in flow, `/submissions/[submissionId]` is protected by the same authenticated flow, and the preview hostname no longer returns a Cloudflare 404. Arbitrary preview OAuth completion remains intentionally untested because Discord callback configuration is production-only.
 
 Production runtime verification is complete on `https://pfseeker.com`. Manual testing confirmed signed upload completion, pending submission persistence, private list rendering, private detail rendering, runtime Cloudinary preview rendering through server runtime configuration, optional taxonomy behavior, suggested-tag rendering, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections.
+
+## Moderation routes
+
+Phase 13 adds protected moderation routes on the feature branch:
+
+- `/moderation`
+- `/moderation/submissions`
+- `/moderation/submissions/[submissionId]`
+- `/moderation/taxonomy`
+- `/moderation/history`
+- `/moderation/members`
+
+Mutation APIs exist under `/api/moderation`. Moderator requests can edit metadata, approve/publish, reject, and inspect event history. Owner requests can manage taxonomy, memberships, bootstrap the first owner, and archive published assets. No report route or report API is implemented.
 
 ## Security notes
 

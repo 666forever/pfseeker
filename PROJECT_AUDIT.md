@@ -6,7 +6,7 @@ Audit date: 2026-07-05
 
 This audit originally covered `C:\Users\hk\Documents\pfseeker-codex-project`. Active work now occurs in `C:\Users\hk\Documents\GitHub\pfseeker`, including project instructions, planning documents, production source, environment examples, reference material, and safe validation commands.
 
-Current checkpoint: Phase 12 signed pending submissions are implemented, merged, and production-verified. Phase 10 Discord authentication and sessions are production-verified. Phase 11 authenticated multiple collections are production-verified. Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support pending submissions with nullable category IDs and optional tags. Signed-out Cloudflare route protection passed for `/submissions`, `/submissions/new`, and protected detail-route behavior. Production runtime verification confirmed signed upload completion, pending persistence, private list and detail rendering, runtime Cloudinary previews, optional taxonomy behavior, suggested tags, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
+Current checkpoint: Phase 13 moderation is implemented on the active feature branch and is not merged or production-verified. Phase 12 signed pending submissions are implemented, merged, and production-verified. Phase 10 Discord authentication and sessions are production-verified. Phase 11 authenticated multiple collections are production-verified. Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support pending submissions with nullable category IDs and optional tags. Phase 13 adds `0006_moderation_and_publishing.sql` for durable moderator memberships, moderation events, publishing, rejection, archive, and taxonomy actor metadata. Reports remain deferred. Earlier sections that describe pre-foundation failures are retained as historical audit evidence and are superseded by the current-state and validation sections below.
 
 ## Source-of-truth documents read
 
@@ -145,7 +145,7 @@ Still missing:
 - production public assets
 - image manifest
 - public collection publishing
-- moderation, reports, creators, admin flows, and public submission publishing
+- reports, creators, admin flows, and public collection publishing
 - full E2E tests
 
 ## Existing pages
@@ -387,7 +387,7 @@ Reference broken/missing material:
 - Production D1 gallery content and dynamic product workflows beyond asset reads, download-event foundation, authentication, private collections, and pending submissions.
 - Production published-media content import remains incomplete; production auth itself is verified.
 - Phase 12 pending signed submissions are implemented, merged, and production-verified, including optional taxonomy support, runtime Cloudinary preview rendering, owner-only cancellation, and D1/Cloudinary cleanup.
-- Moderation, reports, creators, admin workflows, public submission publishing, and public collection publishing remain deferred.
+- Reports, creators, admin workflows, public collection publishing, production content import, and full E2E tests remain deferred.
 - Broader automated tests and CI coverage beyond the current foundation checks.
 
 ## What is broken
@@ -787,4 +787,4 @@ Manual production verification on `https://pfseeker.com` completed on 2026-07-08
 
 ## Audit conclusion
 
-Phase 11 authenticated multiple collections are complete and production-verified. The local schema, server repository boundary, public route integration, seed SQL generation, D1 environment configuration, local migration and seed, preview migration and seed, production migration, download-event endpoint foundation, Discord OAuth routes, D1-backed opaque sessions, account identity page, logout, Pages SSR compatibility layer, documentation, tests, and production OAuth verification are complete through Phase 10. Phase 11 adds private D1 collections and removes anonymous collection persistence. Production collection creation, rename, add/remove, reorder, ZIP download, persistence, deletion, duplicate prevention, and access protection were manually verified on `https://pfseeker.com`. Phase 12 adds authenticated signed submissions into a private pending state. Production remains intentionally unseeded with development SVG data, fake taxonomy, or fake submissions. Phase 13 moderation has not started.
+Phase 11 authenticated multiple collections are complete and production-verified. The local schema, server repository boundary, public route integration, seed SQL generation, D1 environment configuration, local migration and seed, preview migration and seed, production migration, download-event endpoint foundation, Discord OAuth routes, D1-backed opaque sessions, account identity page, logout, Pages SSR compatibility layer, documentation, tests, and production OAuth verification are complete through Phase 10. Phase 11 adds private D1 collections and removes anonymous collection persistence. Production collection creation, rename, add/remove, reorder, ZIP download, persistence, deletion, duplicate prevention, and access protection were manually verified on `https://pfseeker.com`. Phase 12 adds authenticated signed submissions into a private pending state and is production-verified. Phase 13 moderation is implemented on the feature branch and awaits validation, preview deployment, merge approval, production migration, and production verification. Production remains intentionally unseeded with development SVG data, fake taxonomy, fake submissions, fake report rows, or fake moderation users.

@@ -304,7 +304,7 @@ Completion criteria:
 - Submitted items enter only the private `pending` state.
 - Pending submissions are owner-only, read-only, noindex, newest-first on `/submissions`, and cancellable.
 - Cancellation deletes the pending Cloudinary file before deleting the D1 row and related metadata.
-- Moderation, approval, rejection, public publishing, notifications, drafts, edit routes, replacement, and restore behavior are not implemented.
+- At the Phase 12 checkpoint, moderation, approval, rejection, public publishing, notifications, drafts, edit routes, replacement, and restore behavior were not implemented. Phase 13 implements moderation approval/rejection/publication while notifications, drafts, replacement, and restore remain deferred.
 - Unit and repository tests cover validation, migration shape, upload namespace checks, quotas, duplicates, ownership, upload-intent expiry/replay prevention, cancellation removal, and SVG rejection.
 
 ## Phase 13: Moderation and Reports
@@ -313,11 +313,19 @@ Goal: Add protected moderation operations.
 
 Dependencies: Phase 12.
 
+Status: Implemented on `phase-13-moderation-implementation`; validation, preview deployment, merge approval, production migration, and production verification remain pending.
+
 Completion criteria:
 
-- Moderators can review, edit metadata, approve, reject, archive, and handle reports.
-- Every action writes a moderation event.
-- Role authorization is tested.
+- Moderators can review submissions, edit allowed metadata, approve/publish, reject, and view event history.
+- Owners can manage taxonomy, manage moderator memberships, run the server-side bootstrap action, and archive published assets.
+- Every privileged action rechecks server-side membership or bootstrap eligibility.
+- Every moderation action writes a moderation event.
+- Publication copies pending Cloudinary media to the published namespace before D1 publication and cleans up pending media afterward.
+- Rejection deletes pending Cloudinary media, retains the D1 record, and records cleanup failures.
+- Submitters can see pending, approved, published, and rejected private states without internal notes or moderator identity.
+- Reports are explicitly deferred; no report UI, API, or tables are implemented in Phase 13.
+- Role authorization and migration boundaries are tested.
 
 ## Phase 14: Creators and Leaderboards
 
