@@ -276,6 +276,14 @@ export class ModerationRepository {
     return row ? mapMembership(row) : null;
   }
 
+  async canBootstrapOwner(userId: string): Promise<boolean> {
+    const [activeOwnerCount, revokedSelf] = await Promise.all([
+      this.countActiveOwners(),
+      this.hasRevokedMembership(userId),
+    ]);
+    return activeOwnerCount === 0 || !revokedSelf;
+  }
+
   async listMemberships(): Promise<ModeratorMembership[]> {
     const { results } = await this.db
       .prepare(
@@ -328,6 +336,11 @@ export class ModerationRepository {
   async bootstrapOwner(userId: string): Promise<ModeratorMembership> {
     const existing = await this.findActiveMembership(userId);
     if (existing) return existing;
+    if (!(await this.canBootstrapOwner(userId))) {
+      throw new InvalidRepositoryInputError(
+        "Bootstrap is unavailable for this account.",
+      );
+    }
     const id = crypto.randomUUID();
     const now = new Date().toISOString();
     await this.db.batch([
@@ -362,6 +375,11 @@ export class ModerationRepository {
     const reason = requiredText(input.reason, 2, 500, "Revocation reason");
     const membership = await this.readMembership(input.membershipId);
     if (membership.status === "revoked") return membership;
+    if (membership.role === "owner" && (await this.countActiveOwners()) <= 1) {
+      throw new InvalidRepositoryInputError(
+        "At least one active owner membership must remain.",
+      );
+    }
     const now = new Date().toISOString();
     await this.db.batch([
       this.db
@@ -504,6 +522,10 @@ export class ModerationRepository {
       );
     }
     const now = new Date().toISOString();
+    const targetIsEditable = `EXISTS (
+      SELECT 1 FROM submissions
+      WHERE id = ? AND status IN ('pending', 'approved')
+    )`;
     await this.db.batch([
       this.db
         .prepare(
@@ -521,16 +543,21 @@ export class ModerationRepository {
           input.submissionId,
         ),
       this.db
-        .prepare("DELETE FROM submission_tags WHERE submission_id = ?")
-        .bind(input.submissionId),
+        .prepare(
+          `DELETE FROM submission_tags
+           WHERE submission_id = ? AND ${targetIsEditable}`,
+        )
+        .bind(input.submissionId, input.submissionId),
       ...input.metadata.tagIds.map((tagId) =>
         this.db
           .prepare(
-            "INSERT INTO submission_tags (submission_id, tag_id) VALUES (?, ?)",
+            `INSERT INTO submission_tags (submission_id, tag_id)
+             SELECT ?, ?
+             WHERE ${targetIsEditable}`,
           )
-          .bind(input.submissionId, tagId),
+          .bind(input.submissionId, tagId, input.submissionId),
       ),
-      this.eventStatement({
+      this.conditionalEventStatement({
         actorUserId: input.actorUserId,
         targetType: "submission",
         targetId: input.submissionId,
@@ -543,9 +570,17 @@ export class ModerationRepository {
         },
         reason: null,
         createdAt: now,
+        conditionSql: targetIsEditable,
+        conditionValues: [input.submissionId],
       }),
     ]);
-    return this.readSubmission(input.submissionId);
+    const after = await this.readSubmission(input.submissionId);
+    if (after.status !== "pending" && after.status !== "approved") {
+      throw new InvalidRepositoryInputError(
+        "Submission changed before metadata could be saved.",
+      );
+    }
+    return after;
   }
 
   async publishSubmission(input: {
@@ -563,54 +598,59 @@ export class ModerationRepository {
       input.submission.cloudinaryFormat === "jpeg"
         ? "jpg"
         : input.submission.cloudinaryFormat;
-    const published = await this.db
-      .prepare(
-        `UPDATE submissions
-         SET status = 'published',
-           submitted_title = ?,
-           description = ?,
-           creator_credit = ?,
-           source_url = ?,
-           category_id = ?,
-           reviewed_by_user_id = ?,
-           reviewed_at = ?,
-           published_asset_id = ?,
-           media_cleanup_status = 'pending_media_present',
-           review_version = review_version + 1
-         WHERE id = ? AND status = 'pending'
-         RETURNING id`,
-      )
-      .bind(
-        input.metadata.title,
-        input.metadata.description,
-        input.metadata.creatorCredit,
-        input.metadata.sourceUrl,
-        input.metadata.categoryId,
-        input.actorUserId,
-        now,
-        input.assetId,
-        input.submission.id,
-      )
-      .first<{ id: string }>();
-    if (!published) {
-      throw new InvalidRepositoryInputError(
-        "Submission changed before it could be published.",
-      );
-    }
+    const publishedCondition = `EXISTS (
+      SELECT 1 FROM submissions
+      WHERE id = ? AND status = 'published' AND published_asset_id = ?
+    )`;
 
     await this.db.batch([
       this.db
         .prepare(
-          `DELETE FROM submission_tags
-           WHERE submission_id = ?`,
+          `UPDATE submissions
+           SET status = 'published',
+             submitted_title = ?,
+             description = ?,
+             creator_credit = ?,
+             source_url = ?,
+             category_id = ?,
+             reviewed_by_user_id = ?,
+             reviewed_at = ?,
+             published_asset_id = ?,
+             media_cleanup_status = 'pending_media_present',
+             review_version = review_version + 1
+           WHERE id = ?
+             AND status = 'pending'
+             AND NOT EXISTS (
+               SELECT 1 FROM assets
+               WHERE content_hash = ? AND status = 'published'
+             )`,
         )
-        .bind(input.submission.id),
+        .bind(
+          input.metadata.title,
+          input.metadata.description,
+          input.metadata.creatorCredit,
+          input.metadata.sourceUrl,
+          input.metadata.categoryId,
+          input.actorUserId,
+          now,
+          input.assetId,
+          input.submission.id,
+          input.submission.contentHash,
+        ),
+      this.db
+        .prepare(
+          `DELETE FROM submission_tags
+           WHERE submission_id = ? AND ${publishedCondition}`,
+        )
+        .bind(input.submission.id, input.submission.id, input.assetId),
       ...input.metadata.tagIds.map((tagId) =>
         this.db
           .prepare(
-            "INSERT INTO submission_tags (submission_id, tag_id) VALUES (?, ?)",
+            `INSERT INTO submission_tags (submission_id, tag_id)
+             SELECT ?, ?
+             WHERE ${publishedCondition}`,
           )
-          .bind(input.submission.id, tagId),
+          .bind(input.submission.id, tagId, input.submission.id, input.assetId),
       ),
       this.db
         .prepare(
@@ -620,10 +660,10 @@ export class ModerationRepository {
             motif, status, published_at, created_at, updated_at, content_hash,
             description, creator_credit, source_url, submitted_by_user_id,
             submission_id
-          ) VALUES (
-            ?, ?, ?, ?, ?, 'cloudinary', ?, ?, ?, ?, ?, ?, ?, ?, 'published',
+          )
+          SELECT ?, ?, ?, ?, ?, 'cloudinary', ?, ?, ?, ?, ?, ?, ?, ?, 'published',
             ?, ?, ?, ?, ?, ?, ?, ?, ?
-          )`,
+          WHERE ${publishedCondition}`,
         )
         .bind(
           input.assetId,
@@ -648,18 +688,31 @@ export class ModerationRepository {
           input.metadata.sourceUrl,
           input.submission.userId,
           input.submission.id,
+          input.submission.id,
+          input.assetId,
         ),
       this.db
         .prepare(
-          "INSERT INTO asset_categories (asset_id, category_id) VALUES (?, ?)",
+          `INSERT INTO asset_categories (asset_id, category_id)
+           SELECT ?, ?
+           WHERE ${publishedCondition}`,
         )
-        .bind(input.assetId, input.metadata.categoryId),
+        .bind(
+          input.assetId,
+          input.metadata.categoryId,
+          input.submission.id,
+          input.assetId,
+        ),
       ...input.metadata.tagIds.map((tagId) =>
         this.db
-          .prepare("INSERT INTO asset_tags (asset_id, tag_id) VALUES (?, ?)")
-          .bind(input.assetId, tagId),
+          .prepare(
+            `INSERT INTO asset_tags (asset_id, tag_id)
+             SELECT ?, ?
+             WHERE ${publishedCondition}`,
+          )
+          .bind(input.assetId, tagId, input.submission.id, input.assetId),
       ),
-      this.eventStatement({
+      this.conditionalEventStatement({
         actorUserId: input.actorUserId,
         targetType: "submission",
         targetId: input.submission.id,
@@ -669,8 +722,10 @@ export class ModerationRepository {
         metadata: { assetId: input.assetId },
         reason: null,
         createdAt: now,
+        conditionSql: publishedCondition,
+        conditionValues: [input.submission.id, input.assetId],
       }),
-      this.eventStatement({
+      this.conditionalEventStatement({
         actorUserId: input.actorUserId,
         targetType: "submission",
         targetId: input.submission.id,
@@ -680,8 +735,22 @@ export class ModerationRepository {
         metadata: { assetId: input.assetId, slug: input.slug },
         reason: null,
         createdAt: now,
+        conditionSql: publishedCondition,
+        conditionValues: [input.submission.id, input.assetId],
       }),
     ]);
+    const asset = await this.db
+      .prepare(
+        `SELECT id FROM assets
+         WHERE id = ? AND submission_id = ? AND status = 'published'`,
+      )
+      .bind(input.assetId, input.submission.id)
+      .first<{ id: string }>();
+    if (!asset) {
+      throw new InvalidRepositoryInputError(
+        "Submission changed before it could be published.",
+      );
+    }
   }
 
   async markPublishedPendingCleanupDeleted(input: {
@@ -774,42 +843,50 @@ export class ModerationRepository {
       );
     }
     const now = new Date().toISOString();
-    const updated = await this.db
-      .prepare(
-        `UPDATE submissions
-         SET status = 'rejected',
-           reviewed_by_user_id = ?,
-           reviewed_at = ?,
-           rejection_reason_public = ?,
-           rejection_note_internal = ?,
-           review_version = review_version + 1
-         WHERE id = ? AND status = 'pending'
-         RETURNING id`,
-      )
-      .bind(
-        input.actorUserId,
-        now,
-        publicReason,
-        internalNote,
-        input.submissionId,
-      )
-      .first<{ id: string }>();
-    if (!updated) {
+    const rejectedCondition = `EXISTS (
+      SELECT 1 FROM submissions
+      WHERE id = ? AND status = 'rejected' AND reviewed_at = ?
+    )`;
+    await this.db.batch([
+      this.db
+        .prepare(
+          `UPDATE submissions
+           SET status = 'rejected',
+             reviewed_by_user_id = ?,
+             reviewed_at = ?,
+             rejection_reason_public = ?,
+             rejection_note_internal = ?,
+             review_version = review_version + 1
+           WHERE id = ? AND status = 'pending'`,
+        )
+        .bind(
+          input.actorUserId,
+          now,
+          publicReason,
+          internalNote,
+          input.submissionId,
+        ),
+      this.conditionalEventStatement({
+        actorUserId: input.actorUserId,
+        targetType: "submission",
+        targetId: input.submissionId,
+        action: "submission.reject",
+        previousState: "pending",
+        newState: "rejected",
+        metadata: { publicReasonPresent: !!publicReason },
+        reason: internalNote,
+        createdAt: now,
+        conditionSql: rejectedCondition,
+        conditionValues: [input.submissionId, now],
+      }),
+    ]);
+    const rejected = await this.readSubmission(input.submissionId);
+    if (rejected.status !== "rejected" || rejected.reviewedAt !== now) {
       throw new InvalidRepositoryInputError(
         "Submission changed before it could be rejected.",
       );
     }
-    await this.recordEvent({
-      actorUserId: input.actorUserId,
-      targetType: "submission",
-      targetId: input.submissionId,
-      action: "submission.reject",
-      previousState: "pending",
-      newState: "rejected",
-      metadata: { publicReasonPresent: !!publicReason },
-      reason: internalNote,
-    });
-    return this.readSubmission(input.submissionId);
+    return rejected;
   }
 
   async markRejectedCleanupDeleted(input: {
@@ -1180,6 +1257,30 @@ export class ModerationRepository {
     return results.map(mapEvent);
   }
 
+  private async countActiveOwners(): Promise<number> {
+    const row = await this.db
+      .prepare(
+        `SELECT COUNT(*) AS count
+         FROM moderator_memberships
+         WHERE role = 'owner' AND status = 'active'`,
+      )
+      .first<{ count: number }>();
+    return Number(row?.count ?? 0);
+  }
+
+  private async hasRevokedMembership(userId: string): Promise<boolean> {
+    const row = await this.db
+      .prepare(
+        `SELECT id
+         FROM moderator_memberships
+         WHERE user_id = ? AND status = 'revoked'
+         LIMIT 1`,
+      )
+      .bind(userId)
+      .first<{ id: string }>();
+    return !!row;
+  }
+
   async uniqueAssetSlug(title: string, kind: AssetKind): Promise<string> {
     return this.uniqueSlug("assets", slugify(title), kind);
   }
@@ -1213,6 +1314,43 @@ export class ModerationRepository {
         JSON.stringify(input.metadata),
         input.reason,
         input.createdAt,
+      );
+  }
+
+  private conditionalEventStatement(input: {
+    actorUserId: string | null;
+    targetType: ModerationTargetType;
+    targetId: string;
+    action: string;
+    previousState: string | null;
+    newState: string | null;
+    metadata: Record<string, unknown>;
+    reason: string | null;
+    createdAt: string;
+    conditionSql: string;
+    conditionValues: unknown[];
+  }) {
+    return this.db
+      .prepare(
+        `INSERT INTO moderation_events (
+          id, actor_user_id, target_type, target_id, action, previous_state,
+          new_state, metadata_json, reason, created_at
+        )
+        SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+        WHERE ${input.conditionSql}`,
+      )
+      .bind(
+        crypto.randomUUID(),
+        input.actorUserId,
+        input.targetType,
+        input.targetId,
+        input.action,
+        input.previousState,
+        input.newState,
+        JSON.stringify(input.metadata),
+        input.reason,
+        input.createdAt,
+        ...input.conditionValues,
       );
   }
 

@@ -64,7 +64,11 @@ export async function requireModerator(
   }
   if (
     currentUser.user.accountStatus === "active" &&
-    (await isBootstrapModerator(context.locals, currentUser.user.discordUserId))
+    (await isBootstrapModerator(
+      context.locals,
+      currentUser.user.discordUserId,
+    )) &&
+    (await repository.canBootstrapOwner(currentUser.user.id))
   ) {
     return {
       currentUser,
