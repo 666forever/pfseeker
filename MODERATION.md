@@ -20,6 +20,13 @@ Every privileged page and API request rechecks server-side authorization. Modera
 
 Bootstrap access is server-side only. `MODERATOR_BOOTSTRAP_DISCORD_IDS` contains Discord user IDs outside Git. The variable is checked on the server, is never serialized to client output, and creates a durable owner membership plus a moderation event when the bootstrap action is used.
 
+Bootstrap recovery rule:
+
+- If the account already has an active durable membership, that membership controls access.
+- If an allowlisted account has a revoked membership and another active owner exists, bootstrap access is denied so owner revocation remains meaningful.
+- If there are zero active owners, the allowlist can be used as break-glass recovery even for a previously revoked account.
+- Repeated bootstrap with an active owner membership is idempotent and does not create duplicate active memberships.
+
 ## Routes
 
 Protected pages:
