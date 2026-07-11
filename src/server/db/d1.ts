@@ -23,6 +23,7 @@ export interface PfseekerBindings {
   CLOUDINARY_API_KEY?: string;
   CLOUDINARY_API_SECRET?: string;
   CLOUDINARY_PENDING_SUBMISSIONS_FOLDER?: string;
+  MODERATOR_BOOTSTRAP_DISCORD_IDS?: string;
   DISCORD_CLIENT_ID?: string;
   DISCORD_CLIENT_SECRET?: string;
   DISCORD_REDIRECT_URI?: string;

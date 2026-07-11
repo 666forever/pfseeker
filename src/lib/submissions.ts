@@ -1,7 +1,13 @@
 import type { AssetKind } from "@/lib/media";
 
 export const SUBMISSION_STATUS = "pending";
-export const SUBMISSION_STATUS_LABEL = "Awaiting review";
+export const submissionStatusLabels = {
+  pending: "Awaiting review",
+  approved: "Approved",
+  published: "Published",
+  rejected: "Rejected",
+} as const;
+export const SUBMISSION_STATUS_LABEL = submissionStatusLabels.pending;
 export const PENDING_SUBMISSION_FOLDER = "pfseeker/pending-submissions";
 export const UPLOAD_INTENT_EXPIRY_SECONDS = 10 * 60;
 export const MAX_COMPLETED_SUBMISSIONS_PER_24_HOURS = 10;
@@ -19,7 +25,7 @@ export const allowedSubmissionFormats = [
 ] as const;
 
 export type SubmissionFormat = (typeof allowedSubmissionFormats)[number];
-export type SubmissionStatus = typeof SUBMISSION_STATUS;
+export type SubmissionStatus = keyof typeof submissionStatusLabels;
 
 export interface FileLimit {
   minWidth: number;
@@ -161,7 +167,12 @@ export function isAllowedSubmissionFormat(
 export function validateSubmissionStatus(
   value: unknown,
 ): value is SubmissionStatus {
-  return value === SUBMISSION_STATUS;
+  return (
+    value === "pending" ||
+    value === "approved" ||
+    value === "published" ||
+    value === "rejected"
+  );
 }
 
 export function validateSourceUrl(

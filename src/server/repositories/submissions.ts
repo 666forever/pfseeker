@@ -4,6 +4,7 @@ import {
   MAX_COMPLETED_SUBMISSIONS_PER_24_HOURS,
   MAX_PENDING_SUBMISSIONS,
   SUBMISSION_STATUS,
+  validateSubmissionStatus,
   type SubmissionFormat,
   type SubmissionMetadata,
   type SubmissionStatus,
@@ -34,6 +35,12 @@ export interface PendingSubmission {
   description: string | null;
   creatorCredit: string | null;
   sourceUrl: string | null;
+  reviewedAt: string | null;
+  publishedAssetId: string | null;
+  publishedAssetSlug: string | null;
+  rejectionReasonPublic: string | null;
+  mediaCleanupStatus:
+    "pending_media_present" | "pending_media_deleted" | "cleanup_failed";
   category: {
     id: string;
     slug: string;
@@ -45,7 +52,7 @@ export interface PendingSubmission {
     displayName: string;
   }[];
   suggestedTags: string[];
-  cloudinaryPublicId: string;
+  cloudinaryPublicId: string | null;
   cloudinaryResourceType: "image";
   cloudinaryFormat: SubmissionFormat;
   bytes: number;
@@ -93,7 +100,7 @@ interface SubmissionRow {
   category_id: string | null;
   category_slug: string | null;
   category_name: string | null;
-  cloudinary_public_id: string;
+  cloudinary_public_id: string | null;
   cloudinary_resource_type: string;
   cloudinary_format: string;
   bytes: number;
@@ -101,6 +108,11 @@ interface SubmissionRow {
   height: number;
   content_hash: string;
   duplicate_pending_flag: number;
+  reviewed_at: string | null;
+  published_asset_id: string | null;
+  published_asset_slug: string | null;
+  rejection_reason_public: string | null;
+  media_cleanup_status: string;
   created_at: string;
 }
 
@@ -116,8 +128,21 @@ function assertAssetKind(value: string): AssetKind {
 }
 
 function assertStatus(value: string): SubmissionStatus {
-  if (value === SUBMISSION_STATUS) return value;
+  if (validateSubmissionStatus(value)) return value;
   throw new DatabaseRowError("D1 submission row has invalid status.");
+}
+
+function assertCleanupStatus(
+  value: string,
+): PendingSubmission["mediaCleanupStatus"] {
+  if (
+    value === "pending_media_present" ||
+    value === "pending_media_deleted" ||
+    value === "cleanup_failed"
+  ) {
+    return value;
+  }
+  throw new DatabaseRowError("D1 submission row has invalid cleanup status.");
 }
 
 function assertFormat(value: string): SubmissionFormat {
@@ -168,6 +193,11 @@ function mapSubmission(
     description: row.description,
     creatorCredit: row.creator_credit,
     sourceUrl: row.source_url,
+    reviewedAt: row.reviewed_at,
+    publishedAssetId: row.published_asset_id,
+    publishedAssetSlug: row.published_asset_slug,
+    rejectionReasonPublic: row.rejection_reason_public,
+    mediaCleanupStatus: assertCleanupStatus(row.media_cleanup_status),
     category:
       row.category_id && row.category_slug && row.category_name
         ? {
@@ -512,6 +542,18 @@ export class SubmissionRepository {
     return Promise.all(results.map((row) => this.hydrateSubmission(row)));
   }
 
+  async listOwnedSubmissions(userId: string): Promise<PendingSubmission[]> {
+    const { results } = await this.db
+      .prepare(
+        `${this.submissionSelect()}
+         WHERE submissions.user_id = ?
+         ORDER BY submissions.created_at DESC`,
+      )
+      .bind(userId)
+      .all<SubmissionRow>();
+    return Promise.all(results.map((row) => this.hydrateSubmission(row)));
+  }
+
   async readOwnedSubmission(
     userId: string,
     submissionId: string,
@@ -536,8 +578,15 @@ export class SubmissionRepository {
       input.userId,
       input.submissionId,
     );
+    if (submission.status !== SUBMISSION_STATUS) {
+      throw new InvalidRepositoryInputError(
+        "Only pending submissions can be cancelled.",
+      );
+    }
     await this.db
-      .prepare("DELETE FROM submissions WHERE id = ? AND user_id = ?")
+      .prepare(
+        "DELETE FROM submissions WHERE id = ? AND user_id = ? AND status = 'pending'",
+      )
       .bind(input.submissionId, input.userId)
       .run();
     return submission;
@@ -595,9 +644,15 @@ export class SubmissionRepository {
       submissions.height,
       submissions.content_hash,
       submissions.duplicate_pending_flag,
+      submissions.reviewed_at,
+      submissions.published_asset_id,
+      published_assets.slug AS published_asset_slug,
+      submissions.rejection_reason_public,
+      submissions.media_cleanup_status,
       submissions.created_at
      FROM submissions
-     LEFT JOIN categories ON categories.id = submissions.category_id`;
+     LEFT JOIN categories ON categories.id = submissions.category_id
+     LEFT JOIN assets AS published_assets ON published_assets.id = submissions.published_asset_id`;
   }
 
   private async categoryIdFor(

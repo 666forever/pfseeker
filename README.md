@@ -44,6 +44,7 @@ Begin with the audit and planning task in `INITIAL_TASK.md`. Do not immediately 
 - `SEARCH_AND_TAXONOMY.md`
 - `COLLECTIONS.md`
 - `SUBMISSIONS.md`
+- `MODERATION.md`
 - `ASSET_PAGES.md`
 
 ## D1 environments
@@ -58,7 +59,7 @@ Preview contains development seed media for validation. Production has the Phase
 
 ## Authentication
 
-Discord sign-in is implemented with the approved client ID, `identify` scope only, D1-backed opaque sessions, and no guild, role, bot, moderation, or admin behavior. See `AUTHENTICATION.md`.
+Discord sign-in is implemented with the approved client ID, `identify` scope only, D1-backed opaque sessions, and no guild or bot behavior. Phase 13 moderation roles are local D1 memberships, not Discord guild roles. See `AUTHENTICATION.md` and `MODERATION.md`.
 
 Production OAuth was manually verified on `https://pfseeker.com` on 2026-07-08. The production callback is `https://pfseeker.com/auth/discord/callback`. Arbitrary preview OAuth remains intentionally unsupported until a stable preview callback is registered.
 
@@ -76,4 +77,4 @@ Phase 12 adds authenticated signed submissions. Signed-in users can submit one P
 
 Submission taxonomy is optional for Phase 12: category is optional, existing tags are 0 to 5, and suggested tags are 0 to 3. Production currently has no real category or tag taxonomy, and the application must not seed fake taxonomy or block uploads because taxonomy tables are empty. Phase 12 production runtime verification is complete: signed upload completion, pending persistence, private list and detail rendering, runtime Cloudinary previews, optional taxonomy display, suggested tags, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and private collection non-regression were manually verified on `https://pfseeker.com`.
 
-Moderation, approval, rejection, public publishing, notifications, drafts, edit routes, and image replacement remain deferred to later phases. See `SUBMISSIONS.md`.
+Phase 13 moderation is implemented on the active feature branch but is not merged or production-verified. It adds protected moderator/owner workflows for submission review, metadata correction, required taxonomy assignment before publication, approval/publication, rejection, archive, taxonomy management, membership management, and append-only moderation history. Reports remain deferred and no report tables or `/moderation/reports` route are implemented. See `MODERATION.md`.

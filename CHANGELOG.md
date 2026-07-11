@@ -43,6 +43,9 @@
 - Added direct signed Cloudinary upload intents, server-side Cloudinary verification, SHA-256 content hashing, pending namespace checks, owner-only cancellation, and safe submission API responses.
 - Added `SUBMISSIONS.md` documenting authenticated-only policy, accepted formats, file limits, metadata rules, content rules, upload flow, D1 schema, cancellation, quotas, duplicate behavior, privacy model, tests, and deferred moderation.
 - Added submission tests for metadata validation, source URL safety, allowed formats, file limits, dimension limits, status validation, migration shape, upload namespace checks, ownership, quota enforcement, duplicate handling, upload-intent expiry/replay prevention, cancellation removal, and SVG rejection.
+- Added Phase 13 protected moderation routes, moderator/owner authorization, server-side owner bootstrap, durable moderator memberships, moderation event history, taxonomy management, submission metadata correction, approval/publication, rejection, owner-only archive API, and publication cleanup handling.
+- Added `MODERATION.md` documenting the Phase 13 access model, lifecycle, publication, rejection, archive, database, and deferred reports.
+- Added moderation tests for migration shape, route protection, server-only bootstrap boundaries, Cloudinary publication ordering, no report routes/tables, and submitter-facing lifecycle rendering.
 
 ### Changed
 
@@ -65,8 +68,10 @@
 - Applied `0003_synced_collections.sql` locally, to preview, and to production with repeat migration checks showing no pending migrations.
 - Recorded Phase 11 production verification for authenticated-only access, multiple private collections, D1-backed persistence, duplicate prevention, rename, add/remove, reorder, ZIP download, deletion, and signed-out Save sign-in prompts.
 - Added `0004_signed_submissions.sql` for pending submissions, submission tags, suggested tags, upload intents, and future-compatible asset content hashes.
-- Updated README, architecture, server architecture, database, migration, audit, FAQ, privacy, and terms documentation for Phase 12 pending-only submissions. Phase 13 moderation remains deferred.
+- Updated README, architecture, server architecture, database, migration, audit, FAQ, privacy, and terms documentation for Phase 12 pending-only submissions.
 - Recorded successful signed-out Cloudflare preview verification for Phase 12 submission route protection.
 - Added `0005_optional_submission_taxonomy.sql` so Phase 12 submissions can be created when production category and tag tables are empty.
 - Made submission taxonomy optional: category is 0 or 1, existing tags are 0 to 5, and suggested tags are 0 to 3.
 - Recorded Phase 12 production runtime verification for signed upload completion, pending persistence, private list and detail rendering, runtime Cloudinary previews, optional taxonomy behavior, suggested-tag rendering, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and private collection non-regression.
+- Expanded submission status handling from pending-only to the Phase 13 private lifecycle: pending, approved, published, and rejected.
+- Updated submitter submission list and detail pages to render lifecycle state, public published links, public rejection reasons, and pending-only cancellation.

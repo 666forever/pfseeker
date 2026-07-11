@@ -7,7 +7,7 @@ import {
 import type { CurrentUser } from "@/server/auth/types";
 import { getD1DatabaseAsync } from "@/server/db/d1";
 import { SubmissionRepository } from "@/server/repositories/submissions";
-import { SUBMISSION_STATUS_LABEL, bytesLabel } from "@/lib/submissions";
+import { bytesLabel, submissionStatusLabels } from "@/lib/submissions";
 import { buildMediaPreviewUrl } from "@/lib/media";
 import { getCloudinaryConfig } from "@/server/services/cloudinary";
 
@@ -28,7 +28,7 @@ const repository = new SubmissionRepository(
   await getD1DatabaseAsync(Astro.locals),
 );
 const [submissions, cloudinaryConfig] = await Promise.all([
-  repository.listOwnedPendingSubmissions(currentUser.user.id),
+  repository.listOwnedSubmissions(currentUser.user.id),
   getCloudinaryConfig(Astro.locals),
 ]);
 const dateFormatter = new Intl.DateTimeFormat("en", {
@@ -46,11 +46,16 @@ const taxonomySummary = (submission: (typeof submissions)[number]): string => {
   ].filter(Boolean);
   return parts.join(" / ");
 };
+
+const assetPath = (submission: (typeof submissions)[number]): string | null =>
+  submission.status === "published" && submission.publishedAssetSlug
+    ? `/${submission.assetType}/${submission.publishedAssetSlug}`
+    : null;
 ---
 
 <BaseLayout
   title="Submissions"
-  description="View private pending pfseeker submissions."
+  description="View private pfseeker submissions."
   noindex
 >
   <section
@@ -59,8 +64,8 @@ const taxonomySummary = (submission: (typeof submissions)[number]): string => {
   >
     <div class="page-hero">
       <p class="eyebrow">Submissions</p>
-      <h1 id="submissions-title">Pending submissions</h1>
-      <p>Submitted images stay private while they wait for review.</p>
+      <h1 id="submissions-title">Submissions</h1>
+      <p>Submitted images stay private through moderation.</p>
       <p>
         <a class="button button--secondary button--md" href="/submissions/new">
           Submit image
@@ -71,12 +76,12 @@ const taxonomySummary = (submission: (typeof submissions)[number]): string => {
     <section class="collection-panel" aria-labelledby="pending-title">
       <div class="collection-panel__header">
         <div>
-          <h2 id="pending-title">Awaiting review</h2>
+          <h2 id="pending-title">Your submissions</h2>
           <p>
             {
               submissions.length === 1
-                ? "1 pending submission."
-                : `${submissions.length} pending submissions.`
+                ? "1 submission."
+                : `${submissions.length} submissions.`
             }
           </p>
         </div>
@@ -88,7 +93,7 @@ const taxonomySummary = (submission: (typeof submissions)[number]): string => {
             class="route-empty"
             aria-labelledby="submissions-empty-title"
           >
-            <h3 id="submissions-empty-title">No pending submissions</h3>
+            <h3 id="submissions-empty-title">No submissions</h3>
             <p>
               Submit one image when you have a PFP, banner, or icon to share.
             </p>
@@ -111,28 +116,34 @@ const taxonomySummary = (submission: (typeof submissions)[number]): string => {
                   style={`aspect-ratio: ${submission.width} / ${submission.height}`}
                   aria-label={`Open ${submission.title}`}
                 >
-                  <img
-                    src={buildMediaPreviewUrl(
-                      {
-                        kind: submission.assetType,
-                        publicId: submission.cloudinaryPublicId,
-                        width: submission.width,
-                        height: submission.height,
-                        alt: submission.title,
-                      },
-                      {
-                        cloudName: cloudinaryConfig.cloudName,
-                        width: 320,
-                        quality: "auto",
-                        format: "auto",
-                      },
-                    )}
-                    alt=""
-                    width={submission.width}
-                    height={submission.height}
-                    loading="lazy"
-                    decoding="async"
-                  />
+                  {submission.cloudinaryPublicId ? (
+                    <img
+                      src={buildMediaPreviewUrl(
+                        {
+                          kind: submission.assetType,
+                          publicId: submission.cloudinaryPublicId,
+                          width: submission.width,
+                          height: submission.height,
+                          alt: submission.title,
+                        },
+                        {
+                          cloudName: cloudinaryConfig.cloudName,
+                          width: 320,
+                          quality: "auto",
+                          format: "auto",
+                        },
+                      )}
+                      alt=""
+                      width={submission.width}
+                      height={submission.height}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  ) : (
+                    <span class="collection-item__placeholder">
+                      {submission.assetType}
+                    </span>
+                  )}
                 </a>
                 <div class="collection-item__body">
                   <h3>
@@ -140,13 +151,38 @@ const taxonomySummary = (submission: (typeof submissions)[number]): string => {
                       {submission.title}
                     </a>
                   </h3>
-                  <p>{taxonomySummary(submission)}</p>
+                  {taxonomySummary(submission) && (
+                    <p>{taxonomySummary(submission)}</p>
+                  )}
                   <p>
                     <time datetime={submission.createdAt}>
                       {dateFormatter.format(new Date(submission.createdAt))}
                     </time>{" "}
-                    / {SUBMISSION_STATUS_LABEL} / {bytesLabel(submission.bytes)}
+                    / {submissionStatusLabels[submission.status]} /{" "}
+                    {bytesLabel(submission.bytes)}
                   </p>
+                  {submission.status === "published" &&
+                    assetPath(submission) && (
+                      <p>
+                        <a href={assetPath(submission) ?? undefined}>
+                          View published asset
+                        </a>
+                      </p>
+                    )}
+                  {submission.status === "rejected" &&
+                    submission.reviewedAt && (
+                      <p>
+                        Rejected{" "}
+                        <time datetime={submission.reviewedAt}>
+                          {dateFormatter.format(
+                            new Date(submission.reviewedAt),
+                          )}
+                        </time>
+                        {submission.rejectionReasonPublic
+                          ? ` / ${submission.rejectionReasonPublic}`
+                          : ""}
+                      </p>
+                    )}
                 </div>
                 <div class="collection-item__controls">
                   <a
@@ -155,13 +191,15 @@ const taxonomySummary = (submission: (typeof submissions)[number]): string => {
                   >
                     Open
                   </a>
-                  <button
-                    class="button button--danger button--sm"
-                    type="button"
-                    data-submission-cancel={submission.id}
-                  >
-                    Cancel submission
-                  </button>
+                  {submission.status === "pending" && (
+                    <button
+                      class="button button--danger button--sm"
+                      type="button"
+                      data-submission-cancel={submission.id}
+                    >
+                      Cancel submission
+                    </button>
+                  )}
                 </div>
               </li>
             ))}

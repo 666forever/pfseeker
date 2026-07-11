@@ -231,6 +231,17 @@ export class AuthRepository {
       .run();
   }
 
+  async revokeActiveSessionsForUser(userId: string): Promise<void> {
+    await this.db
+      .prepare(
+        `UPDATE sessions
+         SET revoked_at = ?
+         WHERE user_id = ? AND revoked_at IS NULL`,
+      )
+      .bind(new Date().toISOString(), userId)
+      .run();
+  }
+
   async deleteExpiredSessions(now = new Date().toISOString()): Promise<void> {
     await this.db
       .prepare("DELETE FROM sessions WHERE expires_at <= ?")

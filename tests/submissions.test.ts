@@ -37,14 +37,14 @@ interface IntentRecord {
 interface SubmissionRecord {
   id: string;
   user_id: string;
-  status: "pending";
+  status: "pending" | "approved" | "published" | "rejected";
   asset_type: "pfp" | "banner" | "icon";
   submitted_title: string;
   description: string | null;
   creator_credit: string | null;
   source_url: string | null;
   category_id: string | null;
-  cloudinary_public_id: string;
+  cloudinary_public_id: string | null;
   cloudinary_resource_type: "image";
   cloudinary_format: "jpg" | "jpeg" | "png" | "webp" | "gif";
   bytes: number;
@@ -52,6 +52,12 @@ interface SubmissionRecord {
   height: number;
   content_hash: string;
   duplicate_pending_flag: number;
+  reviewed_at: string | null;
+  published_asset_id: string | null;
+  published_asset_slug: string | null;
+  rejection_reason_public: string | null;
+  media_cleanup_status:
+    "pending_media_present" | "pending_media_deleted" | "cleanup_failed";
   created_at: string;
 }
 
@@ -247,6 +253,7 @@ class FakeSubmissionD1 implements D1DatabaseLike {
           ...submission,
           category_slug: category?.slug ?? null,
           category_name: category?.name ?? null,
+          published_asset_slug: submission.published_asset_slug,
         };
       }) as T[];
     }
@@ -314,6 +321,11 @@ class FakeSubmissionD1 implements D1DatabaseLike {
         height: Number(height),
         content_hash: String(contentHash),
         duplicate_pending_flag: Number(duplicatePendingFlag),
+        reviewed_at: null,
+        published_asset_id: null,
+        published_asset_slug: null,
+        rejection_reason_public: null,
+        media_cleanup_status: "pending_media_present",
         created_at: String(createdAt),
       });
     }
@@ -527,7 +539,7 @@ describe("submission validation", () => {
     ).toMatchObject({ ok: false, field: "tags" });
   });
 
-  it("allows only safe source URLs and pending status", () => {
+  it("allows only safe source URLs and Phase 13 submission statuses", () => {
     expect(validateSourceUrl("https://example.com/a")).toMatchObject({
       ok: true,
     });
@@ -536,7 +548,10 @@ describe("submission validation", () => {
     });
     expect(validateSourceUrl("data:text/html,hi")).toMatchObject({ ok: false });
     expect(validateSubmissionStatus("pending")).toBe(true);
-    expect(validateSubmissionStatus("approved")).toBe(false);
+    expect(validateSubmissionStatus("approved")).toBe(true);
+    expect(validateSubmissionStatus("published")).toBe(true);
+    expect(validateSubmissionStatus("rejected")).toBe(true);
+    expect(validateSubmissionStatus("cancelled")).toBe(false);
   });
 
   it("enforces allowed formats, file sizes, dimensions, and GIF workload", () => {
@@ -903,6 +918,11 @@ describe("submission repository", () => {
         height: 512,
         content_hash: `hash-${index}`,
         duplicate_pending_flag: 0,
+        reviewed_at: null,
+        published_asset_id: null,
+        published_asset_slug: null,
+        rejection_reason_public: null,
+        media_cleanup_status: "pending_media_present",
         created_at: new Date().toISOString(),
       });
     }
@@ -930,6 +950,11 @@ describe("submission repository", () => {
         height: 512,
         content_hash: `pending-hash-${index}`,
         duplicate_pending_flag: 0,
+        reviewed_at: null,
+        published_asset_id: null,
+        published_asset_slug: null,
+        rejection_reason_public: null,
+        media_cleanup_status: "pending_media_present",
         created_at: new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString(),
       });
     }

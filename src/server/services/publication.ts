@@ -1,0 +1,118 @@
+import {
+  copyCloudinaryResource,
+  createPublishedPublicId,
+  deleteCloudinaryResource,
+  type CloudinaryConfig,
+} from "@/server/services/cloudinary";
+import type {
+  ModeratedMetadataInput,
+  ModerationRepository,
+} from "@/server/repositories/moderation";
+
+export async function approveAndPublishSubmission(input: {
+  repository: ModerationRepository;
+  config: CloudinaryConfig;
+  actorUserId: string;
+  submissionId: string;
+  metadataInput: ModeratedMetadataInput;
+}): Promise<{ assetId: string; slug: string }> {
+  const submission = await input.repository.readSubmission(input.submissionId);
+  const metadata = await input.repository.validateModeratedMetadata(
+    submission.assetType,
+    input.metadataInput,
+  );
+  const assetId = crypto.randomUUID();
+  const slug = await input.repository.uniqueAssetSlug(
+    metadata.title,
+    submission.assetType,
+  );
+  const publishedPublicId = createPublishedPublicId({
+    assetType: submission.assetType,
+    assetId,
+  });
+
+  if (!submission.cloudinaryPublicId) {
+    throw new Error("Pending media is missing for publication.");
+  }
+
+  await copyCloudinaryResource({
+    config: input.config,
+    sourcePublicId: submission.cloudinaryPublicId,
+    targetPublicId: publishedPublicId,
+  });
+
+  try {
+    await input.repository.publishSubmission({
+      actorUserId: input.actorUserId,
+      submission,
+      metadata,
+      assetId,
+      slug,
+      publishedPublicId,
+    });
+  } catch (error) {
+    try {
+      await deleteCloudinaryResource(input.config, publishedPublicId);
+    } catch {
+      await input.repository.markCleanupFailed({
+        actorUserId: input.actorUserId,
+        targetType: "asset",
+        targetId: assetId,
+        submissionId: submission.id,
+        action: "publication.copied_resource_cleanup_failed",
+      });
+    }
+    throw error;
+  }
+
+  try {
+    await deleteCloudinaryResource(input.config, submission.cloudinaryPublicId);
+    await input.repository.markPublishedPendingCleanupDeleted({
+      actorUserId: input.actorUserId,
+      submissionId: submission.id,
+      assetId,
+    });
+  } catch {
+    await input.repository.markCleanupFailed({
+      actorUserId: input.actorUserId,
+      targetType: "asset",
+      targetId: assetId,
+      submissionId: submission.id,
+      action: "publication.pending_cleanup_failed",
+    });
+  }
+
+  return { assetId, slug };
+}
+
+export async function rejectSubmissionWithCleanup(input: {
+  repository: ModerationRepository;
+  config: CloudinaryConfig;
+  actorUserId: string;
+  submissionId: string;
+  internalNote: unknown;
+  publicReason: unknown;
+}): Promise<void> {
+  const rejected = await input.repository.rejectSubmission({
+    actorUserId: input.actorUserId,
+    submissionId: input.submissionId,
+    internalNote: input.internalNote,
+    publicReason: input.publicReason,
+  });
+  if (!rejected.cloudinaryPublicId) return;
+  try {
+    await deleteCloudinaryResource(input.config, rejected.cloudinaryPublicId);
+    await input.repository.markRejectedCleanupDeleted({
+      actorUserId: input.actorUserId,
+      submissionId: input.submissionId,
+    });
+  } catch {
+    await input.repository.markCleanupFailed({
+      actorUserId: input.actorUserId,
+      targetType: "submission",
+      targetId: input.submissionId,
+      submissionId: input.submissionId,
+      action: "rejection.pending_cleanup_failed",
+    });
+  }
+}

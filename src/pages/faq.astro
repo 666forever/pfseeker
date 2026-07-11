@@ -62,18 +62,20 @@ import BaseLayout from "@/layouts/BaseLayout.astro";
         fields are optional, and there is no guarantee of publication.
       </p>
       <p>
-        Pending submissions are stored through Cloudinary, shown only to the
-        submitting account, and can be cancelled. Cancelling deletes the pending
-        submission and uploaded pending file. Moderation and public publishing
-        are not enabled yet.
+        Pending submissions are stored through Cloudinary and shown only to the
+        submitting account until moderation. On the Phase 13 feature branch,
+        moderators can approve and publish, reject, or correct metadata. Pending
+        submissions can be cancelled by the submitter. Approved, published, and
+        rejected submissions cannot be cancelled by the submitter.
       </p>
     </section>
     <section aria-labelledby="faq-six">
       <h2 id="faq-six">How will copyright or reports work?</h2>
       <p>
-        Reporting and moderation workflows are planned. Current submissions
-        require users to confirm that images do not contain obvious nudity, gore
-        or graphic injury, or hateful imagery.
+        Moderation workflows are implemented on the Phase 13 feature branch.
+        Report workflows remain planned and are not available yet. Current
+        submissions require users to confirm that images do not contain obvious
+        nudity, gore or graphic injury, or hateful imagery.
       </p>
     </section>
   </section>

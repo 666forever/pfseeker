@@ -2,9 +2,11 @@
 
 ## Current status
 
-The project has completed the audit, engineering foundation, design primitives, global public shell, Cloudinary media abstraction, seed galleries, asset detail pages, expanded search, D1 server layer, Phase 10 Discord authentication, Phase 11 authenticated private collections, and Phase 12 signed pending submissions.
+The project has completed the audit, engineering foundation, design primitives, global public shell, Cloudinary media abstraction, seed galleries, asset detail pages, expanded search, D1 server layer, Phase 10 Discord authentication, Phase 11 authenticated private collections, and Phase 12 signed pending submissions. Phase 13 moderation is implemented on the active feature branch and awaits validation, preview deployment, merge approval, production migration, and production verification.
 
-Phase 10 adds open Discord sign-in with `identify` scope only, D1-backed users, one-time OAuth state records, opaque sessions, POST logout, protected `/account`, server-rendered header auth state, and safe auth errors. Production OAuth and logout were manually verified on `https://pfseeker.com` on 2026-07-08. Phase 11 requires sign-in for collection features, stores multiple private collections in D1, and removes anonymous local collection persistence. Production collection creation, rename, add/remove, reorder, ZIP download, persistence, deletion, and access protection were manually verified on `https://pfseeker.com`. Phase 12 adds authenticated signed submissions into a private pending state. Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support the submission schema; signed-out route protection and production runtime upload behavior have been manually verified. Production verification confirmed signed upload completion, pending persistence, private list and detail rendering, runtime Cloudinary previews, optional taxonomy behavior, suggested tags, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections. All authenticated users are ordinary users. Moderation, creators, admin workflows, guild checks, bot behavior, role systems, public collection publishing, and public submission publishing remain future work.
+Phase 10 adds open Discord sign-in with `identify` scope only, D1-backed users, one-time OAuth state records, opaque sessions, POST logout, protected `/account`, server-rendered header auth state, and safe auth errors. Production OAuth and logout were manually verified on `https://pfseeker.com` on 2026-07-08. Phase 11 requires sign-in for collection features, stores multiple private collections in D1, and removes anonymous local collection persistence. Production collection creation, rename, add/remove, reorder, ZIP download, persistence, deletion, and access protection were manually verified on `https://pfseeker.com`. Phase 12 adds authenticated signed submissions into a private pending state. Migrations `0004_signed_submissions.sql` and `0005_optional_submission_taxonomy.sql` support the submission schema; signed-out route protection and production runtime upload behavior have been manually verified. Production verification confirmed signed upload completion, pending persistence, private list and detail rendering, runtime Cloudinary previews, optional taxonomy behavior, suggested tags, owner-only cancellation, D1 and Cloudinary cleanup, inaccessible cancelled detail URLs, and no regression to private collections.
+
+Phase 13 adds server-side moderator and owner authorization, server-only owner bootstrap by Discord ID allowlist, durable moderator memberships, moderation events, metadata correction, approval/publication, rejection, taxonomy management, and owner-only archive. Ordinary users remain the default account type. There is no `admin` role. Guild checks, bot behavior, public collection publishing, reports, creators, and leaderboards remain future work.
 
 ## Product identity
 
@@ -100,7 +102,7 @@ Search and taxonomy filtering is centralized in `src/lib/search.ts`. It parses U
 
 The D1 repository currently loads published rows and applies the same search/filter functions in application code. This preserves Phase 8 URL and matching behavior while the dataset is small. Later production-scale search can push filtering into indexed SQL or a dedicated search service if profiling shows that is needed.
 
-Authenticated users, sessions, OAuth state, private collections, collection items, pending submissions, optional submission category links, optional submission tags, suggested submission tags, and upload intents now exist. Moderation events, reports, public collection publishing, and creator attribution remain future schema additions. Do not add placeholder creator rows, fake roles, fake moderation events, fake taxonomy rows, or fake download counts.
+Authenticated users, sessions, OAuth state, private collections, collection items, submissions, optional submission category links, optional submission tags, suggested submission tags, upload intents, moderator memberships, and moderation events now exist. Reports, public collection publishing, and creator attribution remain future schema additions. Do not add placeholder creator rows, fake report rows, fake roles, fake moderation events, fake taxonomy rows, or fake download counts.
 
 ## Cloudinary boundary
 
@@ -155,6 +157,7 @@ Known environment variables from `.env.example`:
 - `DISCORD_CLIENT_SECRET`
 - `DISCORD_REDIRECT_URI`
 - `SESSION_SECRET`
+- `MODERATOR_BOOTSTRAP_DISCORD_IDS`
 
 Phase 1 should add typed validation for required public configuration and document required server secrets without exposing them to browser code.
 
@@ -189,7 +192,7 @@ Public routes:
 - `/privacy` implemented
 - `/terms` implemented
 
-Moderation and admin routes are future phases and must not be built as decorative dead screens before their backing behavior exists. Submission routes now exist for authenticated private pending intake only, and the current account route shows truthful Discord identity and local session information only.
+Moderation routes now exist as protected server-backed Phase 13 routes: `/moderation`, `/moderation/submissions`, `/moderation/submissions/[submissionId]`, `/moderation/taxonomy`, `/moderation/history`, and `/moderation/members`. There is no `/moderation/reports` route. Submission routes show private lifecycle state to the owner, and the current account route shows truthful Discord identity and local session information only.
 
 ## Styling architecture
 

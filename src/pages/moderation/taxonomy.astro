@@ -1,0 +1,212 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  ModerationAuthorizationError,
+  requireOwner,
+} from "@/server/auth/moderation";
+import { AuthenticationRequiredError } from "@/server/auth/session";
+
+let access;
+try {
+  access = await requireOwner(Astro);
+} catch (error) {
+  if (error instanceof AuthenticationRequiredError) {
+    return Astro.redirect(
+      `/auth/discord?returnTo=${encodeURIComponent("/moderation/taxonomy")}`,
+      302,
+    );
+  }
+  if (error instanceof ModerationAuthorizationError) {
+    return new Response("Not found.", { status: 404 });
+  }
+  throw error;
+}
+
+const [categories, tags] = await Promise.all([
+  access.repository.listCategories(),
+  access.repository.listTags(),
+]);
+const kindOptions = ["pfp", "banner", "icon"] as const;
+---
+
+<BaseLayout
+  title="Moderation taxonomy"
+  description="Owner-only pfseeker taxonomy management."
+  noindex
+>
+  <section class="page-shell" aria-labelledby="taxonomy-title">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <ol>
+        <li><a href="/moderation">Moderation</a></li>
+        <li><span aria-current="page">Taxonomy</span></li>
+      </ol>
+    </nav>
+
+    <div class="page-hero">
+      <p class="eyebrow">Owner</p>
+      <h1 id="taxonomy-title">Taxonomy</h1>
+      <p>
+        Create real production categories and tags. Fake taxonomy is not seeded.
+      </p>
+    </div>
+
+    <section class="collection-panel" aria-labelledby="category-create-title">
+      <h2 id="category-create-title">Create category</h2>
+      <form
+        method="post"
+        action="/api/moderation/taxonomy/categories"
+        class="submission-form"
+      >
+        <div class="submission-grid">
+          <label>
+            Name
+            <input name="name" required minlength="2" maxlength="80" />
+          </label>
+          <label>
+            Description
+            <input name="description" required minlength="2" maxlength="200" />
+          </label>
+          <fieldset class="submission-fieldset">
+            <legend>Supported types</legend>
+            <div class="submission-tag-grid">
+              {
+                kindOptions.map((kind) => (
+                  <label>
+                    <input type="checkbox" name="kinds" value={kind} />
+                    <span>{kind}</span>
+                  </label>
+                ))
+              }
+            </div>
+          </fieldset>
+        </div>
+        <button class="button button--secondary button--md" type="submit">
+          Create category
+        </button>
+      </form>
+    </section>
+
+    <section class="collection-panel" aria-labelledby="categories-title">
+      <h2 id="categories-title">Categories</h2>
+      {
+        categories.length === 0 ? (
+          <p>No categories yet.</p>
+        ) : (
+          <ol class="collection-list">
+            {categories.map((category) => (
+              <li class="collection-item">
+                <form
+                  class="collection-item__body submission-form"
+                  method="post"
+                  action={`/api/moderation/taxonomy/categories/${category.id}`}
+                >
+                  <label>
+                    Name
+                    <input name="name" value={category.name} required />
+                  </label>
+                  <label>
+                    Description
+                    <input
+                      name="description"
+                      value={category.description}
+                      required
+                    />
+                  </label>
+                  <fieldset class="submission-fieldset">
+                    <legend>Supported types</legend>
+                    <div class="submission-tag-grid">
+                      {kindOptions.map((kind) => (
+                        <label>
+                          <input
+                            type="checkbox"
+                            name="kinds"
+                            value={kind}
+                            checked={category.kinds.includes(kind)}
+                          />
+                          <span>{kind}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <p>Slug: {category.slug}</p>
+                  <button
+                    class="button button--secondary button--sm"
+                    type="submit"
+                  >
+                    Save
+                  </button>
+                  <button
+                    class="button button--danger button--sm"
+                    type="submit"
+                    name="_method"
+                    value="DELETE"
+                  >
+                    Delete
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </section>
+
+    <section class="collection-panel" aria-labelledby="tag-create-title">
+      <h2 id="tag-create-title">Create tag</h2>
+      <form method="post" action="/api/moderation/taxonomy/tags">
+        <label>
+          Tag name
+          <input name="displayName" required minlength="2" maxlength="50" />
+        </label>
+        <button class="button button--secondary button--md" type="submit">
+          Create tag
+        </button>
+      </form>
+    </section>
+
+    <section class="collection-panel" aria-labelledby="tags-title">
+      <h2 id="tags-title">Tags</h2>
+      {
+        tags.length === 0 ? (
+          <p>No tags yet.</p>
+        ) : (
+          <ol class="collection-list">
+            {tags.map((tag) => (
+              <li class="collection-item">
+                <form
+                  class="collection-item__body"
+                  method="post"
+                  action={`/api/moderation/taxonomy/tags/${tag.id}`}
+                >
+                  <label>
+                    Tag name
+                    <input
+                      name="displayName"
+                      value={tag.displayName}
+                      required
+                    />
+                  </label>
+                  <p>Slug: {tag.slug}</p>
+                  <button
+                    class="button button--secondary button--sm"
+                    type="submit"
+                  >
+                    Save
+                  </button>
+                  <button
+                    class="button button--danger button--sm"
+                    type="submit"
+                    name="_method"
+                    value="DELETE"
+                  >
+                    Delete
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+    </section>
+  </section>
+</BaseLayout>

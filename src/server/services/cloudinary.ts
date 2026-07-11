@@ -154,6 +154,22 @@ export function publicIdInPendingNamespace(
   );
 }
 
+export function createPublishedPublicId(input: {
+  assetType: AssetKind;
+  assetId: string;
+}): string {
+  return `pfseeker/published/${input.assetType}/${input.assetId}`;
+}
+
+export function publicIdInPublishedNamespace(publicId: string): boolean {
+  return (
+    publicId.startsWith("pfseeker/published/") &&
+    !publicId.includes("..") &&
+    !publicId.includes("\\") &&
+    !/https?:/i.test(publicId)
+  );
+}
+
 async function signParameters(
   params: Record<string, string | number>,
   apiSecret: string,
@@ -241,6 +257,53 @@ export async function deleteCloudinaryResource(
   if (!response.ok) {
     throw new InvalidRepositoryInputError(
       "Cloudinary image could not be deleted.",
+    );
+  }
+}
+
+export async function copyCloudinaryResource(input: {
+  config: CloudinaryConfig;
+  sourcePublicId: string;
+  targetPublicId: string;
+}): Promise<void> {
+  if (
+    !publicIdInPendingNamespace(
+      input.sourcePublicId,
+      input.config.pendingFolder,
+    ) ||
+    !publicIdInPublishedNamespace(input.targetPublicId)
+  ) {
+    throw new InvalidRepositoryInputError(
+      "Cloudinary copy namespace is invalid.",
+    );
+  }
+
+  const sourceUrl = `https://res.cloudinary.com/${input.config.cloudName}/image/upload/${encodePublicIdForResourcePath(input.sourcePublicId)}`;
+  const timestamp = Math.floor(Date.now() / 1000);
+  const signature = await signParameters(
+    {
+      file: sourceUrl,
+      overwrite: "false",
+      public_id: input.targetPublicId,
+      timestamp,
+    },
+    input.config.apiSecret,
+  );
+  const body = new URLSearchParams({
+    file: sourceUrl,
+    overwrite: "false",
+    public_id: input.targetPublicId,
+    timestamp: String(timestamp),
+    api_key: input.config.apiKey,
+    signature,
+  });
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${input.config.cloudName}/image/upload`,
+    { method: "POST", body },
+  );
+  if (!response.ok) {
+    throw new InvalidRepositoryInputError(
+      "Cloudinary image could not be copied for publication.",
     );
   }
 }
