@@ -2,7 +2,9 @@
 
 ## Current Status
 
-Phase 13 moderation is implemented and audited on the `phase-13-moderation-audit` branch. It is awaiting merge to `main`, production migration `0006_moderation_and_publishing.sql`, production bootstrap configuration, and production verification.
+Phase 13 deployed and owner-bootstrap verified; full moderation workflow verification pending.
+
+Phase 13 was merged to `main`, production migration `0006_moderation_and_publishing.sql` was applied successfully, and owner bootstrap was manually verified on `https://pfseeker.com`. The durable owner membership persisted after sign-out/sign-in, and production currently has one active owner membership. Reports remain deferred. Taxonomy management, approval/publication, rejection, archive, moderator creation/revocation, and the full moderation workflow are not yet manually production-tested.
 
 The implementation adds protected moderator and owner workflows for pending submissions, durable D1 role memberships, taxonomy management, publication, rejection, archive, and moderation event history. Reports remain deferred and no report UI, API, or tables are implemented.
 

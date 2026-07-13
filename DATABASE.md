@@ -172,12 +172,14 @@ Signed-submission migration status:
 
 Moderation migration status:
 
-- `migrations/0006_moderation_and_publishing.sql` is implemented on the Phase 13 feature branch.
-- It has not been applied to production and Phase 13 is not production-verified.
+- `migrations/0006_moderation_and_publishing.sql` is applied locally, to preview, and to production.
+- Phase 13 deployed and owner-bootstrap verified; full moderation workflow verification pending.
 - The migration adds durable moderator memberships and append-only moderation events.
 - It expands submission states to `pending`, `approved`, `published`, and `rejected`.
 - It adds published asset linkage, rejection note fields, cleanup tracking, archive fields, and taxonomy actor columns.
 - It does not add report tables, fake taxonomy, fake submissions, fake moderator users, or fake published assets.
+- Production owner bootstrap was manually verified. Durable owner access persisted after sign-out/sign-in, and production currently has one active owner membership.
+- Taxonomy management, approval, rejection, archive, moderator creation/revocation, and the full moderation workflow are not yet manually production-tested.
 
 ## Cloudflare Pages binding status
 

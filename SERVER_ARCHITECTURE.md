@@ -131,7 +131,7 @@ Production runtime verification is complete on `https://pfseeker.com`. Manual te
 
 ## Moderation routes
 
-Phase 13 adds protected moderation routes on the feature branch:
+Phase 13 adds protected moderation routes:
 
 - `/moderation`
 - `/moderation/submissions`
@@ -140,7 +140,7 @@ Phase 13 adds protected moderation routes on the feature branch:
 - `/moderation/history`
 - `/moderation/members`
 
-Mutation APIs exist under `/api/moderation`. Moderator requests can edit metadata, approve/publish, reject, and inspect event history. Owner requests can manage taxonomy, memberships, bootstrap the first owner, and archive published assets. No report route or report API is implemented.
+Mutation APIs exist under `/api/moderation`. Moderator requests can edit metadata, approve/publish, reject, and inspect event history. Owner requests can manage taxonomy, memberships, bootstrap the first owner, and archive published assets. Phase 13 was merged to `main`, production migration `0006_moderation_and_publishing.sql` was applied successfully, owner bootstrap was manually verified, durable owner access persisted after sign-out/sign-in, and production currently has one active owner membership. Taxonomy management, approval, rejection, archive, moderator creation/revocation, and the full moderation workflow are not yet manually production-tested. No report route or report API is implemented.
 
 ## Security notes
 
