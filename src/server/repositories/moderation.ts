@@ -599,60 +599,20 @@ export class ModerationRepository {
       input.submission.cloudinaryFormat === "jpeg"
         ? "jpg"
         : input.submission.cloudinaryFormat;
+    const pendingCondition = `EXISTS (
+      SELECT 1 FROM submissions
+      WHERE id = ? AND status = 'pending'
+        AND NOT EXISTS (
+          SELECT 1 FROM assets
+          WHERE content_hash = ? AND status = 'published'
+        )
+    )`;
     const publishedCondition = `EXISTS (
       SELECT 1 FROM submissions
       WHERE id = ? AND status = 'published' AND published_asset_id = ?
     )`;
 
     await this.db.batch([
-      this.db
-        .prepare(
-          `UPDATE submissions
-           SET status = 'published',
-             submitted_title = ?,
-             description = ?,
-             creator_credit = ?,
-             source_url = ?,
-             category_id = ?,
-             reviewed_by_user_id = ?,
-             reviewed_at = ?,
-             published_asset_id = ?,
-             media_cleanup_status = 'pending_media_present',
-             review_version = review_version + 1
-           WHERE id = ?
-             AND status = 'pending'
-             AND NOT EXISTS (
-               SELECT 1 FROM assets
-               WHERE content_hash = ? AND status = 'published'
-             )`,
-        )
-        .bind(
-          input.metadata.title,
-          input.metadata.description,
-          input.metadata.creatorCredit,
-          input.metadata.sourceUrl,
-          input.metadata.categoryId,
-          input.actorUserId,
-          now,
-          input.assetId,
-          input.submission.id,
-          input.submission.contentHash,
-        ),
-      this.db
-        .prepare(
-          `DELETE FROM submission_tags
-           WHERE submission_id = ? AND ${publishedCondition}`,
-        )
-        .bind(input.submission.id, input.submission.id, input.assetId),
-      ...input.metadata.tagIds.map((tagId) =>
-        this.db
-          .prepare(
-            `INSERT INTO submission_tags (submission_id, tag_id)
-             SELECT ?, ?
-             WHERE ${publishedCondition}`,
-          )
-          .bind(input.submission.id, tagId, input.submission.id, input.assetId),
-      ),
       this.db
         .prepare(
           `INSERT INTO assets (
@@ -664,7 +624,7 @@ export class ModerationRepository {
           )
           SELECT ?, ?, ?, ?, ?, 'cloudinary', ?, ?, ?, ?, ?, ?, ?, ?, 'published',
             ?, ?, ?, ?, ?, ?, ?, ?, ?
-          WHERE ${publishedCondition}`,
+          WHERE ${pendingCondition}`,
         )
         .bind(
           input.assetId,
@@ -690,8 +650,63 @@ export class ModerationRepository {
           input.submission.userId,
           input.submission.id,
           input.submission.id,
+          input.submission.contentHash,
+        ),
+      this.db
+        .prepare(
+          `UPDATE submissions
+           SET status = 'published',
+             submitted_title = ?,
+             description = ?,
+             creator_credit = ?,
+             source_url = ?,
+             category_id = ?,
+             reviewed_by_user_id = ?,
+             reviewed_at = ?,
+             published_asset_id = ?,
+             media_cleanup_status = 'pending_media_present',
+             review_version = review_version + 1
+           WHERE id = ?
+             AND status = 'pending'
+             AND EXISTS (
+               SELECT 1 FROM assets
+               WHERE id = ? AND submission_id = ?
+             )
+             AND NOT EXISTS (
+               SELECT 1 FROM assets
+               WHERE content_hash = ? AND status = 'published' AND id <> ?
+             )`,
+        )
+        .bind(
+          input.metadata.title,
+          input.metadata.description,
+          input.metadata.creatorCredit,
+          input.metadata.sourceUrl,
+          input.metadata.categoryId,
+          input.actorUserId,
+          now,
+          input.assetId,
+          input.submission.id,
+          input.assetId,
+          input.submission.id,
+          input.submission.contentHash,
           input.assetId,
         ),
+      this.db
+        .prepare(
+          `DELETE FROM submission_tags
+           WHERE submission_id = ? AND ${publishedCondition}`,
+        )
+        .bind(input.submission.id, input.submission.id, input.assetId),
+      ...input.metadata.tagIds.map((tagId) =>
+        this.db
+          .prepare(
+            `INSERT INTO submission_tags (submission_id, tag_id)
+             SELECT ?, ?
+             WHERE ${publishedCondition}`,
+          )
+          .bind(input.submission.id, tagId, input.submission.id, input.assetId),
+      ),
       this.db
         .prepare(
           `INSERT INTO asset_categories (asset_id, category_id)
