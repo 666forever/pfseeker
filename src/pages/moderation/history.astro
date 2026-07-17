@@ -80,6 +80,10 @@ function metadataUpdateSummary(event: {
     return [];
   }
 }
+
+function shortInternalId(value: string): string {
+  return value.length > 6 ? `...${value.slice(-6)}` : "redacted";
+}
 ---
 
 <BaseLayout
@@ -146,7 +150,8 @@ function metadataUpdateSummary(event: {
                 <div class="collection-item__body">
                   <h3>{event.action}</h3>
                   <p>
-                    {event.targetType} / {event.targetId}
+                    {event.targetType} / internal target{" "}
+                    {shortInternalId(event.targetId)}
                   </p>
                   <p>
                     {event.previousState ?? "none"} / {event.newState ?? "none"}

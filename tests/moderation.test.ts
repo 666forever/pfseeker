@@ -97,6 +97,9 @@ describe("Phase 13 moderation routes", () => {
     expect(read("src/pages/moderation/members.astro")).toContain(
       "requireOwner(Astro)",
     );
+    expect(read("src/pages/api/moderation/members/revoke.ts")).toContain(
+      "requireOwner(context)",
+    );
     expect(
       read("src/pages/api/moderation/assets/[assetId]/archive.ts"),
     ).toContain("requireOwner(context)");
@@ -120,6 +123,71 @@ describe("Phase 13 moderation routes", () => {
     expect(pageSources.join("\n")).not.toContain(
       "MODERATOR_BOOTSTRAP_DISCORD_IDS",
     );
+  });
+
+  it("keeps duplicate bootstrap and last-owner API protection in place", () => {
+    const repository = read("src/server/repositories/moderation.ts");
+
+    expect(repository).toContain("async bootstrapOwner");
+    expect(repository).toContain("if (existing) return existing");
+    expect(repository).toContain("async revokeMembership");
+    expect(repository).toContain("this.countActiveOwners()) <= 1");
+    expect(repository).toContain(
+      "At least one active owner membership must remain.",
+    );
+  });
+
+  it("hides last-owner revocation and avoids raw IDs on membership pages", () => {
+    const members = read("src/pages/moderation/members.astro");
+
+    expect(members).toContain("activeOwnerCount");
+    expect(members).toContain("canRevokeMembership(membership)");
+    expect(members).toContain("Last active owner cannot be revoked.");
+    expect(members).toContain("shortInternalId(membership.userId)");
+    expect(members).toContain("internal user");
+    expect(members).toContain("Multi-user moderator creation is deferred.");
+    expect(members).toContain('action="/api/moderation/members/revoke"');
+    expect(members).toContain("membershipRevokeTokens.get(membership.id)");
+    expect(members).not.toContain("{membership.userId}");
+    expect(members).not.toContain("{membership.id}");
+    expect(members).not.toContain("Local user ID");
+    expect(members).not.toContain(
+      "action={`/api/moderation/members/${membership.id}/revoke`}",
+    );
+    expect(members).not.toContain("discordUserId");
+    expect(members).not.toContain("sessionCookieName");
+    expect(members).not.toContain("sessionSecret");
+  });
+
+  it("keeps revocation visible for future revocable memberships", () => {
+    const members = read("src/pages/moderation/members.astro");
+    const revokeApi = read("src/pages/api/moderation/members/revoke.ts");
+    const tokenService = read(
+      "src/server/services/moderation-membership-actions.ts",
+    );
+
+    expect(members).toContain('membership.status !== "active"');
+    expect(members).toContain(
+      'membership.role === "owner" && activeOwnerCount <= 1',
+    );
+    expect(members).toContain("membershipToken");
+    expect(revokeApi).toContain("findMembershipByRevokeToken");
+    expect(tokenService).toContain("constantTimeEqual");
+    expect(tokenService).toContain("moderation-membership-revoke:");
+  });
+
+  it("redacts moderation event target IDs by default", () => {
+    const history = read("src/pages/moderation/history.astro");
+    const landing = read("src/pages/moderation/index.astro");
+
+    for (const source of [history, landing]) {
+      expect(source).toContain("shortInternalId(event.targetId)");
+      expect(source).toContain("internal target");
+      expect(source).not.toContain("{event.targetId}");
+      expect(source).not.toContain("discordUserId");
+      expect(source).not.toContain("sessionCookieName");
+      expect(source).not.toContain("sessionSecret");
+    }
   });
 });
 
