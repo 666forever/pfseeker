@@ -178,6 +178,11 @@ Production:
 - `/500` error page
 - `/dev/design-system` internal noindex design-system route
 
+Current dedicated category routes remain tied to the committed seed/static
+taxonomy. D1-created moderation categories are available through search filter
+URLs, for example `/search?type=pfp&category=phase-13-test`; DB-backed
+dedicated category routes remain deferred.
+
 Reference-only:
 
 - `reference/assessed-site/index.html`

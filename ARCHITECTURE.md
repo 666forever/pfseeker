@@ -188,6 +188,13 @@ Public routes:
 - `/auth/error` implemented
 - `/account` implemented as an authenticated identity page
 - `/about` implemented
+
+Dedicated category routes such as `/pfps/[category]`, `/banners/[category]`,
+and `/icons/[category]` currently resolve the committed seed/static taxonomy.
+D1-created moderation categories are discoverable through search filter URLs
+such as `/search?type=pfp&category=phase-13-test`; DB-backed dedicated category
+routes are deferred to a later discovery/SEO pass.
+
 - `/faq` implemented
 - `/privacy` implemented
 - `/terms` implemented

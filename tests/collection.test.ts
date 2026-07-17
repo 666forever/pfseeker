@@ -398,12 +398,19 @@ describe("collection repository", () => {
 });
 
 describe("collection ZIP creation", () => {
-  it("uses safe, kind-scoped SVG filenames", () => {
+  it("uses safe, kind-scoped format-specific filenames", () => {
     expect(sanitizeFilename(" A messy/name!.svg ")).toBe("a-messy-name-.svg");
     expect(zipPathForAsset(seedAssets[0])).toBe("pfps/ember-orbit.svg");
     expect(
       zipPathForAsset(seedAssets.find((asset) => asset.kind === "banner")!),
     ).toBe("banners/slate-horizon.svg");
+    expect(
+      zipPathForAsset({
+        ...seedAssets[0],
+        slug: "phase-13-published-test",
+        format: "jpg",
+      }),
+    ).toBe("pfps/phase-13-published-test.jpg");
   });
 
   it("settles concurrent work without rejecting the whole batch", async () => {
@@ -442,6 +449,34 @@ describe("collection ZIP creation", () => {
     expect(result.blob?.size).toBeGreaterThan(0);
     expect(progress).toContain("creating");
     expect(progress).toContain("complete");
+  });
+
+  it("fetches Cloudinary-backed ZIP assets through delivery URLs", async () => {
+    const fetchedUrls: string[] = [];
+    const asset = {
+      ...seedAssets[0],
+      mediaSourceType: "cloudinary" as const,
+      localSource: "pfseeker/published/pfp/asset-1",
+      cloudinaryPublicId: "pfseeker/published/pfp/asset-1",
+      cloudinaryCloudName: "pfseeker-test",
+      format: "jpg" as const,
+    };
+
+    const result = await createCollectionZip({
+      assets: [asset],
+      signal: new AbortController().signal,
+      fetcher: async (url) => {
+        fetchedUrls.push(url);
+        return new Blob(["jpg-bytes"], { type: "image/jpeg" });
+      },
+    });
+
+    expect(result.status).toBe("complete");
+    expect(fetchedUrls[0]).toContain(
+      "https://res.cloudinary.com/pfseeker-test/image/upload/",
+    );
+    expect(fetchedUrls[0]).toContain("fl_attachment");
+    expect(fetchedUrls[0]).not.toBe(asset.localSource);
   });
 
   it("returns a partial ZIP when only some asset fetches fail", async () => {

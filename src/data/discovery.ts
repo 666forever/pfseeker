@@ -8,6 +8,7 @@ import {
 } from "@/data/categories";
 import {
   buildLocalResponsiveImage,
+  buildResponsiveImage,
   type AssetKind,
   type MediaFormat,
   type ResponsiveImageDescriptor,
@@ -213,6 +214,26 @@ export function buildSeedImageDescriptor(
   asset: SeedAsset,
 ): ResponsiveImageDescriptor {
   const config = galleryKindConfigs[asset.kind];
+  if (asset.mediaSourceType === "cloudinary") {
+    const publicId = asset.cloudinaryPublicId ?? asset.localSource;
+    return buildResponsiveImage(
+      {
+        kind: asset.kind,
+        publicId,
+        alt: asset.alt,
+        width: asset.width,
+        height: asset.height,
+        format: asset.format,
+        animation: asset.animation,
+      },
+      {
+        cloudName: asset.cloudinaryCloudName ?? undefined,
+        preset: asset.kind,
+        sizes: config.imageSizes,
+        widths: config.imageWidths,
+      },
+    );
+  }
 
   return buildLocalResponsiveImage(
     {

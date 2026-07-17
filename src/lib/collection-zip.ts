@@ -1,6 +1,6 @@
 import JSZip from "jszip";
 
-import { galleryKindConfigs } from "@/data/discovery";
+import { buildSeedImageDescriptor, galleryKindConfigs } from "@/data/discovery";
 import type { SeedAsset } from "@/data/assets";
 
 export type ZipStatus = "complete" | "partial" | "failed" | "cancelled";
@@ -57,7 +57,7 @@ export function zipPathForAsset(asset: SeedAsset): string {
   const folder = sanitizeFilename(
     galleryKindConfigs[asset.kind].path.replace("/", ""),
   );
-  return `${folder}/${sanitizeFilename(asset.slug)}.svg`;
+  return `${folder}/${sanitizeFilename(asset.slug)}.${asset.format}`;
 }
 
 async function defaultFetcher(url: string, signal: AbortSignal): Promise<Blob> {
@@ -145,7 +145,10 @@ export async function createCollectionZip({
         message: `Fetching item ${index + 1} of ${total}.`,
       });
 
-      const blob = await fetcher(asset.localSource, signal);
+      const blob = await fetcher(
+        buildSeedImageDescriptor(asset).downloadUrl,
+        signal,
+      );
       const data = await blob.arrayBuffer();
       completed += 1;
       onProgress?.({
