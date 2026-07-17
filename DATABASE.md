@@ -173,13 +173,14 @@ Signed-submission migration status:
 Moderation migration status:
 
 - `migrations/0006_moderation_and_publishing.sql` is applied locally, to preview, and to production.
-- Phase 13 deployed and owner-bootstrap verified; full moderation workflow verification pending.
+- Phase 13 is deployed and production-verified in solo-owner mode.
 - The migration adds durable moderator memberships and append-only moderation events.
 - It expands submission states to `pending`, `approved`, `published`, and `rejected`.
 - It adds published asset linkage, rejection note fields, cleanup tracking, archive fields, and taxonomy actor columns.
 - It does not add report tables, fake taxonomy, fake submissions, fake moderator users, or fake published assets.
-- Production owner bootstrap was manually verified. Durable owner access persisted after sign-out/sign-in, and production currently has one active owner membership.
-- Taxonomy management, approval, rejection, archive, moderator creation/revocation, and the full moderation workflow are not yet manually production-tested.
+- Production verification confirmed taxonomy creation/update, approval/publication, public Cloudinary media rendering, rejection, archive, duplicate bootstrap behavior, last-owner protection, signed-out moderation route protection, and solo-owner membership UI hardening.
+- Production currently has one active owner membership, zero active moderator memberships, one rejected submission, one published submission linked to an archived asset, three categories, and four tags from Phase 13 verification. No cleanup of production test records has been performed yet.
+- Multi-user moderator add/revoke testing is intentionally deferred by user choice.
 
 ## Cloudflare Pages binding status
 

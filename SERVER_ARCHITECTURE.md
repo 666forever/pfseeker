@@ -140,7 +140,7 @@ Phase 13 adds protected moderation routes:
 - `/moderation/history`
 - `/moderation/members`
 
-Mutation APIs exist under `/api/moderation`. Moderator requests can edit metadata, approve/publish, reject, and inspect event history. Owner requests can manage taxonomy, memberships, bootstrap the first owner, and archive published assets. Phase 13 was merged to `main`, production migration `0006_moderation_and_publishing.sql` was applied successfully, owner bootstrap was manually verified, durable owner access persisted after sign-out/sign-in, and production currently has one active owner membership. Taxonomy management, approval, rejection, archive, moderator creation/revocation, and the full moderation workflow are not yet manually production-tested. No report route or report API is implemented.
+Mutation APIs exist under `/api/moderation`. Moderator requests can edit metadata, approve/publish, reject, and inspect event history. Owner requests can manage taxonomy, memberships, bootstrap the first owner, and archive published assets. Phase 13 is deployed and production-verified in solo-owner mode. Production verification confirmed taxonomy creation/update, approval/publication, public Cloudinary media rendering, rejection, archive, duplicate bootstrap behavior, last-owner protection, signed-out moderation route protection, and solo-owner membership UI hardening. Production currently has one active owner membership and zero active moderator memberships. Multi-user moderator add/revoke testing is intentionally deferred by user choice. No report route or report API is implemented.
 
 ## Security notes
 
