@@ -9,6 +9,26 @@ import type {
   ModeratedMetadataInput,
   ModerationRepository,
 } from "@/server/repositories/moderation";
+import { InvalidRepositoryInputError } from "@/server/repositories/errors";
+
+export type PublicationFailureCategory =
+  | "publication_cloudinary_copy_failed"
+  | "publication_d1_write_failed"
+  | "publication_orphan_target_exists"
+  | "publication_invalid_taxonomy"
+  | "publication_duplicate_asset"
+  | "publication_stale_submission_state"
+  | "publication_cleanup_failed";
+
+export class PublicationError extends InvalidRepositoryInputError {
+  readonly category: PublicationFailureCategory;
+
+  constructor(category: PublicationFailureCategory) {
+    super(category);
+    this.name = "PublicationError";
+    this.category = category;
+  }
+}
 
 export async function approveAndPublishSubmission(input: {
   repository: ModerationRepository;
@@ -74,8 +94,12 @@ export async function approveAndPublishSubmission(input: {
         submissionId: submission.id,
         action: "publication.copied_resource_cleanup_failed",
       });
+      throw new PublicationError("publication_orphan_target_exists");
     }
-    throw error;
+    if (error instanceof InvalidRepositoryInputError) {
+      throw error;
+    }
+    throw new PublicationError("publication_d1_write_failed");
   }
 
   try {

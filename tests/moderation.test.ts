@@ -10,7 +10,11 @@ import {
   publicIdInPublishedNamespace,
 } from "@/server/services/cloudinary";
 import { InvalidRepositoryInputError } from "@/server/repositories/errors";
-import { approveAndPublishSubmission } from "@/server/services/publication";
+import {
+  approveAndPublishSubmission,
+  PublicationError,
+} from "@/server/services/publication";
+import { readRequestBody } from "@/server/services/collection-api";
 
 function read(path: string): string {
   return readFileSync(path, "utf8");
@@ -349,6 +353,156 @@ describe("Phase 13 publication boundaries", () => {
     expect(repository).toContain("Choose a category.");
     expect(repository).toContain("Choose at least one tag.");
     expect(approveApi).toContain("approveAndPublishSubmission");
+  });
+
+  it("inserts the asset before linking the submission foreign key", () => {
+    const repository = read("src/server/repositories/moderation.ts");
+    const publishBlock = repository.slice(
+      repository.indexOf("async publishSubmission"),
+      repository.indexOf("async markPublishedPendingCleanupDeleted"),
+    );
+
+    expect(publishBlock.indexOf("INSERT INTO assets")).toBeGreaterThan(-1);
+    expect(publishBlock.indexOf("UPDATE submissions")).toBeGreaterThan(-1);
+    expect(publishBlock.indexOf("INSERT INTO assets")).toBeLessThan(
+      publishBlock.indexOf("UPDATE submissions"),
+    );
+    expect(publishBlock).toContain("WHERE id = ? AND status = 'pending'");
+    expect(publishBlock).toContain("WHERE id = ? AND submission_id = ?");
+  });
+
+  it("preserves repeated form fields for multiple selected tags", async () => {
+    const body = new URLSearchParams([
+      ["title", "Phase 13 Published Test"],
+      ["tags", "phase-13-test"],
+      ["tags", "temporary-review"],
+    ]);
+    const request = new Request("https://pfseeker.test/moderation", {
+      method: "POST",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded",
+        "content-length": String(body.toString().length),
+      },
+      body,
+    });
+
+    const { data, isForm } = await readRequestBody({ request } as never);
+
+    expect(isForm).toBe(true);
+    expect(data.tags).toEqual(["phase-13-test", "temporary-review"]);
+  });
+
+  it("returns a safe publication category when D1 publish fails after copy", async () => {
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: { message: "not found" } }), {
+          status: 404,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            public_id:
+              "pfseeker/pending-submissions/user-1/intent-1/source-file",
+            resource_type: "image",
+            type: "upload",
+            format: "png",
+            bytes: 100,
+            width: 512,
+            height: 512,
+            secure_url:
+              "https://res.cloudinary.com/example-cloud/image/upload/v123/pfseeker/pending-submissions/user-1/intent-1/source-file.png",
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response("source-bytes", {
+          status: 200,
+          headers: { "content-type": "image/png" },
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ public_id: "published" }), {
+          status: 200,
+        }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ result: "ok" }), { status: 200 }),
+      );
+    const repository = {
+      readSubmission: vi.fn().mockResolvedValue({
+        id: "11111111-1111-4111-8111-111111111111",
+        userId: "user-1",
+        status: "pending",
+        assetType: "pfp",
+        title: "Pending",
+        description: null,
+        creatorCredit: null,
+        sourceUrl: null,
+        reviewedAt: null,
+        publishedAssetId: null,
+        publishedAssetSlug: null,
+        rejectionReasonPublic: null,
+        mediaCleanupStatus: "pending_media_present",
+        category: { id: "category-1", slug: "phase-13-test", name: "Test" },
+        tags: [
+          { id: "tag-1", slug: "phase-13-test", displayName: "Test" },
+          {
+            id: "tag-2",
+            slug: "temporary-review",
+            displayName: "temporary-review-updated",
+          },
+        ],
+        suggestedTags: [],
+        cloudinaryPublicId:
+          "pfseeker/pending-submissions/user-1/intent-1/source-file",
+        cloudinaryResourceType: "image",
+        cloudinaryFormat: "png",
+        bytes: 100,
+        width: 512,
+        height: 512,
+        contentHash: "hash",
+        duplicatePendingFlag: false,
+        createdAt: "2026-07-17T00:00:00.000Z",
+        submitter: { id: "user-1", username: "user", globalName: null },
+      }),
+      validateModeratedMetadata: vi.fn().mockResolvedValue({
+        title: "Published",
+        description: null,
+        categoryId: "category-1",
+        categorySlug: "phase-13-test",
+        tagIds: ["tag-1", "tag-2"],
+        tagSlugs: ["phase-13-test", "temporary-review"],
+        creatorCredit: null,
+        sourceUrl: null,
+      }),
+      uniqueAssetSlug: vi.fn().mockResolvedValue("published"),
+      publishSubmission: vi.fn().mockRejectedValue(new Error("D1 failed")),
+      markCleanupFailed: vi.fn(),
+    };
+
+    await expect(
+      approveAndPublishSubmission({
+        repository: repository as never,
+        config: cloudinaryConfig,
+        actorUserId: "owner-1",
+        submissionId: "11111111-1111-4111-8111-111111111111",
+        metadataInput: {
+          title: "Published",
+          description: "",
+          category: "phase-13-test",
+          tags: ["phase-13-test", "temporary-review"],
+          creatorCredit: "",
+          sourceUrl: "",
+        },
+      }),
+    ).rejects.toMatchObject({
+      name: "PublicationError",
+      category: "publication_d1_write_failed",
+    });
+    expect(PublicationError).toBeTypeOf("function");
+    expect(repository.markCleanupFailed).not.toHaveBeenCalled();
   });
 
   it("lets moderators clear tags while saving metadata before approval", () => {

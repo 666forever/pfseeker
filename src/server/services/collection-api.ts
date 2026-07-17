@@ -115,8 +115,19 @@ export async function readRequestBody(context: APIContext): Promise<{
     contentType.includes("multipart/form-data")
   ) {
     const form = await context.request.formData();
+    const data: Record<string, unknown> = {};
+    for (const [key, value] of form.entries()) {
+      const current = data[key];
+      if (current === undefined) {
+        data[key] = value;
+      } else if (Array.isArray(current)) {
+        current.push(value);
+      } else {
+        data[key] = [current, value];
+      }
+    }
     return {
-      data: Object.fromEntries(form.entries()),
+      data,
       isForm: true,
     };
   }
