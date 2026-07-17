@@ -46,7 +46,7 @@
 - Added Phase 13 protected moderation routes, moderator/owner authorization, server-side owner bootstrap, durable moderator memberships, moderation event history, taxonomy management, submission metadata correction, approval/publication, rejection, owner-only archive API, and publication cleanup handling.
 - Added `MODERATION.md` documenting the Phase 13 access model, lifecycle, publication, rejection, archive, database, and deferred reports.
 - Added moderation tests for migration shape, route protection, server-only bootstrap boundaries, Cloudinary publication ordering, no report routes/tables, and submitter-facing lifecycle rendering.
-- Recorded Phase 13 production owner-bootstrap verification: migration `0006_moderation_and_publishing.sql` is applied in production, owner bootstrap completed successfully, durable owner access persisted after sign-out/sign-in, and production has one active owner membership. Full moderation workflow verification remains pending.
+- Recorded Phase 13 production verification in solo-owner mode: migration `0006_moderation_and_publishing.sql` is applied in production; taxonomy creation/update, approval/publication, public Cloudinary media rendering, rejection, archive, duplicate bootstrap behavior, last-owner protection, signed-out moderation route protection, and membership UI hardening passed; production has one active owner membership and zero active moderator memberships. Multi-user moderator add/revoke testing remains intentionally deferred by user choice.
 
 ### Changed
 

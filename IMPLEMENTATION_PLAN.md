@@ -313,7 +313,7 @@ Goal: Add protected moderation operations.
 
 Dependencies: Phase 12.
 
-Status: Phase 13 deployed and owner-bootstrap verified; full moderation workflow verification pending.
+Status: Complete. Phase 13 is deployed and production-verified in solo-owner mode.
 
 Completion criteria:
 
@@ -325,8 +325,10 @@ Completion criteria:
 - Rejection deletes pending Cloudinary media, retains the D1 record, and records cleanup failures.
 - Submitters can see pending, approved, published, and rejected private states without internal notes or moderator identity.
 - Reports are explicitly deferred; no report UI, API, or tables are implemented in Phase 13.
-- Production migration `0006_moderation_and_publishing.sql` is applied, owner bootstrap was manually verified, durable owner access persisted after sign-out/sign-in, and production currently has one active owner membership.
-- Taxonomy management, approval, rejection, archive, moderator creation/revocation, and the full moderation workflow are not yet manually production-tested.
+- Production migration `0006_moderation_and_publishing.sql` is applied.
+- Production verification confirmed taxonomy creation/update, approval/publication, public Cloudinary media rendering, rejection, archive, duplicate bootstrap behavior, last-owner protection, signed-out moderation route protection, and solo-owner membership UI hardening.
+- Production currently has one active owner membership and zero active moderator memberships.
+- Multi-user moderator add/revoke testing is intentionally deferred by user choice.
 - Role authorization and migration boundaries are tested.
 
 ## Phase 14: Creators and Leaderboards

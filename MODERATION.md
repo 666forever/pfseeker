@@ -2,9 +2,9 @@
 
 ## Current Status
 
-Phase 13 deployed and owner-bootstrap verified; full moderation workflow verification pending.
+Phase 13 is deployed and production-verified in solo-owner mode.
 
-Phase 13 was merged to `main`, production migration `0006_moderation_and_publishing.sql` was applied successfully, and owner bootstrap was manually verified on `https://pfseeker.com`. The durable owner membership persisted after sign-out/sign-in, and production currently has one active owner membership. Reports remain deferred. Taxonomy management, approval/publication, rejection, archive, moderator creation/revocation, and the full moderation workflow are not yet manually production-tested.
+Phase 13 was merged to `main`, production migration `0006_moderation_and_publishing.sql` was applied successfully, and production verification on `https://pfseeker.com` covered taxonomy management, approval/publication, public Cloudinary media rendering, rejection, archive, duplicate bootstrap behavior, last-owner protection, signed-out moderation route protection, and solo-owner membership UI hardening. Production currently has one active owner membership and zero active moderator memberships. Multi-user moderator add/revoke testing is intentionally deferred by user choice.
 
 The implementation adds protected moderator and owner workflows for pending submissions, durable D1 role memberships, taxonomy management, publication, rejection, archive, and moderation event history. Reports remain deferred and no report UI, API, or tables are implemented.
 
@@ -17,6 +17,8 @@ Roles:
 - owner
 
 There is no `admin` role.
+
+There are no Discord guild checks or Discord bot checks. Moderation roles are local D1 memberships.
 
 Every privileged page and API request rechecks server-side authorization. Moderators can review submissions, edit moderation metadata, approve/publish, reject, and view history. Owners can do all moderator actions and can also manage taxonomy, manage moderator memberships, bootstrap the first owner, and archive published assets.
 
@@ -72,6 +74,8 @@ Rejection requires an internal note from 2 to 1000 characters and can include an
 
 Archiving is owner-only. Archiving moves a published asset to `archived` while retaining the asset row, taxonomy links, Cloudinary media, content hash, and event history. Phase 13 does not include restore.
 
+There is no restore or unarchive flow.
+
 ## Submitter View
 
 Submitters can see their private submissions in `pending`, `approved`, `published`, and `rejected` states. Published submissions show a public asset link when available. Rejected submissions show the optional public reason and rejection timestamp. Internal moderation notes, moderator identity, event records, and cleanup internals are never shown to submitters.
@@ -97,9 +101,13 @@ The migration intentionally does not add report tables.
 Deferred to later phases:
 
 - report submission and handling
+- multi-user moderator creation and revocation testing with a second account
 - appeals
 - notifications
 - public creator/profile surfaces
 - restore flows
 - media replacement
+- DB-backed dedicated category routes; D1 categories are currently discoverable through search filter URLs
 - full browser E2E coverage for authenticated moderation flows
+
+No cleanup of the Phase 13 production test records has been performed yet.
