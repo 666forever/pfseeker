@@ -41,6 +41,7 @@ class FakeStatement implements D1PreparedStatementLike {
 
 class FakeD1Database implements D1DatabaseLike {
   runs: { query: string; values: unknown[] }[] = [];
+  cloudinary = false;
 
   prepare(query: string): D1PreparedStatementLike {
     return new FakeStatement(query, this);
@@ -52,13 +53,36 @@ class FakeD1Database implements D1DatabaseLike {
 
   resultsFor<T>(query: string): T[] {
     if (query.includes("FROM assets")) {
+      if (this.cloudinary) {
+        return [
+          {
+            id: "asset-1",
+            slug: "phase-13-published-test",
+            kind: "pfp",
+            title: "Phase 13 Published Test",
+            alt_text: "Phase 13 Published Test",
+            media_source_type: "cloudinary",
+            durable_media_ref: "pfseeker/published/pfp/asset-1",
+            cloudinary_public_id: "pfseeker/published/pfp/asset-1",
+            width: 736,
+            height: 742,
+            format: "jpg",
+            animation: "static",
+            palette_json: JSON.stringify(["#111111", "#444444", "#d7d7d7"]),
+            motif: "submitted",
+            published_at: "2026-07-17T00:00:00.000Z",
+          },
+        ] as T[];
+      }
       return seedAssets.map((asset) => ({
         id: asset.id,
         slug: asset.slug,
         kind: asset.kind,
         title: asset.title,
         alt_text: asset.alt,
+        media_source_type: "local_seed",
         durable_media_ref: asset.localSource,
+        cloudinary_public_id: null,
         width: asset.width,
         height: asset.height,
         format: asset.format,
@@ -70,12 +94,21 @@ class FakeD1Database implements D1DatabaseLike {
     }
 
     if (query.includes("FROM asset_categories")) {
+      if (this.cloudinary) {
+        return [{ asset_id: "asset-1", slug: "phase-13-test" }] as T[];
+      }
       return seedAssets.flatMap((asset) =>
         asset.categories.map((slug) => ({ asset_id: asset.id, slug })),
       ) as T[];
     }
 
     if (query.includes("FROM asset_tags")) {
+      if (this.cloudinary) {
+        return [
+          { asset_id: "asset-1", slug: "phase-13-test" },
+          { asset_id: "asset-1", slug: "temporary-review" },
+        ] as T[];
+      }
       return seedAssets.flatMap((asset) =>
         asset.tags.map((slug) => ({ asset_id: asset.id, slug })),
       ) as T[];
@@ -152,6 +185,8 @@ describe("content repositories", () => {
 
     expect(asset?.id).toBe("pfp-ember-orbit");
     expect(asset?.categories).toContain("dark");
+    expect(asset?.mediaSourceType).toBe("local_seed");
+    expect(asset?.cloudinaryPublicId).toBeNull();
 
     const result = await repository.recordDownload({
       assetId: "pfp-ember-orbit",
@@ -164,6 +199,28 @@ describe("content repositories", () => {
     });
     expect(db.runs[0]?.query).toContain("INSERT INTO downloads");
     expect(db.runs[0]?.values[1]).toBe("pfp-ember-orbit");
+  });
+
+  it("maps D1 Cloudinary rows with stable IDs and runtime public cloud name", async () => {
+    const db = new FakeD1Database();
+    db.cloudinary = true;
+    const repository = new D1ContentRepository(db, {
+      cloudinaryCloudName: "pfseeker-test",
+    });
+    const asset = await repository.getAssetByKindAndSlug(
+      "pfp",
+      "phase-13-published-test",
+    );
+
+    expect(asset).toMatchObject({
+      id: "asset-1",
+      mediaSourceType: "cloudinary",
+      localSource: "pfseeker/published/pfp/asset-1",
+      cloudinaryPublicId: "pfseeker/published/pfp/asset-1",
+      cloudinaryCloudName: "pfseeker-test",
+      categories: ["phase-13-test"],
+      tags: ["phase-13-test", "temporary-review"],
+    });
   });
 
   it("uses seed fallback outside Cloudflare runtime", async () => {

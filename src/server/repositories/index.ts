@@ -19,7 +19,10 @@ export async function createContentRepository(
   const env = await getCloudflareRuntimeEnv(locals);
 
   if (env?.DB) {
-    return new D1ContentRepository(env.DB);
+    return new D1ContentRepository(env.DB, {
+      cloudinaryCloudName:
+        env.PUBLIC_CLOUDINARY_CLOUD_NAME ?? env.CLOUDINARY_CLOUD_NAME,
+    });
   }
 
   if (isCloudflarePagesRuntime(locals)) {

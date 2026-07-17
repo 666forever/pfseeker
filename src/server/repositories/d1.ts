@@ -21,7 +21,9 @@ const assetSelect = `
     kind,
     title,
     alt_text,
+    media_source_type,
     durable_media_ref,
+    cloudinary_public_id,
     width,
     height,
     format,
@@ -44,7 +46,9 @@ interface AssetRow {
   kind: string;
   title: string;
   alt_text: string;
+  media_source_type: string;
   durable_media_ref: string;
+  cloudinary_public_id: string | null;
   width: number;
   height: number;
   format: string;
@@ -91,6 +95,13 @@ function assertAnimation(value: string): AnimationState {
   throw new DatabaseRowError(`Unsupported animation state from D1: ${value}.`);
 }
 
+function assertMediaSourceType(value: string): "local_seed" | "cloudinary" {
+  if (value === "local_seed" || value === "cloudinary") return value;
+  throw new DatabaseRowError(
+    `Unsupported media source type from D1: ${value}.`,
+  );
+}
+
 function parsePalette(value: string): [string, string, string] {
   const parsed: unknown = JSON.parse(value);
   if (
@@ -107,6 +118,7 @@ function mapAsset(
   row: AssetRow,
   categoriesByAssetId: Map<string, string[]>,
   tagsByAssetId: Map<string, string[]>,
+  cloudinaryCloudName?: string,
 ): SeedAsset {
   return {
     id: row.id,
@@ -114,7 +126,10 @@ function mapAsset(
     kind: assertAssetKind(row.kind),
     title: row.title,
     alt: row.alt_text,
+    mediaSourceType: assertMediaSourceType(row.media_source_type),
     localSource: row.durable_media_ref,
+    cloudinaryPublicId: row.cloudinary_public_id,
+    cloudinaryCloudName,
     width: row.width,
     height: row.height,
     format: assertMediaFormat(row.format),
@@ -148,7 +163,10 @@ function groupSlugs(rows: SlugRow[]): Map<string, string[]> {
 }
 
 export class D1ContentRepository implements ContentRepository {
-  constructor(private readonly db: D1DatabaseLike) {}
+  constructor(
+    private readonly db: D1DatabaseLike,
+    private readonly options: { cloudinaryCloudName?: string } = {},
+  ) {}
 
   async listAssets(filters?: Parameters<ContentRepository["listAssets"]>[0]) {
     const assets = await this.readPublishedAssets();
@@ -276,7 +294,12 @@ export class D1ContentRepository implements ContentRepository {
     const tagsByAssetId = groupSlugs(tagRows.results);
 
     return assetRows.results.map((row) =>
-      mapAsset(row, categoriesByAssetId, tagsByAssetId),
+      mapAsset(
+        row,
+        categoriesByAssetId,
+        tagsByAssetId,
+        this.options.cloudinaryCloudName,
+      ),
     );
   }
 }

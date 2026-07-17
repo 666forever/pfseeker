@@ -206,4 +206,30 @@ describe("image descriptor integration", () => {
     });
     expect(descriptor.srcset).toContain("/seed-media/pfp-ember-orbit.svg 240w");
   });
+
+  it("builds Cloudinary delivery URLs for D1-published media records", () => {
+    const publicId = "pfseeker/published/pfp/asset-1";
+    const descriptor = buildSeedImageDescriptor({
+      ...seedAssets[0],
+      id: "asset-1",
+      slug: "phase-13-published-test",
+      title: "Phase 13 Published Test",
+      alt: "Phase 13 Published Test",
+      mediaSourceType: "cloudinary",
+      localSource: publicId,
+      cloudinaryPublicId: publicId,
+      cloudinaryCloudName: "pfseeker-test",
+      format: "jpg",
+    });
+
+    expect(descriptor.src).toContain(
+      "https://res.cloudinary.com/pfseeker-test/image/upload/",
+    );
+    expect(descriptor.src).toContain("pfseeker/published/pfp/asset-1");
+    expect(descriptor.src).not.toBe(publicId);
+    expect(descriptor.srcset).toContain(
+      "https://res.cloudinary.com/pfseeker-test/image/upload/",
+    );
+    expect(descriptor.downloadUrl).toContain("fl_attachment");
+  });
 });

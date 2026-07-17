@@ -6,7 +6,10 @@ export interface SeedAsset {
   kind: AssetKind;
   title: string;
   alt: string;
+  mediaSourceType?: "local_seed" | "cloudinary";
   localSource: string;
+  cloudinaryPublicId?: string | null;
+  cloudinaryCloudName?: string | null;
   width: number;
   height: number;
   format: MediaFormat;
