@@ -24,6 +24,7 @@ export const POST: APIRoute = async (context) => {
         creatorCredit: data.creatorCredit,
         sourceUrl: data.sourceUrl,
       },
+      { requireTags: false },
     );
     await access.repository.updateSubmissionMetadata({
       actorUserId: access.currentUser.user.id,

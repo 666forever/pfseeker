@@ -1,4 +1,5 @@
 import {
+  cloudinaryResourceExists,
   copyCloudinaryResource,
   createPublishedPublicId,
   deleteCloudinaryResource,
@@ -21,15 +22,27 @@ export async function approveAndPublishSubmission(input: {
     submission.assetType,
     input.metadataInput,
   );
-  const assetId = crypto.randomUUID();
   const slug = await input.repository.uniqueAssetSlug(
     metadata.title,
     submission.assetType,
   );
-  const publishedPublicId = createPublishedPublicId({
-    assetType: submission.assetType,
-    assetId,
-  });
+  let assetId = "";
+  let publishedPublicId = "";
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    assetId = crypto.randomUUID();
+    publishedPublicId = createPublishedPublicId({
+      assetType: submission.assetType,
+      assetId,
+    });
+    if (!(await cloudinaryResourceExists(input.config, publishedPublicId))) {
+      break;
+    }
+    assetId = "";
+    publishedPublicId = "";
+  }
+  if (!assetId || !publishedPublicId) {
+    throw new Error("Published media target is unavailable.");
+  }
 
   if (!submission.cloudinaryPublicId) {
     throw new Error("Pending media is missing for publication.");

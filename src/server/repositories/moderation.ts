@@ -466,6 +466,7 @@ export class ModerationRepository {
   async validateModeratedMetadata(
     assetType: AssetKind,
     input: ModeratedMetadataInput,
+    options: { requireTags?: boolean } = {},
   ): Promise<ModeratedMetadata> {
     const title = requiredText(input.title, 2, 80, "Title");
     const description = optionalText(input.description, 100, "Description");
@@ -489,7 +490,7 @@ export class ModerationRepository {
     }
 
     const tagSlugs = Array.from(new Set(normalizeStringList(input.tags)));
-    if (tagSlugs.length === 0) {
+    if (tagSlugs.length === 0 && options.requireTags !== false) {
       throw new InvalidRepositoryInputError("Choose at least one tag.");
     }
     if (tagSlugs.length > MAX_SELECTED_TAGS) {

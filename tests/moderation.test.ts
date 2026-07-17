@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  CloudinaryCopyError,
   copyCloudinaryResource,
   createPublishedPublicId,
   getCloudinaryConfig,
@@ -147,7 +148,7 @@ describe("Phase 13 publication boundaries", () => {
     );
   });
 
-  it("copies nested pending resources from Cloudinary's canonical secure URL", async () => {
+  it("copies nested pending resources by re-uploading server-read bytes", async () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(
@@ -168,6 +169,12 @@ describe("Phase 13 publication boundaries", () => {
         ),
       )
       .mockResolvedValueOnce(
+        new Response("source-bytes", {
+          status: 200,
+          headers: { "content-type": "image/png" },
+        }),
+      )
+      .mockResolvedValueOnce(
         new Response(JSON.stringify({ public_id: "published" }), {
           status: 200,
         }),
@@ -183,13 +190,45 @@ describe("Phase 13 publication boundaries", () => {
     expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
       "https://api.cloudinary.com/v1_1/example-cloud/resources/image/upload/pfseeker/pending-submissions/user-1/intent-1/source-file",
     );
-    const uploadBody = fetchMock.mock.calls[1]?.[1]?.body as URLSearchParams;
-    expect(uploadBody.get("file")).toBe(
+    expect(String(fetchMock.mock.calls[1]?.[0])).toBe(
       "https://res.cloudinary.com/example-cloud/image/upload/v123/pfseeker/pending-submissions/user-1/intent-1/source-file.png",
+    );
+    const uploadOptions = fetchMock.mock.calls[2]?.[1];
+    const uploadBody = uploadOptions?.body as URLSearchParams;
+    expect(uploadBody.get("file")).toBe(
+      "data:image/png;base64,c291cmNlLWJ5dGVz",
     );
     expect(uploadBody.get("public_id")).toBe("pfseeker/published/pfp/asset-1");
     expect(uploadBody.get("public_id")).not.toContain(".png");
     expect(uploadBody.get("overwrite")).toBe("false");
+    expect(uploadBody.has("api_key")).toBe(false);
+    expect(uploadBody.has("signature")).toBe(false);
+    expect(uploadBody.has("timestamp")).toBe(false);
+    expect(uploadOptions?.headers).toEqual({
+      authorization: "Basic ZXhhbXBsZS1rZXk6ZXhhbXBsZS1zZWNyZXQ=",
+    });
+  });
+
+  it("returns sanitized Cloudinary copy failure categories", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      new Response(JSON.stringify({ error: { message: "not found" } }), {
+        status: 404,
+      }),
+    );
+
+    await expect(
+      copyCloudinaryResource({
+        config: cloudinaryConfig,
+        sourcePublicId:
+          "pfseeker/pending-submissions/user-1/intent-1/source-file",
+        targetPublicId: "pfseeker/published/pfp/asset-1",
+      }),
+    ).rejects.toMatchObject({
+      name: "CloudinaryCopyError",
+      reason: "source_resource_not_found",
+    });
+
+    expect(CloudinaryCopyError).toBeTypeOf("function");
   });
 
   it("uses runtime Cloudinary config names and not only public env names", () => {
@@ -203,6 +242,11 @@ describe("Phase 13 publication boundaries", () => {
 
   it("leaves publication retryable when Cloudinary copy fails", async () => {
     vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: { message: "not found" } }), {
+          status: 404,
+        }),
+      )
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
@@ -219,6 +263,12 @@ describe("Phase 13 publication boundaries", () => {
           }),
           { status: 200 },
         ),
+      )
+      .mockResolvedValueOnce(
+        new Response("source-bytes", {
+          status: 200,
+          headers: { "content-type": "image/png" },
+        }),
       )
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ error: { message: "copy failed" } }), {
@@ -299,6 +349,39 @@ describe("Phase 13 publication boundaries", () => {
     expect(repository).toContain("Choose a category.");
     expect(repository).toContain("Choose at least one tag.");
     expect(approveApi).toContain("approveAndPublishSubmission");
+  });
+
+  it("lets moderators clear tags while saving metadata before approval", () => {
+    const metadataApi = read(
+      "src/pages/api/moderation/submissions/[submissionId]/metadata.ts",
+    );
+    const repository = read("src/server/repositories/moderation.ts");
+
+    expect(metadataApi).toContain("{ requireTags: false }");
+    expect(repository).toContain("options.requireTags !== false");
+    expect(repository).toContain("DELETE FROM submission_tags");
+  });
+
+  it("distinguishes duplicate display names by slug in moderation forms", () => {
+    const detail = read(
+      "src/pages/moderation/submissions/[submissionId].astro",
+    );
+
+    expect(detail).toContain("slug: {tag.slug}");
+    expect(detail).toContain("selectedTags.has(tag.slug)");
+  });
+
+  it("summarizes metadata update events without rendering raw metadata JSON", () => {
+    const history = read("src/pages/moderation/history.astro");
+    const detail = read(
+      "src/pages/moderation/submissions/[submissionId].astro",
+    );
+
+    expect(history).toContain("metadataUpdateSummary(event)");
+    expect(history).toContain('event.action !== "submission.metadata_update"');
+    expect(history).not.toContain("{event.metadataJson}");
+    expect(detail).toContain("metadataUpdateSummary(event)");
+    expect(detail).not.toContain("{event.metadataJson}");
   });
 });
 
