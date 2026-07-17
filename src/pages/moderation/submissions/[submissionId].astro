@@ -63,6 +63,11 @@ const mediaUrl = submission.cloudinaryPublicId
       },
     )
   : "";
+const canArchivePublishedAsset =
+  access.role === "owner" &&
+  submission.status === "published" &&
+  submission.publishedAssetId &&
+  submission.publishedAssetStatus === "published";
 
 function textValue(value: unknown): string {
   return typeof value === "string" && value.trim() ? value.trim() : "none";
@@ -153,6 +158,14 @@ function metadataUpdateSummary(event: {
             <dt>Status</dt>
             <dd>{submissionStatusLabels[submission.status]}</dd>
           </div>
+          {
+            submission.publishedAssetId && (
+              <div>
+                <dt>Published asset status</dt>
+                <dd>{submission.publishedAssetStatus ?? "Unavailable"}</dd>
+              </div>
+            )
+          }
           <div>
             <dt>Submitter</dt>
             <dd>
@@ -214,7 +227,7 @@ function metadataUpdateSummary(event: {
                       value={category.slug}
                       selected={submission.category?.slug === category.slug}
                     >
-                      {category.name}
+                      {category.name} / slug: {category.slug}
                     </option>
                   ))
               }
@@ -330,6 +343,37 @@ function metadataUpdateSummary(event: {
             </label>
             <button class="button button--danger button--md" type="submit">
               Reject
+            </button>
+          </form>
+        </section>
+      )
+    }
+
+    {
+      canArchivePublishedAsset && (
+        <section class="collection-panel" aria-labelledby="archive-title">
+          <h2 id="archive-title">Archive published asset</h2>
+          <form
+            class="submission-form"
+            method="post"
+            action={`/api/moderation/assets/${submission.publishedAssetId}/archive`}
+          >
+            <p>
+              Archiving removes this asset from public galleries, search, and
+              public detail pages. Published media remains stored.
+            </p>
+            <label>
+              Archive reason
+              <textarea
+                name="reason"
+                required
+                minlength="2"
+                maxlength="500"
+                rows="2"
+              />
+            </label>
+            <button class="button button--danger button--md" type="submit">
+              Archive published asset
             </button>
           </form>
         </section>

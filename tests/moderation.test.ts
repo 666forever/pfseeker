@@ -522,7 +522,28 @@ describe("Phase 13 publication boundaries", () => {
     );
 
     expect(detail).toContain("slug: {tag.slug}");
+    expect(detail).toContain("{category.name} / slug: {category.slug}");
     expect(detail).toContain("selectedTags.has(tag.slug)");
+  });
+
+  it("shows published asset archive controls only to owners", () => {
+    const detail = read(
+      "src/pages/moderation/submissions/[submissionId].astro",
+    );
+    const archiveApi = read(
+      "src/pages/api/moderation/assets/[assetId]/archive.ts",
+    );
+
+    expect(detail).toContain('access.role === "owner"');
+    expect(detail).toContain('submission.status === "published"');
+    expect(detail).toContain("submission.publishedAssetId");
+    expect(detail).toContain('submission.publishedAssetStatus === "published"');
+    expect(detail).toContain("Archive published asset");
+    expect(detail).toContain(
+      "action={`/api/moderation/assets/${submission.publishedAssetId}/archive`}",
+    );
+    expect(detail).toContain("Published asset status");
+    expect(archiveApi).toContain("requireOwner(context)");
   });
 
   it("summarizes metadata update events without rendering raw metadata JSON", () => {

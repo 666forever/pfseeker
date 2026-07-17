@@ -50,6 +50,7 @@ export interface ModerationSubmission extends PendingSubmission {
     username: string;
     globalName: string | null;
   };
+  publishedAssetStatus: "published" | "archived" | null;
 }
 
 export interface ModerationCategory {
@@ -1377,6 +1378,9 @@ export class ModerationRepository {
       row.user_id,
       row.id,
     );
+    const publishedAssetStatus = submission.publishedAssetId
+      ? await this.readPublishedAssetStatus(submission.publishedAssetId)
+      : null;
     return {
       ...submission,
       submitter: {
@@ -1384,7 +1388,22 @@ export class ModerationRepository {
         username: row.username,
         globalName: row.global_name,
       },
+      publishedAssetStatus,
     };
+  }
+
+  private async readPublishedAssetStatus(
+    assetId: string,
+  ): Promise<"published" | "archived" | null> {
+    const row = await this.db
+      .prepare("SELECT status FROM assets WHERE id = ?")
+      .bind(assetId)
+      .first<{ status: string }>();
+    if (!row) return null;
+    if (row.status === "published" || row.status === "archived") {
+      return row.status;
+    }
+    throw new InvalidRepositoryInputError("Asset row has invalid status.");
   }
 
   private moderationSubmissionSelect(): string {
