@@ -5,6 +5,8 @@ import {
   requireOwner,
 } from "@/server/auth/moderation";
 import { AuthenticationRequiredError } from "@/server/auth/session";
+import { getAuthConfig } from "@/server/config";
+import { createMembershipRevokeToken } from "@/server/services/moderation-membership-actions";
 
 let access;
 try {
@@ -22,7 +24,43 @@ try {
   throw error;
 }
 
-const memberships = await access.repository.listMemberships();
+const [memberships, authConfig] = await Promise.all([
+  access.repository.listMemberships(),
+  getAuthConfig(Astro.locals),
+]);
+const activeOwnerCount = memberships.filter(
+  (membership) => membership.role === "owner" && membership.status === "active",
+).length;
+const membershipRevokeTokenEntries: [string, string][] = await Promise.all(
+  memberships.map(async (membership): Promise<[string, string]> => [
+    membership.id,
+    await createMembershipRevokeToken(membership, authConfig),
+  ]),
+);
+const membershipRevokeTokens = new Map<string, string>(
+  membershipRevokeTokenEntries,
+);
+
+function shortInternalId(value: string): string {
+  return value.length > 6 ? `...${value.slice(-6)}` : "redacted";
+}
+
+function canRevokeMembership(
+  membership: (typeof memberships)[number],
+): boolean {
+  return !(
+    membership.status !== "active" ||
+    (membership.role === "owner" && activeOwnerCount <= 1)
+  );
+}
+
+function isLastActiveOwner(membership: (typeof memberships)[number]): boolean {
+  return (
+    membership.status === "active" &&
+    membership.role === "owner" &&
+    activeOwnerCount <= 1
+  );
+}
 ---
 
 <BaseLayout
@@ -49,32 +87,10 @@ const memberships = await access.repository.listMemberships();
 
     <section class="collection-panel" aria-labelledby="member-create-title">
       <h2 id="member-create-title">Add member</h2>
-      <form
-        class="submission-form"
-        method="post"
-        action="/api/moderation/members"
-      >
-        <div class="submission-grid">
-          <label>
-            Local user ID
-            <input name="userId" required />
-          </label>
-          <label>
-            Role
-            <select name="role">
-              <option value="moderator">Moderator</option>
-              <option value="owner">Owner</option>
-            </select>
-          </label>
-          <label>
-            Reason
-            <input name="reason" maxlength="500" />
-          </label>
-        </div>
-        <button class="button button--secondary button--md" type="submit">
-          Add membership
-        </button>
-      </form>
+      <p>
+        Multi-user moderator creation is deferred. The current production
+        verification keeps a single durable owner membership.
+      </p>
     </section>
 
     <section class="collection-panel" aria-labelledby="members-list-title">
@@ -89,7 +105,8 @@ const memberships = await access.repository.listMemberships();
                 <div class="collection-item__body">
                   <h3>{membership.role}</h3>
                   <p>
-                    {membership.status} / {membership.userId}
+                    {membership.status} / internal user{" "}
+                    {shortInternalId(membership.userId)}
                   </p>
                   <p>
                     <time datetime={membership.createdAt}>
@@ -97,12 +114,22 @@ const memberships = await access.repository.listMemberships();
                     </time>
                   </p>
                 </div>
-                {membership.status === "active" && (
+                {isLastActiveOwner(membership) && (
+                  <p class="collection-item__controls">
+                    Last active owner cannot be revoked.
+                  </p>
+                )}
+                {canRevokeMembership(membership) && (
                   <form
                     class="collection-item__controls"
                     method="post"
-                    action={`/api/moderation/members/${membership.id}/revoke`}
+                    action="/api/moderation/members/revoke"
                   >
+                    <input
+                      type="hidden"
+                      name="membershipToken"
+                      value={membershipRevokeTokens.get(membership.id)}
+                    />
                     <label>
                       Revocation reason
                       <input

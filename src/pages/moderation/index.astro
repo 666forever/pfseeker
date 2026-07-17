@@ -23,6 +23,10 @@ try {
 }
 
 const events = await access.repository.listEvents({ limit: 5 });
+
+function shortInternalId(value: string): string {
+  return value.length > 6 ? `...${value.slice(-6)}` : "redacted";
+}
 ---
 
 <BaseLayout
@@ -88,7 +92,8 @@ const events = await access.repository.listEvents({ limit: 5 });
                 <div class="collection-item__body">
                   <h3>{event.action}</h3>
                   <p>
-                    {event.targetType} / {event.targetId}
+                    {event.targetType} / internal target{" "}
+                    {shortInternalId(event.targetId)}
                   </p>
                   <p>
                     <time datetime={event.createdAt}>{event.createdAt}</time>
