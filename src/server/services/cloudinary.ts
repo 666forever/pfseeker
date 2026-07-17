@@ -278,7 +278,25 @@ export async function copyCloudinaryResource(input: {
     );
   }
 
-  const sourceUrl = `https://res.cloudinary.com/${input.config.cloudName}/image/upload/${encodePublicIdForResourcePath(input.sourcePublicId)}`;
+  const source = await readCloudinaryResource(
+    input.config,
+    input.sourcePublicId,
+  );
+  if (
+    source.public_id !== input.sourcePublicId ||
+    source.resource_type !== "image" ||
+    source.type !== "upload"
+  ) {
+    throw new InvalidRepositoryInputError(
+      "Cloudinary source image could not be copied.",
+    );
+  }
+  const sourceUrl = source.secure_url ?? source.url;
+  if (!sourceUrl) {
+    throw new InvalidRepositoryInputError(
+      "Cloudinary source image URL is missing.",
+    );
+  }
   const timestamp = Math.floor(Date.now() / 1000);
   const signature = await signParameters(
     {
