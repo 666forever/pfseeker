@@ -54,6 +54,27 @@ export interface VerifiedCloudinaryUpload {
   contentHash: string;
 }
 
+export type CloudinaryCopyFailureReason =
+  | "source_resource_not_found"
+  | "source_resource_unreadable"
+  | "source_resource_type_mismatch"
+  | "source_resource_url_missing"
+  | "source_secure_url_upload_rejected"
+  | "target_namespace_invalid"
+  | "cloudinary_auth_failed"
+  | "cloudinary_rate_or_policy_error"
+  | "unknown_cloudinary_error";
+
+export class CloudinaryCopyError extends InvalidRepositoryInputError {
+  readonly reason: CloudinaryCopyFailureReason;
+
+  constructor(reason: CloudinaryCopyFailureReason) {
+    super(`Cloudinary image could not be copied for publication: ${reason}.`);
+    this.name = "CloudinaryCopyError";
+    this.reason = reason;
+  }
+}
+
 export class CloudinaryConfigError extends Error {
   constructor(message: string) {
     super(message);
@@ -217,6 +238,109 @@ function authHeader(config: CloudinaryConfig): string {
   return `Basic ${btoa(`${config.apiKey}:${config.apiSecret}`)}`;
 }
 
+async function cloudinaryFailureReason(
+  response: Response,
+  fallback: CloudinaryCopyFailureReason,
+): Promise<CloudinaryCopyFailureReason> {
+  if (response.status === 401 || response.status === 403) {
+    return "cloudinary_auth_failed";
+  }
+  if (response.status === 420 || response.status === 429) {
+    return "cloudinary_rate_or_policy_error";
+  }
+
+  let message = "";
+  try {
+    const body = (await response.clone().json()) as {
+      error?: { message?: unknown };
+    };
+    if (typeof body.error?.message === "string") {
+      message = body.error.message.toLowerCase();
+    }
+  } catch {
+    message = "";
+  }
+
+  if (response.status === 404 || message.includes("not found")) {
+    return fallback === "source_secure_url_upload_rejected"
+      ? "source_secure_url_upload_rejected"
+      : "source_resource_not_found";
+  }
+  if (
+    message.includes("rate") ||
+    message.includes("quota") ||
+    message.includes("policy")
+  ) {
+    return "cloudinary_rate_or_policy_error";
+  }
+  if (
+    fallback === "source_secure_url_upload_rejected" &&
+    (message.includes("file") ||
+      message.includes("fetch") ||
+      message.includes("download") ||
+      message.includes("invalid"))
+  ) {
+    return "source_secure_url_upload_rejected";
+  }
+
+  return fallback;
+}
+
+function contentTypeForResource(
+  resource: CloudinaryResource,
+  response: Response,
+): string {
+  const headerType = response.headers.get("content-type")?.split(";")[0].trim();
+  if (headerType?.startsWith("image/")) return headerType;
+  if (resource.format === "jpg") return "image/jpeg";
+  return `image/${resource.format}`;
+}
+
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = "";
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function readCloudinaryResourceForCopy(
+  config: CloudinaryConfig,
+  publicId: string,
+): Promise<CloudinaryResource> {
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${config.cloudName}/resources/image/upload/${encodePublicIdForResourcePath(publicId)}`,
+    {
+      headers: { authorization: authHeader(config) },
+    },
+  );
+  if (!response.ok) {
+    throw new CloudinaryCopyError(
+      await cloudinaryFailureReason(response, "source_resource_not_found"),
+    );
+  }
+  return (await response.json()) as CloudinaryResource;
+}
+
+export async function cloudinaryResourceExists(
+  config: CloudinaryConfig,
+  publicId: string,
+): Promise<boolean> {
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${config.cloudName}/resources/image/upload/${encodePublicIdForResourcePath(publicId)}`,
+    {
+      headers: { authorization: authHeader(config) },
+    },
+  );
+  if (response.ok) return true;
+  if (response.status === 404) return false;
+  throw new CloudinaryCopyError(
+    await cloudinaryFailureReason(response, "unknown_cloudinary_error"),
+  );
+}
+
 export async function readCloudinaryResource(
   config: CloudinaryConfig,
   publicId: string,
@@ -273,12 +397,10 @@ export async function copyCloudinaryResource(input: {
     ) ||
     !publicIdInPublishedNamespace(input.targetPublicId)
   ) {
-    throw new InvalidRepositoryInputError(
-      "Cloudinary copy namespace is invalid.",
-    );
+    throw new CloudinaryCopyError("target_namespace_invalid");
   }
 
-  const source = await readCloudinaryResource(
+  const source = await readCloudinaryResourceForCopy(
     input.config,
     input.sourcePublicId,
   );
@@ -287,41 +409,42 @@ export async function copyCloudinaryResource(input: {
     source.resource_type !== "image" ||
     source.type !== "upload"
   ) {
-    throw new InvalidRepositoryInputError(
-      "Cloudinary source image could not be copied.",
-    );
+    throw new CloudinaryCopyError("source_resource_type_mismatch");
   }
   const sourceUrl = source.secure_url ?? source.url;
   if (!sourceUrl) {
-    throw new InvalidRepositoryInputError(
-      "Cloudinary source image URL is missing.",
-    );
+    throw new CloudinaryCopyError("source_resource_url_missing");
   }
-  const timestamp = Math.floor(Date.now() / 1000);
-  const signature = await signParameters(
-    {
-      file: sourceUrl,
-      overwrite: "false",
-      public_id: input.targetPublicId,
-      timestamp,
-    },
-    input.config.apiSecret,
-  );
+
+  const sourceResponse = await fetch(sourceUrl);
+  if (!sourceResponse.ok) {
+    throw new CloudinaryCopyError("source_resource_unreadable");
+  }
+  const contentType = contentTypeForResource(source, sourceResponse);
+  const sourceBytes = await sourceResponse.arrayBuffer();
+  if (sourceBytes.byteLength === 0) {
+    throw new CloudinaryCopyError("source_resource_unreadable");
+  }
+  const fileData = `data:${contentType};base64,${arrayBufferToBase64(sourceBytes)}`;
   const body = new URLSearchParams({
-    file: sourceUrl,
+    file: fileData,
     overwrite: "false",
     public_id: input.targetPublicId,
-    timestamp: String(timestamp),
-    api_key: input.config.apiKey,
-    signature,
   });
   const response = await fetch(
     `https://api.cloudinary.com/v1_1/${input.config.cloudName}/image/upload`,
-    { method: "POST", body },
+    {
+      method: "POST",
+      headers: { authorization: authHeader(input.config) },
+      body,
+    },
   );
   if (!response.ok) {
-    throw new InvalidRepositoryInputError(
-      "Cloudinary image could not be copied for publication.",
+    throw new CloudinaryCopyError(
+      await cloudinaryFailureReason(
+        response,
+        "source_secure_url_upload_rejected",
+      ),
     );
   }
 }

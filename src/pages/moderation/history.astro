@@ -38,6 +38,48 @@ const events = await access.repository.listEvents({
   targetId,
   action,
 });
+
+function textValue(value: unknown): string {
+  return typeof value === "string" && value.trim() ? value.trim() : "none";
+}
+
+function listValue(value: unknown): string {
+  if (!Array.isArray(value)) return "none";
+  const entries = value
+    .filter((entry): entry is string => typeof entry === "string")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return entries.length ? entries.join(", ") : "none";
+}
+
+function metadataUpdateSummary(event: {
+  action: string;
+  metadataJson: string;
+}): string[] {
+  if (event.action !== "submission.metadata_update") return [];
+  try {
+    const metadata = JSON.parse(event.metadataJson) as {
+      before?: Record<string, unknown>;
+      after?: Record<string, unknown>;
+    };
+    const before = metadata.before ?? {};
+    const after = metadata.after ?? {};
+    const summary = [
+      ["title", textValue(before.title), textValue(after.title)],
+      [
+        "category",
+        textValue(before.category),
+        textValue(after.categorySlug ?? after.category),
+      ],
+      ["tags", listValue(before.tags), listValue(after.tagSlugs ?? after.tags)],
+    ];
+    return summary
+      .filter(([, previous, next]) => previous !== next)
+      .map(([field, previous, next]) => `${field}: ${previous} -> ${next}`);
+  } catch {
+    return [];
+  }
+}
 ---
 
 <BaseLayout
@@ -112,6 +154,13 @@ const events = await access.repository.listEvents({
                   <p>
                     <time datetime={event.createdAt}>{event.createdAt}</time>
                   </p>
+                  {metadataUpdateSummary(event).length > 0 && (
+                    <ul>
+                      {metadataUpdateSummary(event).map((item) => (
+                        <li>{item}</li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </li>
             ))}
